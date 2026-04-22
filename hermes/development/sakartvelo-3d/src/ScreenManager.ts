@@ -89,7 +89,7 @@ export class ScreenManager {
       const audio = (window as any).__audioMgr;
       if (audio) audio.stopEraNarration();
       this._hideScreen('screen-era');
-      this.showChapterScreen();
+      this.showLevelSelect();
     });
     document.getElementById('btn-chapter-continue')?.addEventListener('click', () => {
       const audio = (window as any).__audioMgr;
