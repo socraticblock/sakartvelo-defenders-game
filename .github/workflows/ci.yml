@@ -18,30 +18,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'pnpm'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: npm ci
 
       - name: Run linter
-        run: pnpm run lint || echo "⚠️ Lint not configured, skipping"
+        run: npm run lint || echo "⚠️ Lint not configured, skipping"
         continue-on-error: true
 
       - name: Type check
-        run: pnpm run typecheck || pnpm exec tsc --noEmit || echo "⚠️ Typecheck not configured"
+        run: npm exec tsc --noEmit || echo "⚠️ Typecheck not configured"
         continue-on-error: true
 
       - name: Build
-        run: pnpm build
+        run: npm run build
 
       - name: Verify build output
         run: |
@@ -62,20 +57,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'pnpm'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: npm ci
 
       - name: Run tests
-        run: pnpm test || echo "⚠️ No tests configured"
+        run: npm test || echo "⚠️ No tests configured"
         continue-on-error: true
