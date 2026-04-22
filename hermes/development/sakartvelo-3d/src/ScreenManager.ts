@@ -52,7 +52,14 @@ export class ScreenManager {
   // ─── Screens ────────────────────────────────────────────────────────────────
 
   showTitleScreen(): void { this._showScreen('screen-title'); }
-  showEraScreen(): void { this._showScreen('screen-era'); }
+
+  showEraScreen(): void {
+    this._showScreen('screen-era');
+    // Auto-start era narration when screen opens
+    const audio = (window as any).__audioMgr;
+    if (audio) audio.startEraNarration();
+  }
+
   showChapterScreen(): void { this._showScreen('screen-chapter'); }
 
   private _showScreen(id: string): void {
@@ -71,11 +78,13 @@ export class ScreenManager {
   private _bindIntroButtons(): void {
     document.getElementById('btn-title-continue')?.addEventListener('click', () => {
       this._hideScreen('screen-title');
-      this._showScreen('screen-era');
+      this.showEraScreen();
     });
     document.getElementById('btn-era-continue')?.addEventListener('click', () => {
+      const audio = (window as any).__audioMgr;
+      if (audio) audio.stopEraNarration();
       this._hideScreen('screen-era');
-      this._showScreen('screen-chapter');
+      this.showLevelSelect();
     });
     document.getElementById('btn-chapter-continue')?.addEventListener('click', () => {
       this._hideScreen('screen-chapter');
