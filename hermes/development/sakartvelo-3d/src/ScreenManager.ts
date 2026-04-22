@@ -54,6 +54,7 @@ export class ScreenManager {
   showTitleScreen(): void { this._showScreen('screen-title'); }
 
   showEraScreen(): void {
+    console.log('[DEBUG] showEraScreen called');
     this._showScreen('screen-era');
     // Auto-start era narration when screen opens
     const audio = (window as any).__audioMgr;
@@ -68,6 +69,7 @@ export class ScreenManager {
   }
 
   private _showScreen(id: string): void {
+    console.log('[DEBUG] _showScreen:', id);
     document.querySelectorAll('.intro-overlay').forEach(el =>
       (el as HTMLElement).style.display = 'none'
     );
@@ -82,7 +84,9 @@ export class ScreenManager {
 
   private _bindIntroButtons(): void {
     document.getElementById('btn-title-continue')?.addEventListener('click', () => {
+      console.log('[DEBUG] btn-title-continue clicked');
       this._hideScreen('screen-title');
+      console.log('[DEBUG] screen-title hidden, calling showEraScreen');
       this.showEraScreen();
     });
     document.getElementById('btn-era-continue')?.addEventListener('click', () => {
