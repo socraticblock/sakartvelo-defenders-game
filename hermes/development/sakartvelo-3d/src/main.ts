@@ -102,9 +102,9 @@ function startLevel(era: number, level: number): void {
   }
 
   ui.showLevelName(lvl.name);
-  ui.hideGameOver();
-  ui.hideLevelComplete();
-  ui.showTutorial(lvl.level);
+  ui.screens.hideGameOver();
+  ui.screens.hideLevelComplete();
+  ui.screens.showTutorial(lvl.level);
   ui.update();
 }
 
@@ -116,7 +116,7 @@ function onWaveStart(bonus: number): void {
 
 ui.init(
   (era, level) => startLevel(era, level),
-  () => { gs.selectedType = null; gs.selectedTower = null; ui.showLevelSelect(); },
+  () => { gs.selectedType = null; gs.selectedTower = null; ui.screens.showLevelSelect(); },
 );
 
 input.init(
@@ -130,18 +130,18 @@ input.init(
       if (gs.waveMgr?.active) return;
       gs.placeTower(gs.selectedType, gx, gy, isPath, scene);
       gs.selectedType = null;
-      ui.towerButtons.forEach(b => b.classList.remove('selected'));
+      ui.panel.towerButtons.forEach((b: HTMLButtonElement) => b.classList.remove('selected'));
       ui.update();
     },
     onTowerClick: (tower: Tower) => {
       gs.selectedType = null;
       gs.selectedTower = gs.selectedTower === tower ? null : tower;
       gs.selectedTower?.showRange(true);
-      ui.towerButtons.forEach(b => b.classList.remove('selected'));
+      ui.panel.towerButtons.forEach((b: HTMLButtonElement) => b.classList.remove('selected'));
       ui.update();
     },
     onAbility: (idx: number) => gs.hero?.activateAbility(idx, gs.enemies, gs.towers),
-    onEscape: () => { gs.selectedType = null; gs.selectedTower = null; ui.showLevelSelect(); },
+    onEscape: () => { gs.selectedType = null; gs.selectedTower = null; ui.screens.showLevelSelect(); },
   },
 );
 
@@ -164,7 +164,7 @@ renderer.domElement.addEventListener('pointerdown', (e) => {
     gs.selectedType = null;
     gs.selectedTower = gs.selectedTower === tower ? null : tower;
     gs.selectedTower?.showRange(true);
-    ui.towerButtons.forEach(b => b.classList.remove('selected'));
+    ui.panel.towerButtons.forEach((b: HTMLButtonElement) => b.classList.remove('selected'));
     ui.update();
     return;
   }
@@ -177,7 +177,7 @@ renderer.domElement.addEventListener('pointerdown', (e) => {
     const placed = gs.placeTower(gs.selectedType, cell.gx, cell.gy, cell.isPath, scene);
     if (placed) {
       gs.selectedType = null;
-      ui.towerButtons.forEach(b => b.classList.remove('selected'));
+      ui.panel.towerButtons.forEach((b: HTMLButtonElement) => b.classList.remove('selected'));
       ui.update();
     }
   }
@@ -203,8 +203,8 @@ document.getElementById('wave-btn')?.addEventListener('click', () => {
 // ─── Menu button ───────────────────────────────────────────────────────────
 
 document.getElementById('go-menu')?.addEventListener('click', () => {
-  ui.hideGameOver();
-  ui.showLevelSelect();
+  ui.screens.hideGameOver();
+  ui.screens.showLevelSelect();
 });
 
 // ─── Resize ───────────────────────────────────────────────────────────────
@@ -222,13 +222,13 @@ async function init(): Promise<void> {
   audio.calibrateWordTimes().then(times => {
     (audio as any)._tpWordTimes = times;
   });
-  ui.startCulturalFacts();
+  ui.screens.startCulturalFacts();
 
   try {
     const resp = await fetch('./data/levels.json');
     const raw = await resp.json();
     gs.allLevels = Array.isArray(raw) ? raw : (raw.levels ?? [raw]);
-    ui.showTitleScreen();
+    ui.screens.showTitleScreen();
     ui.updateKbBadge();
   } catch (err) {
     console.error('Level load failed:', err);

@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { ENEMY_CONFIGS } from './types';
-import { createEnemyModel, animateRig, EnemyRig } from './EnemyModels';
+import { createEnemyModel } from './EnemyModels';
+import { animateRig } from './EnemyAnimations';
+import { type EnemyRig } from './EnemyBuilders';
 
 export class Enemy {
   group: THREE.Group;
