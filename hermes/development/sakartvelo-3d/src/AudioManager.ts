@@ -32,6 +32,16 @@ export class AudioManager {
     }
   }
 
+  // ─── Chapter narration (Chapter I: Bronze Age) ─────────────────────────────
+
+  playChapterNarration(): void {
+    this.playNarration('./audio/narration-chapter1-bronze-age.mp3');
+  }
+
+  stopChapterNarration(): void {
+    this.stopNarration();
+  }
+
   // ─── Volume setup ───────────────────────────────────
 
   init(): void {
