@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd hermes/development/sakartvelo-3d && npm install && npm run build",
+  "outputDirectory": "hermes/development/sakartvelo-3d/dist",
+  "installCommand": "cd hermes/development/sakartvelo-3d && npm install",
+  "framework": "vite"
+}
