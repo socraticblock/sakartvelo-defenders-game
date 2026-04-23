@@ -259,18 +259,19 @@
         overflow: hidden;
         position: relative;
         /* Fade edges — text disappears at top/bottom of viewport */
+        /* Soften the focus for better readability */
         -webkit-mask-image: linear-gradient(
           to bottom,
           transparent 0%,
-          black 18%,
-          black 82%,
+          black 15%,
+          black 85%,
           transparent 100%
         );
         mask-image: linear-gradient(
           to bottom,
           transparent 0%,
-          black 18%,
-          black 82%,
+          black 15%,
+          black 85%,
           transparent 100%
         );
       }
@@ -278,17 +279,19 @@
       /* Reading guide line — fixed at 28% from top */
       #era-tp-reading-line {
         position: absolute;
-        top: 28%;
+        top: 50%; /* Center the focus */
         left: 0; right: 0;
-        height: 1px;
+        height: 2px;
         background: linear-gradient(90deg,
           transparent 0%,
-          rgba(212,160,23,0.3) 20%,
-          rgba(212,160,23,0.6) 50%,
-          rgba(212,160,23,0.3) 80%,
+          rgba(212,160,23,0.1) 15%,
+          rgba(212,160,23,0.8) 50%,
+          rgba(212,160,23,0.1) 85%,
           transparent 100%);
+        box-shadow: 0 0 15px rgba(212,160,23,0.4);
         pointer-events: none;
         z-index: 2;
+        transform: translateY(-50%);
       }
 
       /* ─── BUILD PHASE OVERLAY ─── */
@@ -352,11 +355,16 @@
         margin-bottom: 16px; font-family: 'Georgia', serif;
       }
       #era-tp-track {
-        font-size: 18px; line-height: 2.3; color: #c0b090;
-        text-align: center; padding: 0 24px 60%;
+        font-size: 20px; line-height: 2.5; color: #6a5a3a;
+        text-align: center; padding: 45% 24px 60%;
+        transition: transform 0.1s ease-out;
       }
-      .tp-word { transition: color 0.2s; }
-      .tp-word.active { color: #f0e6d2; text-shadow: 0 0 10px rgba(240,230,210,0.5); }
+      .tp-word { transition: all 0.3s ease; display: inline-block; padding: 0 4px; }
+      .tp-word.active {
+        color: #f0e6d2;
+        text-shadow: 0 0 15px rgba(212,160,23,0.6);
+        transform: scale(1.15);
+      }
 
       /* Legacy — hide old paragraph display */
       #era-para-container { display: none; }

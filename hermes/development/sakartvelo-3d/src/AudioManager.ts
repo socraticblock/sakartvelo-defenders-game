@@ -86,18 +86,39 @@ export class AudioManager {
 
   calibrateWordTimes(): Promise<number[]> {
     return new Promise(resolve => {
-      if (!('speechSynthesis' in window)) { resolve([]); return; }
+      const generateFallback = () => {
+        const fullText = this.ERA_PARAGRAPHS.join(' ');
+        const words = fullText.split(/\s+/);
+        const fallbackTimes: number[] = [];
+        let charIdx = 0;
+        words.forEach(w => {
+          fallbackTimes.push(charIdx);
+          charIdx += w.length + 1;
+        });
+        this._tpWordTimes = fallbackTimes;
+        resolve(fallbackTimes);
+      };
+
+      if (!('speechSynthesis' in window)) { generateFallback(); return; }
+      
       const fullText = this.ERA_PARAGRAPHS.join(' ');
       const utterance = new SpeechSynthesisUtterance(fullText);
       utterance.rate = 1.0;
-      utterance.volume = 0; // silent calibration
-      utterance.pitch = 1.0;
+      utterance.volume = 0; 
+      
       const times: number[] = [];
       utterance.onboundary = (e) => {
         if (e.name === 'word') times.push(e.charIndex);
       };
-      utterance.onend = () => { this._tpWordTimes = times; resolve(times); };
-      utterance.onerror = () => { this._tpWordTimes = []; resolve([]); };
+      utterance.onend = () => { 
+        if (times.length > 0) { this._tpWordTimes = times; resolve(times); }
+        else generateFallback();
+      };
+      utterance.onerror = () => generateFallback();
+      
+      // Timeout fallback in case speech API hangs
+      setTimeout(() => { if (times.length === 0) generateFallback(); }, 1500);
+
       speechSynthesis.cancel();
       speechSynthesis.speak(utterance);
     });
@@ -126,8 +147,19 @@ export class AudioManager {
   // ─── Era narration playback ──────────────────────────
 
   startEraNarration(): void {
-    this.buildEraTeleprompter();
     const playBtn = document.getElementById('btn-era-play') as HTMLButtonElement;
+    
+    // If already exists and paused, just resume
+    if (this._eraAudioEl && !this._eraPlaying) {
+      this._eraPlaying = true;
+      playBtn.textContent = '⏸ Pause';
+      this._eraAudioEl.play();
+      if (this._tpRafId) cancelAnimationFrame(this._tpRafId);
+      this._tpRafId = requestAnimationFrame(() => this._tpTick());
+      return;
+    }
+
+    this.buildEraTeleprompter();
     playBtn.textContent = '⏳ Loading...';
     playBtn.classList.add('playing');
     playBtn.disabled = true;
@@ -143,14 +175,16 @@ export class AudioManager {
       playBtn.disabled = false;
       playBtn.classList.remove('playing');
       this._eraPlaying = false;
+      this._eraAudioEl = null;
     });
 
     this._eraAudioEl.addEventListener('canplay', () => {
-      this._tpAudioDuration = this._eraAudioEl!.duration;
-      this.updateTpProgress(); // Initial update
-      playBtn.textContent = '■ Stop';
+      if (!this._eraAudioEl) return;
+      this._tpAudioDuration = this._eraAudioEl.duration;
+      this.updateTpProgress();
+      playBtn.textContent = '⏸ Pause';
       playBtn.disabled = false;
-      this._eraAudioEl!.play().catch(e => {
+      this._eraAudioEl.play().catch(e => {
         console.warn('[Narration] play blocked:', e.message);
         playBtn.textContent = '▶ Play Narration';
         playBtn.disabled = false;
@@ -165,9 +199,9 @@ export class AudioManager {
   stopEraNarration(): void {
     this._eraPlaying = false;
     if (this._tpRafId) { cancelAnimationFrame(this._tpRafId); this._tpRafId = null; }
-    if (this._eraAudioEl) { this._eraAudioEl.pause(); this._eraAudioEl = null; }
+    if (this._eraAudioEl) { this._eraAudioEl.pause(); }
     const playBtn = document.getElementById('btn-era-play') as HTMLButtonElement;
-    playBtn.textContent = '▶ Play Narration';
+    playBtn.textContent = '▶ Resume';
     playBtn.disabled = false;
     playBtn.classList.remove('playing');
   }
@@ -193,18 +227,43 @@ export class AudioManager {
     const elapsed = this._eraAudioEl.currentTime;
     const audioDur = this._eraAudioEl.duration || this._tpAudioDuration;
 
-    if (this._tpWordTimes.length > 0 && audioDur > 0) {
-      const scale = audioDur / (this._tpWordTimes[this._tpWordTimes.length - 1] || 1);
-      const scaledElapsed = elapsed / scale;
+    if (audioDur > 0) {
+      // If we still have no timings, generate a linear fallback now
+      if (this._tpWordTimes.length === 0) {
+        let charIdx = 0;
+        this._tpWordTimes = this.ERA_PARAGRAPHS.join(' ').split(/\s+/).map(w => {
+          const t = charIdx;
+          charIdx += w.length + 1;
+          return t;
+        });
+      }
+
+      const lastTime = this._tpWordTimes[this._tpWordTimes.length - 1] || 1;
+      const scale = audioDur / lastTime;
+      
+      // Add a small 200ms lookahead so highlighting feels "responsive" to the voice
+      const scaledElapsed = (elapsed + 0.2) / scale;
+
       let lo = 0, hi = this._tpWordTimes.length - 1;
       while (lo < hi) {
         const mid = (lo + hi + 1) >> 1;
         if (this._tpWordTimes[mid] <= scaledElapsed) lo = mid;
         else hi = mid - 1;
       }
+
       const wordIdx = Math.min(lo, this._tpWordEls.length - 1);
-      if (this._tpWordEls[wordIdx]) {
-        this._tpWordEls[wordIdx].scrollIntoView({ block: 'center', behavior: 'smooth' });
+      const activeWord = this._tpWordEls[wordIdx];
+      
+      if (activeWord && !activeWord.classList.contains('active')) {
+        this._tpWordEls.forEach(el => el.classList.remove('active'));
+        activeWord.classList.add('active');
+        
+        // Use a more reliable scroll method
+        activeWord.scrollIntoView({
+          block: 'center',
+          inline: 'nearest',
+          behavior: 'smooth'
+        });
       }
     }
 
