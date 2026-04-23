@@ -1,7 +1,7 @@
 # Sakartvelo Defenders — Game Design Bible v4.0
 
 ## 🏛️ Core Vision
-A premium 2D Isometric Cel-Shaded Tower Defense game that preserves and celebrates 2,000+ years of Georgian history through engaging gameplay and invisible blockchain infrastructure.
+A premium 3D Action-Strategy Tower Defense game that preserves and celebrates 2,000+ years of Georgian history. Players control a Hero who must physically travel to sites to construct towers ("Walk-to-Build" system).
 
 ## ⚔️ Gameplay Pillars
 1. **Education through Gameplay**: History is taught organically via level design, enemy waves, and pop-ups.

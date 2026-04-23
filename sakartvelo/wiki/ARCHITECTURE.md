@@ -6,8 +6,8 @@
 src/
 ├── main.ts                    # Entry point — scene setup, init, event wiring
 ├── GameState.ts               # Mutable singleton state (gold, lives, towers, enemies, etc.)
-├── GameLoop.ts                # 13-step animate() loop, delegates to managers
-├── InputManager.ts            # Keyboard (QWERTY/AZERTY), mouse, touch, raycasting
+├── GameLoop.ts                # 14-step animate() loop, delegates to managers
+├── InputManager.ts            # High-precision raycasting (document-level tracking)
 ├── UIManager.ts               # HUD coordination (gold/lives/wave/build HUD)
 ├── TowerPanel.ts              # Tower buttons, tower info panel (upgrade/sell)
 ├── ScreenManager.ts           # Screens: title, level select, tutorial, game-over, etc.
@@ -75,13 +75,14 @@ Each file has exactly one job. If you can't name the file in one clear word, it 
 8. `_updateTowers` — tower targeting + firing
 9. `_updateProjectiles` — projectile update + splash damage
 10. `_updateHero` — hero movement + abilities
-11. `updateEnemyDeaths` — gold rewards, death cleanup (→ EnemyAI.ts)
-12. `updateEffects` — VFX billboard sprites
-13. `_updateWallHpBillboards` — wall HP labels face camera
-14. `_checkWaveComplete` — between-wave popup, final wave → game over
+11. `_updateHeroBuilding` — progress builds when hero is in range
+12. `updateEnemyDeaths` — gold rewards, death cleanup (→ EnemyAI.ts)
+13. `updateEffects` — VFX billboard sprites
+14. `_updateWallHpBillboards` — wall HP labels face camera
+15. `_checkWaveComplete` — between-wave popup, final wave → game over
 
 ## Managers
-- **InputManager** — single source of truth for mouse grid position, keyboard layout
+- **InputManager** — single source of truth for mouse grid position; tracks `document` level pointer events to ensure precision over HTML UI.
 - **UIManager** — HUD gold/lives/wave display + build phase UI
 - **TowerPanel** — tower selection buttons + upgrade/sell panel
 - **ScreenManager** — title, level select, tutorial, game-over, level-complete screens

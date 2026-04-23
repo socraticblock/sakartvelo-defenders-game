@@ -107,6 +107,15 @@ const { addOutlineTo } = require('./CelShader');
 - **Strict Type Safety**: Avoid `any`. If a type is unknown, use `unknown` or define a proper Interface.
 - **Design Excellence**: Every UI change must follow the "Premium Georgian" aesthetic (gold accents, serif typography, soft gradients).
 
+## Rule 8: Input & Coordination Strategy
+
+To ensure a high-precision feel in the 3D environment, the following input rules apply:
+
+1. **Global Pointer Tracking**: Never track `pointermove` only on the canvas. Use the `document` level to ensure coordinates remain fresh even when the user is hovering over HTML UI elements (like the Tower Panel).
+2. **Explicit Pointer Sync**: UI elements (buttons) must call `input.syncPointer(e.clientX, e.clientY)` on click. This ensures that the very next game loop frame uses the exact mouse position of the click for raycasting.
+3. **Contextual Priority**: Input managers must prioritize the active intent. If `placementMode` is active, the grid should be targeted exclusively, ignoring incidental clicks on existing tower meshes or the hero.
+4. **Interaction Interrupts**: New user intents (like a move command) should immediately clear secondary states. If the Hero is moved, any `pendingBuild` or `buildTimer` must be nullified to maintain a responsive "Action" feel.
+
 ## Naming Conventions
 
 | Thing | Convention | Example |
