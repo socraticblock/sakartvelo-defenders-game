@@ -11,6 +11,29 @@ import { audio } from './AudioManager';
 import { GameLoop } from './GameLoop';
 import { SaveManager } from './SaveManager';
 import { Tower } from './Tower';
+import { screenMgr } from './ScreenManager';
+
+// ─── Global refs for external access (SET IMMEDIATELY) ──────────────────
+(window as any).__navigateToLevelSelect = () => {
+  try {
+    console.log('--- FOOLPROOF NAV TRIGGERED ---');
+    audio.stopEraNarration();
+    screenMgr.showLevelSelect(0);
+  } catch (err: any) {
+    alert('NAV ERROR: ' + err.message);
+  }
+};
+(window as any).__showEraScreen = () => {
+  try {
+    screenMgr.showEraScreen();
+  } catch (err: any) {
+    alert('BEGIN ERROR: ' + err.message);
+  }
+};
+(window as any).__audioMgr = audio;
+(window as any).__screenMgr = screenMgr;
+(window as any).__gs = gs;
+(window as any).__saveManager = SaveManager;
 
 // ─── Scene ────────────────────────────────────────────────────────────────
 
@@ -74,6 +97,24 @@ scene.add(moveRing);
 (window as any).__scene = scene;
 (window as any).__saveManager = SaveManager;
 (window as any).__audioMgr = audio;
+(window as any).__screenMgr = screenMgr;
+(window as any).__gs = gs;
+(window as any).__navigateToLevelSelect = () => {
+  try {
+    console.log('--- FOOLPROOF NAV TRIGGERED ---');
+    audio.stopEraNarration();
+    screenMgr.showLevelSelect(0);
+  } catch (err: any) {
+    alert('NAV ERROR: ' + err.message);
+  }
+};
+(window as any).__showEraScreen = () => {
+  try {
+    screenMgr.showEraScreen();
+  } catch (err: any) {
+    alert('BEGIN ERROR: ' + err.message);
+  }
+};
 
 // ─── Level lifecycle ─────────────────────────────────────────────────────
 

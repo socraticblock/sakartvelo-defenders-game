@@ -375,6 +375,17 @@
     </style>
   </head>
   <body>
+    <!-- Emergency Debug Overlay -->
+    <div id="debug-overlay" style="
+      position:fixed; bottom:10px; left:10px; z-index:9999;
+      background:rgba(0,0,0,0.8); color:#0f0; font-family:monospace; font-size:12px;
+      padding:8px 12px; border:1px solid #0f0; border-radius:4px;
+      pointer-events:none; display:block;">
+      STATE: <span id="debug-state">INIT</span><br/>
+      LEVELS: <span id="debug-levels">0</span><br/>
+      TARGET: <span id="debug-target">NONE</span>
+    </div>
+
     <div id="hud">
       <div>
         <span class="hud-item"><span class="hud-icon">💰</span><span id="gold">100</span></span>
@@ -472,7 +483,8 @@
       <div class="intro-subtitle">2,000 years of Georgian history · one tower at a time</div>
       <div class="intro-sound-hint">🔊 Sound on — click Begin to start</div>
       <div class="intro-divider"></div>
-      <button class="intro-btn" id="btn-title-continue">Begin</button>
+      <button class="intro-btn" id="btn-title-continue" 
+              onclick="window.__showEraScreen()">Begin</button>
     </div>
 
     <!-- ─── SCREEN 1: ERA INTRO ─── -->
@@ -506,7 +518,9 @@
         <button id="btn-era-next" class="era-nav-btn">Next →</button>
       </div>
 
-      <button class="intro-btn" id="btn-era-continue" style="margin-top:8px;">Continue</button>
+      <button class="intro-btn" id="btn-era-continue" 
+              onclick="window.__navigateToLevelSelect()"
+              style="margin-top:8px; position:relative; z-index:999;">Continue</button>
     </div>
 
     <!-- ─── SCREEN 2: CHAPTER I INTRO ─── -->
@@ -560,5 +574,17 @@
     </div>
 
     <script type="module" src="/src/main.ts"></script>
+    <script>
+      // Global click auditor for debugging
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (btn) {
+          console.log('--- GLOBAL CLICK AUDIT ---');
+          console.log('Button ID:', btn.id);
+          console.log('Button Classes:', btn.className);
+          console.log('Button Text:', btn.innerText.trim());
+        }
+      }, true);
+    </script>
   </body>
 </html>

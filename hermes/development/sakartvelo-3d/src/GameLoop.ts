@@ -68,10 +68,10 @@ export class GameLoop {
       this._updateWaveCountdown(dt);
       this._updateSpawn(dt);
       updateEnemySlow();
-      this._updateEnemies();
+      this._updateEnemies(dt);
       updateEnemyWallAttacks(this._scene, this._camera);
-      this._updateTowers();
-      this._updateProjectiles();
+      this._updateTowers(dt);
+      this._updateProjectiles(dt);
       this._updateHero(dt);
       updateEnemyDeaths(this._scene, this._camera);
       updateEffects(dt, this._camera);
@@ -115,13 +115,13 @@ export class GameLoop {
     if (spawned) gs.addEnemy(spawned, this._scene);
   }
 
-  private _updateEnemies(): void {
+  private _updateEnemies(dt: number): void {
     for (const enemy of gs.enemies) {
       enemy.update(dt, this._camera);
     }
   }
 
-  private _updateTowers(): void {
+  private _updateTowers(dt: number): void {
     for (const tower of gs.towers) {
       const spawn = tower.update(dt, gs.enemies);
       if (spawn) {
@@ -133,9 +133,9 @@ export class GameLoop {
     }
   }
 
-  private _updateProjectiles(): void {
+  private _updateProjectiles(dt: number): void {
     for (const proj of gs.projectilePool.alive) {
-      proj.update(0);
+      proj.update(dt);
       if (!proj.alive) {
         const hitPos = proj.mesh.position.clone();
         if (proj.splashRadius > 0) {

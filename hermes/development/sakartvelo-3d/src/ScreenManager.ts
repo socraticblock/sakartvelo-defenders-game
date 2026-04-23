@@ -25,14 +25,32 @@ export class ScreenManager {
     this._bindLevelCompleteButtons();
     this._bindTutorial();
     
+    console.log('ScreenManager.init complete');
+    
     culturalFacts.init();
   }
 
   // ─── Screen Transitions ───────────────────────────────────────────────
 
   private _showScreen(id: string): void {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('visible'));
-    document.getElementById(id)?.classList.add('visible');
+    try {
+      console.log(`Showing screen: ${id}`);
+
+      // Update Debug Overlay
+      const debugState = document.getElementById('debug-state');
+      const debugLevels = document.getElementById('debug-levels');
+      if (debugState) debugState.textContent = id.toUpperCase();
+      if (debugLevels) debugLevels.textContent = String(gs.allLevels.length);
+
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('visible'));
+      // Force title screen hide just in case
+      document.getElementById('screen-title')?.classList.remove('visible');
+      const target = document.getElementById(id);
+      if (!target) throw new Error(`Screen not found: ${id}`);
+      target.classList.add('visible');
+    } catch (err: any) {
+      alert('UI ERROR: ' + err.message);
+    }
   }
 
   showIntro(): void { this._showScreen('screen-title'); }
@@ -43,15 +61,15 @@ export class ScreenManager {
     audio.startEraNarration();
   }
 
-  showLevelSelect(): void {
+  showLevelSelect(era: number = 0): void {
     const container = document.getElementById('screen-level-select');
     if (container) {
       LevelSelect.show(
-        0, 
+        era, 
         container, 
         gs.allLevels, 
         (e, l) => this._onLevelSelect?.(e, l),
-        () => this._onEscape?.()
+        () => this.showIntro()
       );
     }
     this._showScreen('screen-level-select');
@@ -119,8 +137,9 @@ export class ScreenManager {
     });
 
     document.getElementById('btn-era-continue')?.addEventListener('click', () => {
+      console.log('Era Continue clicked');
       audio.stopEraNarration();
-      this.showLevelSelect();
+      this.showLevelSelect(0); // For now hardcoded to era 0
     });
   }
 

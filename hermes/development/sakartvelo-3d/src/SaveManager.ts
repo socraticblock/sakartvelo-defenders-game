@@ -72,8 +72,6 @@ export const SaveManager = {
       save.totalStars = Object.values(save.starsPerLevel).reduce((a, b) => a + b, 0);
     }
 
-    save.completedLevels[levelId] = true;
-
     // Best time
     if (time !== undefined) {
       const prevTime = save.bestTimes[levelId];
@@ -81,11 +79,9 @@ export const SaveManager = {
         save.bestTimes[levelId] = time;
       }
     }
-
-    // Unlock next level
-    const nextLevel = nextLevelId(levelId);
-    if (nextLevel) save.completedLevels[nextLevel] = true;
-
+    
+    // Record completion
+    save.completedLevels[levelId] = true;
     persist(save);
   },
 
@@ -124,7 +120,8 @@ export const SaveManager = {
 
   /** Get stars for a specific level (0 if never played) */
   getStars(levelId: string): number {
-    return loadRaw().starsPerLevel[levelId] || 0;
+    const s = loadRaw().starsPerLevel[levelId];
+    return (typeof s === 'number' && !isNaN(s)) ? s : 0;
   },
 
   /** Get total stars */
@@ -132,35 +129,59 @@ export const SaveManager = {
     return loadRaw().totalStars;
   },
 
-  /** Check if level was completed at least once */
+  /** Check if level was completed at least once (has stars) */
   isCompleted(levelId: string): boolean {
-    return loadRaw().completedLevels[levelId] === true;
+    return this.getStars(levelId) > 0;
+  },
+
+  /** Check if a specific level is unlocked */
+  isLevelUnlocked(era: number, level: number): boolean {
+    // Force numbers to avoid string comparison issues
+    const e = Number(era);
+    const l = Number(level);
+
+    if (e === 0 && l === 1) return true;
+    
+    const currentId = this.levelId(e, l);
+    const stars = this.getStars(currentId);
+    
+    // If you already have stars, it's unlocked
+    if (stars > 0) return true;
+
+    // Check previous level
+    let pEra = e;
+    let pLvl = l - 1;
+    if (l === 1) {
+      pEra = e - 1;
+      pLvl = 20; 
+    }
+
+    if (pEra < 0) return true; 
+    
+    const prevId = this.levelId(pEra, pLvl);
+    const prevStars = this.getStars(prevId);
+    
+    return prevStars > 0;
   },
 
   /** Check if next level in sequence is unlocked */
   isNextUnlocked(currentLevelId: string): boolean {
     const next = nextLevelId(currentLevelId);
-    if (!next) return true; // No next level
-    return loadRaw().completedLevels[next] === true;
+    if (!next) return true;
+    const parsed = this.parseLevelId(next);
+    if (!parsed) return true;
+    return this.isLevelUnlocked(parsed.era, parsed.level);
   },
 
   /**
-   * Check if a chapter is unlocked within an era.
-   * chapter 0 = levels 1-5, chapter 1 = levels 6-20, etc.
+   * Check if a chapter is unlocked.
    * Chapter 0 always unlocked.
-   * Subsequent chapters require the last level of the previous chapter to be completed.
+   * Chapter 1 requires Level 5 to have stars.
    */
   isChapterUnlocked(era: number, chapter: number): boolean {
     if (chapter === 0) return true;
-    const prevChapterLastLevel = chapter * 20; // chapter 1 → level 20... wrong
-    // Actually: Chapter 0 = levels 1-5, Chapter 1 = levels 6-20
-    // Chapter N's first level = N * 20 + 1... but we have only 20 levels per era
-    // For era 0: chapters are 1-5 and 6-20
-    // chapter 0 = level 5 completed needed
-    // chapter 1 = level 5 completed needed (all era 0 shares same "chapter I completion")
-    if (era === 0) {
-      const save = loadRaw();
-      return save.completedLevels[`era0_level5`] === true;
+    if (era === 0 && chapter === 1) {
+      return this.getStars('era0_level5') > 0;
     }
     return this.isEraUnlocked(era);
   },

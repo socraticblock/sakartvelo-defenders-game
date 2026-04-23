@@ -13,18 +13,19 @@ type OnEscape = () => void;
 
 export class UIManager {
   // HUD elements
-  $gold = document.getElementById('gold')!;
-  $lives = document.getElementById('lives')!;
-  $wave = document.getElementById('wave')!;
-  $totalWaves = document.getElementById('total-waves')!;
+  // HUD elements
+  $gold = document.getElementById('gold');
+  $lives = document.getElementById('lives');
+  $wave = document.getElementById('wave');
+  $totalWaves = document.getElementById('total-waves');
   $waveBtn = document.getElementById('wave-btn') as HTMLButtonElement;
-  private $buildOverlay = document.getElementById('build-overlay')!;
-  private $buildTimer = document.getElementById('build-timer')!;
-  private $bpEnemyList = document.getElementById('bp-enemy-list')!;
+  private $buildOverlay = document.getElementById('build-overlay');
+  private $buildTimer = document.getElementById('build-timer');
+  private $bpEnemyList = document.getElementById('bp-enemy-list');
   private $buildStartBtn = document.getElementById('build-start-btn') as HTMLButtonElement;
-  private $levelName = document.getElementById('level-name')!;
-  private $heroHp = document.getElementById('hero-hp')!;
-  private $heroStatus = document.getElementById('hero-status')!;
+  private $levelName = document.getElementById('level-name');
+  private $heroHp = document.getElementById('hero-hp');
+  private $heroStatus = document.getElementById('hero-status');
   private $kbBadge = document.getElementById('kb-badge');
 
   // Sub-managers
@@ -151,11 +152,11 @@ export class UIManager {
   // ─── Level name HUD ─────────────────────────────────────────────────────
 
   showLevelName(name: string): void {
-    this.$levelName.textContent = name;
+    if (this.$levelName) this.$levelName.textContent = name;
   }
 
   hideLevelName(): void {
-    this.$levelName.textContent = '';
+    if (this.$levelName) this.$levelName.textContent = '';
   }
 }
 

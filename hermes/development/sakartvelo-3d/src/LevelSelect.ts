@@ -96,14 +96,18 @@ function render(era: number) {
       `;
 
       for (const lvl of chLevels) {
-        const levelId = SaveManager.levelId(era, lvl.level);
-        const stars = SaveManager.getStars(levelId);
-        const completed = SaveManager.isCompleted(levelId);
-        const locked = !chapterUnlocked;
+        const id = SaveManager.levelId(era, lvl.level);
+        const stars = SaveManager.getStars(id);
+        const isUnlocked = SaveManager.isLevelUnlocked(era, lvl.level);
+        const isCompleted = stars > 0;
+        const isLocked = !isUnlocked;
+        // A level is "Next" if it's unlocked but not yet completed
+        const isNext = isUnlocked && !isCompleted;
 
         html += `
-          <div class="${cardClass(locked, completed, lvl.level === firstUnlocked)}"
-               data-era="${era}" data-level="${lvl.level}">
+          <div class="${cardClass(isLocked, isCompleted, isNext)}"
+               data-era="${era}" data-level="${lvl.level}"
+               data-locked="${isLocked}">
             <div class="ls-num">${lvl.level}</div>
             <div class="ls-stars">${starsHtml(stars)}</div>
             <div class="ls-name">${lvl.name}</div>
@@ -117,13 +121,17 @@ function render(era: number) {
     html += `<div class="ls-grid">`;
 
     for (const lvl of eraLevels) {
-      const levelId = SaveManager.levelId(era, lvl.level);
-      const stars = SaveManager.getStars(levelId);
-      const completed = SaveManager.isCompleted(levelId);
+      const id = SaveManager.levelId(era, lvl.level);
+      const stars = SaveManager.getStars(id);
+      const isUnlocked = SaveManager.isLevelUnlocked(era, lvl.level);
+      const isCompleted = stars > 0;
+      const isLocked = !isUnlocked;
+      const isNext = isUnlocked && !isCompleted;
 
       html += `
-        <div class="${cardClass(!eraUnlocked, completed, lvl.level === 1)}"
-             data-era="${era}" data-level="${lvl.level}">
+        <div class="${cardClass(isLocked, isCompleted, isNext)}"
+             data-era="${era}" data-level="${lvl.level}"
+             data-locked="${isLocked}">
           <div class="ls-num">${lvl.level}</div>
           <div class="ls-stars">${starsHtml(stars)}</div>
           <div class="ls-name">${lvl.name}</div>
@@ -133,21 +141,35 @@ function render(era: number) {
     html += `</div>`;
   }
 
-  html += `
-    <div style="text-align:center;">
-      <button id="ls-back-btn" style="
-        padding:10px 28px; border:2px solid #8b6914; border-radius:8px;
-        background:rgba(139,105,20,0.35); color:#f0e6d2;
-        cursor:pointer; font-family:Georgia; font-size:14px;
-        transition:background 0.2s;">
-        ← Back
-      </button>
-    </div>
-  </div>`;
+    html += `
+      <div style="text-align:center; margin-top:32px; display:flex; justify-content:center; gap:20px;">
+        <button id="ls-back-btn" style="
+          padding:10px 28px; border:2px solid #8b6914; border-radius:8px;
+          background:rgba(139,105,20,0.35); color:#f0e6d2;
+          cursor:pointer; font-family:Georgia; font-size:14px;
+          transition:background 0.2s;">
+          ← Back
+        </button>
+        <button id="ls-reset-btn" style="
+          padding:10px 20px; border:1px solid #600; border-radius:8px;
+          background:rgba(100,0,0,0.2); color:#f88;
+          cursor:pointer; font-family:Georgia; font-size:12px;
+          transition:background 0.2s;">
+          Clear Progress
+        </button>
+      </div>
+    </div>`;
 
   container.innerHTML = html;
 
-  container.querySelectorAll<HTMLElement>('.ls-card:not(.ls-locked)').forEach(card => {
+  // Debug: Log all levels status
+  console.log(`--- Era ${era} Level Status ---`);
+  eraLevels.forEach(lvl => {
+    const id = SaveManager.levelId(era, lvl.level);
+    console.log(`Lvl ${lvl.level}: Unlocked=${SaveManager.isLevelUnlocked(era, lvl.level)}, Stars=${SaveManager.getStars(id)}`);
+  });
+
+  container.querySelectorAll<HTMLElement>('.ls-card[data-locked="false"]').forEach(card => {
     card.addEventListener('click', () => {
       const e = parseInt(card.dataset.era!);
       const l = parseInt(card.dataset.level!);
@@ -157,6 +179,13 @@ function render(era: number) {
 
   container.querySelector<HTMLButtonElement>('#ls-back-btn')?.addEventListener('click', () => {
     onBack?.();
+  });
+
+  container.querySelector<HTMLButtonElement>('#ls-reset-btn')?.addEventListener('click', () => {
+    if (confirm('Clear all save data and restart?')) {
+      SaveManager.reset();
+      render(era);
+    }
   });
 }
 
