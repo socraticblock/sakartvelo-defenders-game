@@ -9,7 +9,6 @@ import { Tower } from './Tower';
 import { TileUserData, TOWER_CONFIGS } from './types';
 import { buildArcherMesh, buildCatapultMesh, buildWallMesh } from './TowerMeshes';
 
-type MoveDir = { x: number; z: number };
 type KBLayout = 'qwerty' | 'azerty';
 
 interface InputCallbacks {
@@ -21,7 +20,6 @@ interface InputCallbacks {
   onDeselect: () => void;
 }
 
-const MOVE_INTERVAL_MS = 33; // ~30 times/sec for hero movement
 const HUD_SKIP_ZONE_PX = 100; // bottom HUD zone to skip for tap-to-move
 
 export class InputManager {
@@ -30,7 +28,11 @@ export class InputManager {
   private _layoutDetected = false;
   private _savedLayout = false;
 
-  // Mouse tracking — process once per frame, not per event
+  // Mouse tracking — process once per frame, not per event.
+  // Track viewport coordinates from document-level pointer events so the ray stays
+  // correct while the cursor is over HTML UI (tower panel) or the canvas.
+  private _mouseX = 0;
+  private _mouseY = 0;
   private _mouseDirty = false;
   private _lastHoverType: string | null = null;
 
@@ -48,7 +50,6 @@ export class InputManager {
   private _plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   private _groundTarget = new THREE.Vector3();
 
-  private readonly ABILITY_KEYS: string[] = ['q', 'e', 'r'];
   private readonly ABILITY_LABELS: string[] = ['Q', 'E', 'R'];
 
   // ─── Init ──────────────────────────────────────────────
@@ -73,6 +74,22 @@ export class InputManager {
     }
 
     this._bindEvents();
+    this._seedMouseAtCanvasCenter();
+  }
+
+  /** Call from HTML UI (e.g. tower buttons) so the ghost uses the cursor at click time. */
+  syncPointer(clientX: number, clientY: number): void {
+    this._mouseX = clientX;
+    this._mouseY = clientY;
+    this._mouseDirty = true;
+  }
+
+  /** Prime raycast coords before the first pointermove (instant ghost after UI click). */
+  private _seedMouseAtCanvasCenter(): void {
+    const r = this._renderer.domElement.getBoundingClientRect();
+    this._mouseX = r.left + r.width * 0.5;
+    this._mouseY = r.top + r.height * 0.5;
+    this._mouseDirty = true;
   }
 
   // ─── Per-frame hover update ────────────────────────────
@@ -87,6 +104,7 @@ export class InputManager {
     if (!selectedType || !grid) {
       hoverGroup.visible = false;
       this._lastHoverType = null;
+      hoverGroup.clear();
       return;
     }
 
@@ -108,7 +126,8 @@ export class InputManager {
     const cost = TOWER_CONFIGS[selectedType]?.cost ?? Infinity;
     const ok = grid.isBuildable(cell.gx, cell.gy, selectedType === 'wall') && gold >= cost;
 
-    hoverGroup.position.set(cell.gx + 0.5, 0.08, cell.gy + 0.5);
+    // Match Tower.group Y so the preview sits on the same footprint as a real tower.
+    hoverGroup.position.set(cell.gx + 0.5, 0.06, cell.gy + 0.5);
     hoverGroup.visible = true;
 
     // Fade the ghost based on buildability
@@ -158,8 +177,12 @@ export class InputManager {
   get layout(): KBLayout { return this._kbLayout; }
   get layoutLabel(): string { return this._kbLayout.toUpperCase(); }
 
-  getAbilityKeys(): string[] { return this.ABILITY_KEYS[this._kbLayout]; }
-  getAbilityLabels(): string[] { return this.ABILITY_LABELS[this._kbLayout]; }
+  getAbilityKeys(): string[] {
+    return this._kbLayout === 'azerty' ? ['a', 'e', 'r'] : ['q', 'e', 'r'];
+  }
+  getAbilityLabels(): string[] {
+    return this.ABILITY_LABELS;
+  }
 
   toggleLayout(): void {
     // Keyboard layout no longer matters for movement, but we keep the toggle for ability label preference
@@ -222,8 +245,8 @@ export class InputManager {
     addEventListener('keydown', this._onKeyDown);
     addEventListener('keyup', this._onKeyUp);
 
-    // Mouse move (just track position, don't raycast yet)
-    this._renderer.domElement.addEventListener('pointermove', this._onPointerMove);
+    // Global pointer move: cursor is often over the HTML HUD while choosing a tower type.
+    document.addEventListener('pointermove', this._onPointerMove, { passive: true });
 
     // Mouse click — tower select or tower place
     this._renderer.domElement.addEventListener('pointerdown', this._onPointerDown);
@@ -242,36 +265,6 @@ export class InputManager {
 
     // Window resize
     addEventListener('resize', this._onResize);
-  }
-
-  private _detectLayout(key: string): void {
-    if (this._layoutDetected) return;
-    this._layoutDetected = true;
-    if (key === 'w') this._kbLayout = 'qwerty';
-    else if (key === 'z') this._kbLayout = 'azerty';
-    else this._kbLayout = 'qwerty';
-    requestAnimationFrame(() => localStorage.setItem('sakartvelo_kb_layout', this._kbLayout));
-  }
-
-  private _computeHeroDir(): MoveDir {
-    let dx = 0, dz = 0;
-    const move = this._kbLayout === 'azerty' ? this.AZERTY_MOVE : this.QWERTY_MOVE;
-    for (const k of this._keysDown) {
-      const d = move[k] || this.ARROW_MOVE[k];
-      if (d) { dx += d.x; dz += d.z; }
-    }
-    const len = Math.sqrt(dx * dx + dz * dz);
-    if (len === 0) return { x: 0, z: 0 };
-    return { x: dx / len, z: dz / len };
-  }
-
-  private _updateHeroMove(): void {
-    const now = performance.now();
-    if (now - this._lastHeroMove < MOVE_INTERVAL_MS) return;
-    this._lastHeroMove = now;
-    const next = this._computeHeroDir();
-    if (next.x === this._heroKeyDir.x && next.z === this._heroKeyDir.z) return;
-    this._heroKeyDir = next;
   }
 
   private _onKeyDown = (e: KeyboardEvent): void => {
@@ -318,19 +311,25 @@ export class InputManager {
     const grid = (window as any).__grid || (window as any).__gs_grid || gs?.grid;
     if (!gs || !grid) return;
 
-    // 1. Check for Towers (Selection)
+    // Placement mode: ray hits tall tower meshes before the ground tile — always use grid.
+    if (gs.selectedType) {
+      const cell = this.getMouseGrid(grid);
+      if (cell) this._cb.onGridClick(cell.gx, cell.gy, cell.isPath);
+      else this._cb.onDeselect();
+      return;
+    }
+
     const tower = this.getMouseTower(gs.towers);
     if (tower) {
       this._cb.onTowerClick(tower);
       return;
     }
 
-    // 2. Check for Grid (Placement)
     const cell = this.getMouseGrid(grid);
     if (cell) {
-      this._cb.onGridClick(cell.gx, cell.gy, cell.isPath);
+      const pos = this.getMouseGround();
+      if (pos) this._cb.onHeroMove(pos.x, pos.z);
     } else {
-      // If we clicked empty space on the canvas, just deselect, don't exit to menu
       this._cb.onDeselect();
     }
   };
@@ -368,6 +367,7 @@ export class InputManager {
     (this._camera as THREE.PerspectiveCamera).aspect = innerWidth / innerHeight;
     (this._camera as THREE.PerspectiveCamera).updateProjectionMatrix();
     this._renderer.setSize(innerWidth, innerHeight);
+    this._mouseDirty = true;
   };
 }
 

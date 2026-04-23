@@ -24,7 +24,7 @@ export class GameLoop {
   private _ui!: UIManager;
   private _input!: InputManager;
   private _audio!: AudioManager;
-  private _hover!: THREE.Mesh;
+  private _hover!: THREE.Group;
   private _moveRing!: THREE.Mesh;
 
   private _clock = new THREE.Clock();
@@ -37,7 +37,7 @@ export class GameLoop {
     ui: UIManager,
     input: InputManager,
     audio: AudioManager,
-    hover: THREE.Mesh,
+    hover: THREE.Group,
     moveRing: THREE.Mesh,
   ): void {
     this._renderer = renderer;
@@ -166,7 +166,7 @@ export class GameLoop {
         // Only clear pending build if placement was successful
         gs.hero.pendingBuild = null;
         gs.hero.buildTimer = 0;
-        // Do NOT set gs.selectedType = null; this allows batch building
+        // Placement mode is cleared on grid click in main (ghost teardown); batch repeat uses UI.
       } else {
         // Placement failed (e.g. not enough gold anymore?), cancel
         gs.hero.pendingBuild = null;

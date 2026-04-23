@@ -4,6 +4,7 @@
  * Extracted from UIManager.ts.
  */
 import { gs } from './GameState';
+import { input } from './InputManager';
 import { TOWER_CONFIGS } from './types';
 
 export class TowerPanel {
@@ -18,8 +19,24 @@ export class TowerPanel {
     this.towerButtons = Array.from(
       document.querySelectorAll('.tower-btn')
     ) as HTMLButtonElement[];
+    this._syncTowerShopLabels();
     this._bindTowerButtons();
     this._bindUpgradeSell();
+  }
+
+  /** Keep hut / shop prices in sync with TOWER_CONFIGS (HTML defaults are stale). */
+  private _syncTowerShopLabels(): void {
+    const icons: Record<string, string> = {
+      archer: '🏹',
+      catapult: '💥',
+      wall: '🧱',
+    };
+    for (const btn of this.towerButtons) {
+      const type = btn.dataset.type!;
+      const c = TOWER_CONFIGS[type];
+      if (!c) continue;
+      btn.textContent = `${icons[type] ?? ''} ${c.name} (${c.cost}g)`;
+    }
   }
 
   // ─── Per-frame update ──────────────────────────────────────────────────────
@@ -63,7 +80,8 @@ export class TowerPanel {
 
   private _bindTowerButtons(): void {
     this.towerButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        input.syncPointer(e.clientX, e.clientY);
         const type = btn.dataset.type!;
         gs.selectedType = gs.selectedType === type ? null : type;
         gs.selectedTower = null;

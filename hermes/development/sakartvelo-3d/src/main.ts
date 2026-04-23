@@ -163,13 +163,22 @@ input.init(
   camera,
   scene,
   {
-    onHeroMove: (x: number, z: number) => gs.hero?.moveTo(x, z),
+    onHeroMove: (x: number, z: number) => {
+      if (!gs.hero) return;
+      // Cancel any in-progress build so move orders are not overridden by build AI.
+      gs.hero.pendingBuild = null;
+      gs.hero.buildTimer = 0;
+      gs.hero.moveTo(x, z);
+    },
     onGridClick: (gx: number, gy: number, isPath: boolean) => {
       if (gs.gameOver || !gs.grid || !gs.selectedType || !gs.hero) return;
       if (gs.waveMgr?.active) return;
-      
-      // Set the pending build on the hero instead of instant placement
-      gs.hero.pendingBuild = { type: gs.selectedType, gx, gy, isPath };
+
+      const type = gs.selectedType;
+      gs.hero.pendingBuild = { type, gx, gy, isPath };
+      // Drop placement mode immediately so the ghost is cleared this frame (no batch lock).
+      gs.selectedType = null;
+      ui.panel.towerButtons.forEach((b: HTMLButtonElement) => b.classList.remove('selected'));
       ui.update();
     },
     onTowerClick: (tower: Tower) => {

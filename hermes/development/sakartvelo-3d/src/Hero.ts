@@ -41,6 +41,7 @@ export class Hero {
   maxHp = 250;
   alive = true;
   private readonly RESPAWN_TIME = 15;
+  private respawnTimer = 0;
   
   // Building
   pendingBuild: { type: string; gx: number; gy: number; isPath: boolean } | null = null;
