@@ -43,6 +43,13 @@ export class ScreenManager {
       if (debugLevels) debugLevels.textContent = String(gs.allLevels.length);
 
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('visible'));
+      
+      // Toggle Game HUD visibility
+      const isGameScreen = (id === 'none'); // Expand this if you have a dedicated 'game' screen ID
+      document.querySelectorAll<HTMLElement>('.game-ui').forEach(el => {
+        el.style.display = isGameScreen ? '' : 'none';
+      });
+
       // Force title screen hide just in case
       document.getElementById('screen-title')?.classList.remove('visible');
       const target = document.getElementById(id);
@@ -59,6 +66,20 @@ export class ScreenManager {
   showEraScreen(): void {
     this._showScreen('screen-era');
     audio.startEraNarration();
+  }
+
+  hideAllScreens(): void {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('visible'));
+    document.getElementById('screen-title')?.classList.remove('visible');
+  }
+
+  showGameUI(): void {
+    this.hideAllScreens();
+    document.querySelectorAll<HTMLElement>('.game-ui').forEach(el => {
+      el.style.display = '';
+    });
+    const debugState = document.getElementById('debug-state');
+    if (debugState) debugState.textContent = 'GAMEPLAY';
   }
 
   showLevelSelect(era: number = 0): void {

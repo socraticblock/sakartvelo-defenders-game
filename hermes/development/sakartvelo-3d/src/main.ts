@@ -142,6 +142,7 @@ function startLevel(era: number, level: number): void {
     gs.startWaveCountdown();
   }
 
+  ui.screens.showGameUI();
   ui.showLevelName(lvl.name);
   ui.screens.hideGameOver();
   ui.screens.hideLevelComplete();
