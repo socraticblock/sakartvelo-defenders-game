@@ -65,6 +65,7 @@ function render(era: number) {
   injectStyles();
 
   const eraLevels = allLevels.filter(l => l.era === era).sort((a, b) => a.level - b.level);
+  
   let html = `
     <div style="max-width:560px; margin:0 auto;">
       <div style="text-align:center; margin-bottom:28px;">

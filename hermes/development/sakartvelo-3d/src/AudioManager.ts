@@ -147,6 +147,7 @@ export class AudioManager {
 
     this._eraAudioEl.addEventListener('canplay', () => {
       this._tpAudioDuration = this._eraAudioEl!.duration;
+      this.updateTpProgress(); // Initial update
       playBtn.textContent = '■ Stop';
       playBtn.disabled = false;
       this._eraAudioEl!.play().catch(e => {
@@ -174,11 +175,14 @@ export class AudioManager {
   // ─── Per-frame teleprompter tick ────────────────────
 
   updateTpProgress(): void {
-    if (!this._eraAudioEl || !this._tpWordEls || this._tpWordTimes.length === 0) return;
-    const elapsed = this._eraAudioEl.currentTime;
-    const audioDur = this._eraAudioEl.duration || this._tpAudioDuration;
+    const elapsed = this._eraAudioEl?.currentTime || 0;
+    const audioDur = this._eraAudioEl?.duration || this._tpAudioDuration || 0;
     const prog = document.getElementById('era-tp-progress')!;
-    const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+    if (!prog) return;
+    const fmt = (s: number) => {
+      if (isNaN(s) || s < 0) return '0:00';
+      return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+    };
     prog.textContent = `⏱ ${fmt(elapsed)} / ${fmt(audioDur)}`;
   }
 

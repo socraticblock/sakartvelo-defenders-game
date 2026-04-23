@@ -291,72 +291,72 @@
         z-index: 2;
       }
 
-      /* Scrollable text track */
-      #era-tp-track {
-        font-size: 18px;
-        line-height: 2.3;
-        color: #c0b090;
-        font-family: 'Georgia', serif;
-        text-align: center;
-        padding: 0 24px 60%;
-        /* The track is taller than the container so it scrolls.
-           Padding-top of 0 and large padding-bottom creates scrollable height. */
+      /* ─── BUILD PHASE OVERLAY ─── */
+      #build-overlay {
+        position: fixed; top: 120px; left: 50%; transform: translateX(-50%);
+        z-index: 100; display: none; flex-direction: column; align-items: center;
+        background: rgba(10, 20, 10, 0.85); border: 2px solid #3a5a3a;
+        border-radius: 16px; padding: 24px 40px; color: #f0e6d2;
+        box-shadow: 0 0 30px rgba(68, 255, 136, 0.15);
+        pointer-events: all; min-width: 380px;
       }
-      #era-tp-track p {
-        margin: 0 0 1.8em 0;
+      #build-overlay.visible { display: flex; }
+      #build-overlay h2 { color: #44ff88; font-size: 14px; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 12px; }
+      #build-timer-container { font-size: 48px; font-weight: bold; color: #f0e6d2; margin-bottom: 8px; }
+      #bp-enemy-list-container { font-size: 12px; color: #8a9a8a; margin-bottom: 20px; font-style: italic; }
+      #build-start-btn {
+        padding: 12px 32px; border: 2px solid #44ff88; border-radius: 8px;
+        background: rgba(68, 255, 136, 0.15); color: #44ff88; cursor: pointer;
+        font-family: 'Georgia', serif; font-size: 15px; letter-spacing: 1px;
+        transition: all 0.2s;
       }
+      #build-start-btn:hover { background: rgba(68, 255, 136, 0.35); box-shadow: 0 0 15px rgba(68, 255, 136, 0.3); }
 
-      /* Time progress */
-      #era-tp-progress {
-        font-size: 13px;
-        letter-spacing: 2px;
-        color: #6a5a3a;
-        margin-bottom: 14px;
-        font-family: 'Georgia', serif;
-        min-height: 18px;
+      /* Era Narration / Teleprompter Buttons */
+      .era-play-btn {
+        padding: 12px 32px; border: 2px solid #d4a017;
+        border-radius: 8px; background: rgba(212,160,23,0.15);
+        color: #f0e6d2; cursor: pointer;
+        font-family: 'Georgia', serif; font-size: 15px;
+        letter-spacing: 2px; text-transform: uppercase;
+        transition: all 0.25s;
       }
-
-      /* Nav / play buttons */
-      #era-controls {
-        display: flex; gap: 14px; align-items: center;
-        margin-bottom: 20px;
+      .era-play-btn:hover {
+        background: rgba(212,160,23,0.35);
+        box-shadow: 0 0 20px rgba(212,160,23,0.3);
+      }
+      .era-play-btn.playing {
+        background: rgba(212,160,23,0.45);
+        box-shadow: 0 0 16px rgba(212,160,23,0.25);
       }
       .era-nav-btn {
-        padding: 10px 18px;
-        border: 1px solid rgba(139,105,20,0.5);
-        border-radius: 6px;
-        background: rgba(139,105,20,0.15);
-        color: #8a7a5a; cursor: pointer;
-        font-family: 'Georgia', serif; font-size: 13px;
-        letter-spacing: 1px;
+        padding: 12px 24px; border: 2px solid #d4a017;
+        border-radius: 8px; background: rgba(212,160,23,0.1);
+        color: #f0e6d2; cursor: pointer;
+        font-family: 'Georgia', serif; font-size: 14px;
+        text-transform: uppercase; letter-spacing: 1px;
         transition: all 0.2s;
       }
       .era-nav-btn:hover {
-        border-color: #d4a017; color: #f0e6d2;
-        background: rgba(212,160,23,0.2);
+        background: rgba(212,160,23,0.3);
       }
       .era-nav-btn:disabled {
         opacity: 0.3; cursor: default;
       }
-      .era-play-btn {
-        padding: 12px 28px;
-        border: 2px solid #d4a017;
-        border-radius: 8px;
-        background: rgba(212,160,23,0.2);
-        color: #f0e6d2; cursor: pointer;
-        font-family: 'Georgia', serif; font-size: 15px;
-        letter-spacing: 2px;
-        transition: all 0.25s;
+      #era-controls {
+        display: flex; gap: 14px; align-items: center;
+        margin-bottom: 24px;
       }
-      .era-play-btn:hover {
-        background: rgba(212,160,23,0.4);
-        box-shadow: 0 0 20px rgba(212,160,23,0.3);
+      #era-tp-progress {
+        font-size: 14px; letter-spacing: 2px; color: #8a7a5a;
+        margin-bottom: 16px; font-family: 'Georgia', serif;
       }
-      .era-play-btn.playing {
-        border-color: #d4a017;
-        background: rgba(212,160,23,0.35);
-        box-shadow: 0 0 16px rgba(212,160,23,0.25);
+      #era-tp-track {
+        font-size: 18px; line-height: 2.3; color: #c0b090;
+        text-align: center; padding: 0 24px 60%;
       }
+      .tp-word { transition: color 0.2s; }
+      .tp-word.active { color: #f0e6d2; text-shadow: 0 0 10px rgba(240,230,210,0.5); }
 
       /* Legacy — hide old paragraph display */
       #era-para-container { display: none; }
@@ -429,6 +429,14 @@
       <p id="game-over-msg"></p>
       <div id="game-over-stars"></div>
       <button id="go-menu">Level Select</button>
+    </div>
+
+    <!-- Build Phase Overlay -->
+    <div id="build-overlay">
+      <h2>Build Phase</h2>
+      <div id="build-timer-container">⏱ <span id="build-timer">30</span></div>
+      <div id="bp-enemy-list-container">Inbound: <span id="bp-enemy-list">...</span></div>
+      <button id="build-start-btn">▶ Start Wave Now (+0g)</button>
     </div>
 
     <!-- Cultural footer (rotating Georgian facts) -->
