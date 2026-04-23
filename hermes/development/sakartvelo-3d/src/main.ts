@@ -170,9 +170,8 @@ input.init(
     onGridClick: (gx: number, gy: number, isPath: boolean) => {
       if (gs.gameOver || !gs.grid || !gs.selectedType) return;
       if (gs.waveMgr?.active) return;
-      gs.placeTower(gs.selectedType, gx, gy, isPath, scene);
-      gs.selectedType = null;
-      ui.panel.towerButtons.forEach((b: HTMLButtonElement) => b.classList.remove('selected'));
+      const placed = gs.placeTower(gs.selectedType, gx, gy, isPath, scene);
+      // Keep selectedType so user can place multiple towers easily
       ui.update();
     },
     onTowerClick: (tower: Tower) => {
@@ -183,47 +182,27 @@ input.init(
       ui.update();
     },
     onAbility: (idx: number) => gs.hero?.activateAbility(idx, gs.enemies, gs.towers),
-    onEscape: () => { gs.selectedType = null; gs.selectedTower = null; ui.screens.showLevelSelect(); },
+    onEscape: () => {
+      if (gs.selectedType || gs.selectedTower) {
+        gs.selectedType = null;
+        gs.selectedTower = null;
+        ui.panel.towerButtons.forEach((b: HTMLButtonElement) => b.classList.remove('selected'));
+      } else {
+        ui.screens.showLevelSelect();
+      }
+    },
+    onDeselect: () => {
+      gs.selectedType = null;
+      gs.selectedTower = null;
+      ui.panel.towerButtons.forEach((b: HTMLButtonElement) => b.classList.remove('selected'));
+      ui.update();
+    },
   },
 );
 
-// Expose layout toggle
-(window as any).__kbLayout = 'qwerty';
-(window as any).__toggleKbLayout = () => {
-  input.toggleLayout();
-  (window as any).__kbLayout = input.layout;
-  ui.updateKbBadge();
-};
-
 // ─── Click: tower place vs select ────────────────────────────────────────
 
-renderer.domElement.addEventListener('pointerdown', (e) => {
-  if (e.button !== 0 || gs.gameOver) return;
-
-  // Check tower click first
-  const tower = input.getMouseTower(gs.towers);
-  if (tower) {
-    gs.selectedType = null;
-    gs.selectedTower = gs.selectedTower === tower ? null : tower;
-    gs.selectedTower?.showRange(true);
-    ui.panel.towerButtons.forEach((b: HTMLButtonElement) => b.classList.remove('selected'));
-    ui.update();
-    return;
-  }
-
-  // Tower placement
-  if (gs.selectedType && gs.grid) {
-    if (gs.waveMgr?.active) return;
-    const cell = input.getMouseGrid(gs.grid);
-    if (!cell) return;
-    const placed = gs.placeTower(gs.selectedType, cell.gx, cell.gy, cell.isPath, scene);
-    if (placed) {
-      gs.selectedType = null;
-      ui.panel.towerButtons.forEach((b: HTMLButtonElement) => b.classList.remove('selected'));
-      ui.update();
-    }
-  }
-});
+// Note: pointerdown is now handled entirely within InputManager.ts to avoid conflicts.
 
 // Right-click: hero move
 renderer.domElement.addEventListener('contextmenu', (e) => {
@@ -249,7 +228,7 @@ document.getElementById('go-menu')?.addEventListener('click', () => {
   ui.screens.showLevelSelect();
 });
 
-// ─── Resize ───────────────────────────────────────────────────────────────
+// ─── Escape ───────────────────────────────────────────────────────────────
 
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
@@ -271,7 +250,6 @@ async function init(): Promise<void> {
     const raw = await resp.json();
     gs.allLevels = Array.isArray(raw) ? raw : (raw.levels ?? [raw]);
     ui.screens.showTitleScreen();
-    ui.updateKbBadge();
   } catch (err) {
     console.error('Level load failed:', err);
   }

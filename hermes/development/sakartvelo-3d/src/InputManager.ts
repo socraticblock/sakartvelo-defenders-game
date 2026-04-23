@@ -17,6 +17,7 @@ interface InputCallbacks {
   onTowerClick: (tower: Tower) => void;
   onAbility: (idx: number) => void;
   onEscape: () => void;
+  onDeselect: () => void;
 }
 
 const MOVE_INTERVAL_MS = 33; // ~30 times/sec for hero movement
@@ -25,9 +26,6 @@ const HUD_SKIP_ZONE_PX = 100; // bottom HUD zone to skip for tap-to-move
 export class InputManager {
   // ─── State ─────────────────────────────────────────────
   private _kbLayout: KBLayout = 'qwerty';
-  private _keysDown = new Set<string>();
-  private _heroKeyDir: MoveDir = { x: 0, z: 0 };
-  private _lastHeroMove = 0;
   private _layoutDetected = false;
   private _savedLayout = false;
 
@@ -50,27 +48,8 @@ export class InputManager {
   private _plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   private _groundTarget = new THREE.Vector3();
 
-  // ─── Key maps ──────────────────────────────────────────
-  private readonly QWERTY_MOVE: Record<string, MoveDir> = {
-    w: { x: 0, z: -1 }, a: { x: -1, z: 0 },
-    s: { x: 0, z: 1 }, d: { x: 1, z: 0 },
-  };
-  private readonly AZERTY_MOVE: Record<string, MoveDir> = {
-    z: { x: 0, z: -1 }, q: { x: -1, z: 0 },
-    s: { x: 0, z: 1 }, d: { x: 1, z: 0 },
-  };
-  private readonly ARROW_MOVE: Record<string, MoveDir> = {
-    ArrowUp: { x: 0, z: -1 }, ArrowDown: { x: 0, z: 1 },
-    ArrowLeft: { x: -1, z: 0 }, ArrowRight: { x: 1, z: 0 },
-  };
-  private readonly ABILITY_KEYS: Record<KBLayout, string[]> = {
-    qwerty: ['q', 'e', 'r'],
-    azerty: ['a', 'e', 'r'],
-  };
-  private readonly ABILITY_LABELS: Record<KBLayout, string[]> = {
-    qwerty: ['Q', 'E', 'R'],
-    azerty: ['A', 'E', 'R'],
-  };
+  private readonly ABILITY_KEYS: string[] = ['q', 'e', 'r'];
+  private readonly ABILITY_LABELS: string[] = ['Q', 'E', 'R'];
 
   // ─── Init ──────────────────────────────────────────────
 
@@ -131,6 +110,7 @@ export class InputManager {
   getAbilityLabels(): string[] { return this.ABILITY_LABELS[this._kbLayout]; }
 
   toggleLayout(): void {
+    // Keyboard layout no longer matters for movement, but we keep the toggle for ability label preference
     this._kbLayout = this._kbLayout === 'qwerty' ? 'azerty' : 'qwerty';
     localStorage.setItem('sakartvelo_kb_layout', this._kbLayout);
   }
@@ -138,11 +118,18 @@ export class InputManager {
   // ─── Public: raycasting ────────────────────────────────
 
   getMouseGrid(grid: Grid): { gx: number; gy: number; isPath: boolean } | null {
-    this._mouse.x = (this._mouseX / innerWidth) * 2 - 1;
-    this._mouse.y = -(this._mouseY / innerHeight) * 2 + 1;
+    this._mouse.x = (this._mouseX / window.innerWidth) * 2 - 1;
+    this._mouse.y = -(this._mouseY / window.innerHeight) * 2 + 1;
     this._ray.setFromCamera(this._mouse, this._camera);
-    const hits = this._ray.intersectObjects(grid.getAllTileMeshes());
-    if (hits.length > 0) return hits[0].object.userData as TileUserData;
+    
+    // Specifically target the ground tiles to avoid character collision offset
+    const tiles = grid.getAllTileMeshes();
+    const hits = this._ray.intersectObjects(tiles);
+    
+    if (hits.length > 0) {
+      const tile = hits[0].object;
+      return tile.userData as TileUserData;
+    }
     return null;
   }
 
@@ -234,41 +221,25 @@ export class InputManager {
   private _onKeyDown = (e: KeyboardEvent): void => {
     if (e.key === 'Escape') { this._cb.onEscape(); return; }
 
-    const now = performance.now();
-    if (now - this._lastHeroMove >= MOVE_INTERVAL_MS) {
-      this._lastHeroMove = now;
-      const k = e.key.toLowerCase();
-
-      // Layout detection
-      if ((k === 'w' || k === 'z') && !this._layoutDetected) this._detectLayout(k);
-
-      const move = this._kbLayout === 'azerty' ? this.AZERTY_MOVE : this.QWERTY_MOVE;
-
-      if (move[k] || this.ARROW_MOVE[e.key]) {
-        this._keysDown.add(k);
-        this._updateHeroMove();
-        return;
-      }
-
-      if (this.ARROW_MOVE[e.key]) {
-        this._keysDown.add(e.key);
-        this._updateHeroMove();
-        return;
-      }
-
-      // Ability keys
-      const idx = this.getAbilityKeys().indexOf(k);
-      if (idx >= 0) this._cb.onAbility(idx);
+    const k = e.key.toLowerCase();
+    
+    // Auto-detect layout for ability labels only
+    if (!this._savedLayout && !this._layoutDetected) {
+      if (k === 'w') { this._kbLayout = 'qwerty'; this._layoutDetected = true; }
+      else if (k === 'z') { this._kbLayout = 'azerty'; this._layoutDetected = true; }
     }
+
+    // Ability keys (mapping to standard QER regardless of layout for now, or use the layout preference)
+    const qer = ['q', 'e', 'r'];
+    const az = ['a', 'e', 'r'];
+    const keys = this._kbLayout === 'azerty' ? az : qer;
+    
+    const idx = keys.indexOf(k);
+    if (idx >= 0) this._cb.onAbility(idx);
   };
 
   private _onKeyUp = (e: KeyboardEvent): void => {
-    const k = e.key.toLowerCase();
-    const move = this._kbLayout === 'azerty' ? this.AZERTY_MOVE : this.QWERTY_MOVE;
-    if (move[k] || this.ARROW_MOVE[e.key] || k === 'w' || k === 'z') {
-      this._keysDown.delete(k);
-      this._updateHeroMove();
-    }
+    // No longer tracking keys for movement
   };
 
   private _onPointerMove = (e: PointerEvent): void => {
@@ -278,9 +249,34 @@ export class InputManager {
   };
 
   private _onPointerDown = (e: PointerEvent): void => {
+    // Only handle Left Click (button 0)
     if (e.button !== 0) return;
-    // Click dispatch handled by main.ts via pointerdown listener on renderer.domElement
-    // This method is reserved for future InputManager-level click handling
+    
+    // Stop propagation so we don't trigger multiple handlers
+    e.stopPropagation();
+
+    this._mouseX = e.clientX;
+    this._mouseY = e.clientY;
+
+    const gs = (window as any).__gs;
+    const grid = (window as any).__grid || (window as any).__gs_grid || gs?.grid;
+    if (!gs || !grid) return;
+
+    // 1. Check for Towers (Selection)
+    const tower = this.getMouseTower(gs.towers);
+    if (tower) {
+      this._cb.onTowerClick(tower);
+      return;
+    }
+
+    // 2. Check for Grid (Placement)
+    const cell = this.getMouseGrid(grid);
+    if (cell) {
+      this._cb.onGridClick(cell.gx, cell.gy, cell.isPath);
+    } else {
+      // If we clicked empty space on the canvas, just deselect, don't exit to menu
+      this._cb.onDeselect();
+    }
   };
 
   private _dispatchClick(e: PointerEvent): void {

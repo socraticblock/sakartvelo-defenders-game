@@ -26,7 +26,6 @@ export class UIManager {
   private $levelName = document.getElementById('level-name');
   private $heroHp = document.getElementById('hero-hp');
   private $heroStatus = document.getElementById('hero-status');
-  private $kbBadge = document.getElementById('kb-badge');
 
   // Sub-managers
   panel: TowerPanel;
@@ -41,7 +40,6 @@ export class UIManager {
     this._bindWaveButtons();
     this._bindBuildStart();
     this._bindEscape();
-    this.updateKbBadge();
     setInterval(() => this.update(), 100);
   }
 
@@ -108,16 +106,6 @@ export class UIManager {
       this.$waveBtn.disabled = true;
       this.$waveBtn.textContent = '⚔ Wave in progress...';
     });
-  }
-
-  // ─── Keyboard layout badge ─────────────────────────────────────────────────
-
-  updateKbBadge(): void {
-    if (!this.$kbBadge) return;
-    const layout = (window as any).__kbLayout as string || 'qwerty';
-    this.$kbBadge.textContent = `⌨ ${layout.toUpperCase()}`;
-    this.$kbBadge.style.borderColor = layout === 'azerty' ? '#7a9aaa' : '#8b6914';
-    this.$kbBadge.style.color = layout === 'azerty' ? '#7a9aaa' : '#6a5a3a';
   }
 
   // ─── Escape ──────────────────────────────────────────────────────────────

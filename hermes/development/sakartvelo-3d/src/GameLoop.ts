@@ -188,20 +188,18 @@ export class GameLoop {
 
     if (gs.waveMgr.waveNum >= gs.waveMgr.totalWaves) {
       gs.waveMgr.clear();
+      // Victory! Show popup only at the very end of the level
       showPopup(gs.currentLevel?.era ?? 0, gs.currentLevel?.level ?? 1, () => {
         gs.gameOver = true;
-        this._ui.screens.showGameOver(true);
-        this._ui.screens.showLevelComplete(gs.getStars());
+        this._ui.screens.showGameOver(true, "Victory!", gs.getStars());
+        this._ui.screens.showLevelComplete("Level Complete", gs.getStars());
       });
     } else {
       gs.waveMgr.clear();
-      const nextWaveNum = (gs.waveMgr?.waveNum ?? 0) + 1;
-      showPopup(gs.currentLevel?.era ?? 0, nextWaveNum, () => {
-        if (!gs.waveMgr) return;
-        if (gs.waveMgr.startBuildPhase()) {
-          this._ui.showBuildPhase();
-        }
-      });
+      // No more popups between waves! Just start the build phase.
+      if (gs.waveMgr.startBuildPhase()) {
+        this._ui.showBuildPhase();
+      }
     }
   }
 
