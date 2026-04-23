@@ -49,21 +49,23 @@ export class UIManager {
     if (!gs.currentLevel) return;
     const wm = gs.waveMgr;
 
-    this.$gold.textContent = String(gs.gold);
-    this.$lives.textContent = String(gs.lives);
+    if (this.$gold) this.$gold.textContent = String(gs.gold);
+    if (this.$lives) this.$lives.textContent = String(gs.lives);
 
     if (wm) {
-      this.$wave.textContent = String(wm.waveNum);
-      this.$totalWaves.textContent = String(wm.totalWaves);
+      if (this.$wave) this.$wave.textContent = String(wm.waveNum);
+      if (this.$totalWaves) this.$totalWaves.textContent = String(wm.totalWaves);
     }
 
     if (gs.hero) {
       if (gs.hero.alive) {
-        this.$heroHp.textContent = `❤️ ${Math.ceil(gs.hero.hp)}/${gs.hero.maxHp}`;
-        this.$heroStatus.textContent = '';
+        if (this.$heroHp) this.$heroHp.textContent = `❤️ ${Math.ceil(gs.hero.hp)}/${gs.hero.maxHp}`;
+        if (this.$heroStatus) this.$heroStatus.textContent = '';
       } else {
-        this.$heroHp.textContent = '💀 Dead';
-        this.$heroStatus.textContent = `Respawn: ${Math.ceil(gs.hero.respawnTimer)}s`;
+        if (this.$heroHp) this.$heroHp.textContent = '💀 Dead';
+        if (this.$heroStatus) {
+          this.$heroStatus.textContent = `Respawn: ${Math.ceil(gs.hero.respawnTimeRemaining)}s`;
+        }
       }
       this.screens.updateAbilities(gs.hero);
     }
@@ -72,7 +74,7 @@ export class UIManager {
 
     if (wm?.inBuildPhase) {
       const remaining = wm.buildPhaseTimer;
-      this.$buildTimer.textContent = String(Math.ceil(remaining));
+      if (this.$buildTimer) this.$buildTimer.textContent = String(Math.ceil(remaining));
       const bonus = Math.ceil(remaining * 2);
       this.$buildStartBtn.textContent = `▶ Start Wave Now (+${bonus}g)`;
     }
@@ -101,7 +103,7 @@ export class UIManager {
       if (gs.gameOver || !gs.waveMgr?.inBuildPhase) return;
       const bonus = gs.getBuildPhaseBonus();
       gs.waveMgr.endBuildPhase();
-      this.$buildOverlay.classList.remove('visible');
+      this.$buildOverlay?.classList.remove('visible');
       gs.startWave(bonus);
       this.$waveBtn.disabled = true;
       this.$waveBtn.textContent = '⚔ Wave in progress...';
@@ -125,16 +127,16 @@ export class UIManager {
   showBuildPhase(): void {
     if (!gs.waveMgr) return;
     const preview = gs.waveMgr.getNextWavePreview();
-    this.$bpEnemyList.textContent = preview.types.join(' · ') || 'Unknown wave';
-    this.$buildTimer.textContent = String(Math.ceil(gs.waveMgr.buildPhaseTimer));
+    if (this.$bpEnemyList) this.$bpEnemyList.textContent = preview.types.join(' · ') || 'Unknown wave';
+    if (this.$buildTimer) this.$buildTimer.textContent = String(Math.ceil(gs.waveMgr.buildPhaseTimer));
     this.$buildStartBtn.textContent = `▶ Start Wave Now (+${gs.getBuildPhaseBonus()}g)`;
-    this.$buildOverlay.classList.add('visible');
+    this.$buildOverlay?.classList.add('visible');
     this.$waveBtn.disabled = true;
     this.$waveBtn.textContent = '⚒ Build Phase...';
   }
 
   hideBuildPhase(): void {
-    this.$buildOverlay.classList.remove('visible');
+    this.$buildOverlay?.classList.remove('visible');
   }
 
   // ─── Level name HUD ─────────────────────────────────────────────────────

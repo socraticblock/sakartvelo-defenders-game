@@ -181,9 +181,10 @@ export class ScreenManager {
   // ─── HUD / Tutorial ──────────────────────────────────────────────────
 
   updateAbilities(hero: Hero): void {
-    this._updateAbility('ability-q', hero.abilityQCooldown, hero.abilityQMaxCooldown);
-    this._updateAbility('ability-w', hero.abilityWCooldown, hero.abilityWMaxCooldown);
-    this._updateAbility('ability-e', hero.abilityECooldown, hero.abilityEMaxCooldown);
+    const abs = hero.abilities.abilities;
+    this._updateAbility('ability-q', abs[0]?.cooldown ?? 0, abs[0]?.maxCd ?? 1);
+    this._updateAbility('ability-w', abs[1]?.cooldown ?? 0, abs[1]?.maxCd ?? 1);
+    this._updateAbility('ability-e', abs[2]?.cooldown ?? 0, abs[2]?.maxCd ?? 1);
   }
 
   private _updateAbility(id: string, cd: number, maxCd: number): void {

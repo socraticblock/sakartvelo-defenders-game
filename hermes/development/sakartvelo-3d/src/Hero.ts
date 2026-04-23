@@ -42,6 +42,11 @@ export class Hero {
   alive = true;
   private readonly RESPAWN_TIME = 15;
   private respawnTimer = 0;
+
+  /** Seconds remaining until respawn (meaningful when `alive` is false). */
+  get respawnTimeRemaining(): number {
+    return this.respawnTimer;
+  }
   
   // Building
   pendingBuild: { type: string; gx: number; gy: number; isPath: boolean } | null = null;
