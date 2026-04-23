@@ -99,6 +99,14 @@ import { addOutlineTo } from './CelShader';
 const { addOutlineTo } = require('./CelShader');
 ```
 
+## Rule 7: The Sakartvelo Codex (Premium Standards)
+
+- **Prefixing**: All interactive DOM elements must use semantic prefixes: `btn-` (buttons), `screen-` (overlays), `hud-` (status bars), and `txt-` (labels).
+- **Time-Safe Logic**: Every `update()` method must use the delta time (`dt`) parameter to ensure frame-rate independence. No hardcoded constants for time.
+- **Singletons**: Core managers (Audio, Screens, GameState) must be accessed via their exported constants (e.g., `audio`, `screenMgr`, `gs`). Never instantiate new versions.
+- **Strict Type Safety**: Avoid `any`. If a type is unknown, use `unknown` or define a proper Interface.
+- **Design Excellence**: Every UI change must follow the "Premium Georgian" aesthetic (gold accents, serif typography, soft gradients).
+
 ## Naming Conventions
 
 | Thing | Convention | Example |

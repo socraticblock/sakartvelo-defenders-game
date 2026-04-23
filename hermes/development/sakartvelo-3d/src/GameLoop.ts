@@ -117,13 +117,13 @@ export class GameLoop {
 
   private _updateEnemies(): void {
     for (const enemy of gs.enemies) {
-      enemy.update(0, this._camera);
+      enemy.update(dt, this._camera);
     }
   }
 
   private _updateTowers(): void {
     for (const tower of gs.towers) {
-      const spawn = tower.update(0, gs.enemies);
+      const spawn = tower.update(dt, gs.enemies);
       if (spawn) {
         gs.projectilePool.acquire(
           spawn.origin, spawn.target, spawn.damage, spawn.speed,

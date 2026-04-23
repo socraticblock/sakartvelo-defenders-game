@@ -42,14 +42,16 @@ export function toon(color: number): THREE.MeshToonMaterial {
 }
 
 // Outline color: dark brownish-black (works on forest floor)
-const OUTLINE_COLOR = 0x0a0a0a;
+const OUTLINE_COLOR = 0x1a1a1a;
 const OUTLINE_THICKNESS = 0.03; // world units of normal expansion
 
 export function outlineMat(color: number): THREE.MeshBasicMaterial {
   if (outlineMatCache.has(color)) return outlineMatCache.get(color)!;
   const mat = new THREE.MeshBasicMaterial({
-    color,
+    color: 0x1A1A1A, // From the Art Style Guide v3.0
     side: THREE.BackSide,
+    transparent: true,
+    opacity: 0.8
   });
   outlineMatCache.set(color, mat);
   return mat;
