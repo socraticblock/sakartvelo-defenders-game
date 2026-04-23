@@ -75,11 +75,8 @@ ground.position.y = -0.06;
 ground.receiveShadow = true;
 scene.add(ground);
 
-// Hover indicator mesh
-const hover = new THREE.Mesh(
-  new THREE.BoxGeometry(0.92, 0.04, 0.92),
-  new THREE.MeshBasicMaterial({ color: 0x44ff44, transparent: true, opacity: 0.35 }),
-);
+// Hover indicator (Ghost Tower)
+const hover = new THREE.Group();
 hover.visible = false;
 scene.add(hover);
 
@@ -168,10 +165,11 @@ input.init(
   {
     onHeroMove: (x: number, z: number) => gs.hero?.moveTo(x, z),
     onGridClick: (gx: number, gy: number, isPath: boolean) => {
-      if (gs.gameOver || !gs.grid || !gs.selectedType) return;
+      if (gs.gameOver || !gs.grid || !gs.selectedType || !gs.hero) return;
       if (gs.waveMgr?.active) return;
-      const placed = gs.placeTower(gs.selectedType, gx, gy, isPath, scene);
-      // Keep selectedType so user can place multiple towers easily
+      
+      // Set the pending build on the hero instead of instant placement
+      gs.hero.pendingBuild = { type: gs.selectedType, gx, gy, isPath };
       ui.update();
     },
     onTowerClick: (tower: Tower) => {

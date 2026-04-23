@@ -40,8 +40,13 @@ export class Hero {
   hp = 250;
   maxHp = 250;
   alive = true;
-  respawnTimer = 0;
   private readonly RESPAWN_TIME = 15;
+  
+  // Building
+  pendingBuild: { type: string; gx: number; gy: number; isPath: boolean } | null = null;
+  buildTimer = 0;
+  private readonly BUILD_RANGE = 1.5;
+  private readonly BUILD_TIME = 1.5; // Default base build time
 
   // Health bar
   private hpBg: THREE.Mesh;
@@ -50,6 +55,10 @@ export class Hero {
   // Selection ring
   selected = false;
   private ring: THREE.Mesh;
+  
+  // Build bar
+  private buildBg: THREE.Mesh;
+  private buildFill: THREE.Mesh;
 
   // Grid bounds
   private gw: number;
@@ -106,6 +115,23 @@ export class Hero {
     this.ring.position.y = 0.02;
     this.ring.visible = false;
     this.group.add(this.ring);
+
+    // Build bar (hidden by default)
+    this.buildBg = new THREE.Mesh(
+      new THREE.BoxGeometry(0.8, 0.04, 0.01),
+      new THREE.MeshBasicMaterial({ color: 0x222222, transparent: true, opacity: 0.8 })
+    );
+    this.buildBg.position.y = 1.7;
+    this.buildBg.visible = false;
+    this.group.add(this.buildBg);
+
+    this.buildFill = new THREE.Mesh(
+      new THREE.BoxGeometry(0.78, 0.03, 0.02),
+      new THREE.MeshBasicMaterial({ color: 0x44ff88, transparent: true, opacity: 0.9 })
+    );
+    this.buildFill.position.y = 1.7;
+    this.buildFill.visible = false;
+    this.group.add(this.buildFill);
   }
 
   // ─── Movement ───────────────────────────────────────────────────────────────
@@ -171,7 +197,11 @@ export class Hero {
       const dir = this.moveTarget.clone().sub(this.group.position);
       dir.y = 0;
       const dist = dir.length();
-      if (dist < 0.15) {
+      
+      // If we have a pending build, we stop at BUILD_RANGE
+      const stopDist = this.pendingBuild ? this.BUILD_RANGE : 0.15;
+
+      if (dist < stopDist) {
         this.moveTarget = null;
       } else {
         dir.normalize().multiplyScalar(this.moveSpeed * dt);
@@ -180,6 +210,28 @@ export class Hero {
           this.rootGroup.rotation.y = Math.atan2(dir.x, dir.z);
         }
       }
+    }
+
+    // Build process
+    if (this.pendingBuild && !this.moveTarget) {
+      const targetPos = new THREE.Vector3(this.pendingBuild.gx + 0.5, 0, this.pendingBuild.gy + 0.5);
+      const dist = this.group.position.distanceTo(targetPos);
+      
+      if (dist <= this.BUILD_RANGE + 0.1) {
+        this.buildTimer += dt;
+        // Face the building site
+        this.rootGroup.rotation.y = Math.atan2(
+          targetPos.x - this.group.position.x,
+          targetPos.z - this.group.position.z
+        );
+        // Hammering animation
+        this.rightArm.rotation.x = -0.5 + Math.sin(time * 15) * 0.4;
+      } else {
+        // We moved away or aren't there yet
+        this.moveTarget = targetPos;
+      }
+    } else if (!this.pendingBuild) {
+      this.buildTimer = 0;
     }
 
     // Auto-attack
@@ -201,9 +253,23 @@ export class Hero {
     // Ability system (DOTs, cooldowns, VFX)
     this.abilities.update(dt, this.alive, this.group.position);
 
-    // Billboard HP bar
+    // Update build bar
+    if (this.pendingBuild && this.buildTimer > 0) {
+      this.buildBg.visible = true;
+      this.buildFill.visible = true;
+      const ratio = Math.min(1, this.buildTimer / this.BUILD_TIME);
+      this.buildFill.scale.x = Math.max(0.001, ratio);
+      this.buildFill.position.x = -0.39 * (1 - ratio);
+    } else {
+      this.buildBg.visible = false;
+      this.buildFill.visible = false;
+    }
+
+    // Billboard bars
     this.hpBg.quaternion.copy(camera.quaternion);
     this.hpFill.quaternion.copy(camera.quaternion);
+    this.buildBg.quaternion.copy(camera.quaternion);
+    this.buildFill.quaternion.copy(camera.quaternion);
   }
 
   // ─── Model ────────────────────────────────────────────────────────────────

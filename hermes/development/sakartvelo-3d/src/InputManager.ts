@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { Grid } from './Grid';
 import { Tower } from './Tower';
 import { TileUserData, TOWER_CONFIGS } from './types';
+import { buildArcherMesh, buildCatapultMesh, buildWallMesh } from './TowerMeshes';
 
 type MoveDir = { x: number; z: number };
 type KBLayout = 'qwerty' | 'azerty';
@@ -30,9 +31,8 @@ export class InputManager {
   private _savedLayout = false;
 
   // Mouse tracking — process once per frame, not per event
-  private _mouseX = -9999;
-  private _mouseY = -9999;
   private _mouseDirty = false;
+  private _lastHoverType: string | null = null;
 
   // Three.js refs
   private _renderer!: THREE.WebGLRenderer;
@@ -79,26 +79,78 @@ export class InputManager {
   // Call once per frame from game loop to process hover at 60fps cost.
 
   updateHover(
-    hoverMesh: THREE.Mesh,
+    hoverGroup: THREE.Group,
     grid: Grid | null,
     selectedType: string | null,
     gold: number,
   ): void {
-    if (!this._mouseDirty || !selectedType || !grid) {
-      hoverMesh.visible = false;
+    if (!selectedType || !grid) {
+      hoverGroup.visible = false;
+      this._lastHoverType = null;
       return;
     }
+
+    if (selectedType !== this._lastHoverType) {
+      this._lastHoverType = selectedType;
+      this._rebuildGhost(hoverGroup, selectedType);
+      this._mouseDirty = true; // Force update when type changes
+    }
+
+    if (!this._mouseDirty) return;
     this._mouseDirty = false;
 
     const cell = this.getMouseGrid(grid);
-    if (!cell) { hoverMesh.visible = false; return; }
+    if (!cell) {
+      hoverGroup.visible = false;
+      return;
+    }
 
     const cost = TOWER_CONFIGS[selectedType]?.cost ?? Infinity;
     const ok = grid.isBuildable(cell.gx, cell.gy, selectedType === 'wall') && gold >= cost;
 
-    hoverMesh.position.set(cell.gx + 0.5, 0.08, cell.gy + 0.5);
-    hoverMesh.visible = true;
-    (hoverMesh.material as THREE.MeshBasicMaterial).color.setHex(ok ? 0x44ff44 : 0xff4444);
+    hoverGroup.position.set(cell.gx + 0.5, 0.08, cell.gy + 0.5);
+    hoverGroup.visible = true;
+
+    // Fade the ghost based on buildability
+    hoverGroup.traverse(c => {
+      if (c instanceof THREE.Mesh && c.material instanceof THREE.MeshLambertMaterial) {
+        c.material.emissive.setHex(ok ? 0x000000 : 0x440000);
+        c.material.opacity = ok ? 0.4 : 0.2;
+      }
+    });
+  }
+
+  private _rebuildGhost(group: THREE.Group, type: string) {
+    group.clear();
+    const color = TOWER_CONFIGS[type]?.color ?? 0xffffff;
+
+    // We use a simplified version of the tower meshes with transparency
+    if (type === 'archer') {
+      buildArcherMesh(group, 1, 1, color);
+    } else if (type === 'catapult') {
+      buildCatapultMesh(group, 1, 1);
+    } else if (type === 'wall') {
+      // Provide dummy meshes for wall HP bar components to avoid crashes
+      const dummyBg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1));
+      const dummyFill = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1));
+      buildWallMesh(group, 1, dummyBg, dummyFill);
+      // Hide the dummy bars in the ghost
+      dummyBg.visible = false;
+      dummyFill.visible = false;
+    }
+
+    group.traverse(c => {
+      if (c instanceof THREE.Mesh) {
+        // Capture the color before replacing the material
+        const origColor = (c.material as THREE.MeshLambertMaterial).color?.getHex() ?? color;
+        c.material = new THREE.MeshLambertMaterial({
+          color: origColor,
+          transparent: true,
+          opacity: 0.4,
+          depthWrite: false
+        });
+      }
+    });
   }
 
   // ─── Public: layout ─────────────────────────────────────
@@ -117,15 +169,21 @@ export class InputManager {
 
   // ─── Public: raycasting ────────────────────────────────
 
+  private _getNormalizedMouse(): void {
+    const rect = this._renderer.domElement.getBoundingClientRect();
+    // Calculate mouse position relative to the canvas, strictly bound to -1 to +1
+    this._mouse.x = ((this._mouseX - rect.left) / rect.width) * 2 - 1;
+    this._mouse.y = -((this._mouseY - rect.top) / rect.height) * 2 + 1;
+  }
+
   getMouseGrid(grid: Grid): { gx: number; gy: number; isPath: boolean } | null {
-    this._mouse.x = (this._mouseX / window.innerWidth) * 2 - 1;
-    this._mouse.y = -(this._mouseY / window.innerHeight) * 2 + 1;
+    this._getNormalizedMouse();
     this._ray.setFromCamera(this._mouse, this._camera);
-    
+
     // Specifically target the ground tiles to avoid character collision offset
     const tiles = grid.getAllTileMeshes();
     const hits = this._ray.intersectObjects(tiles);
-    
+
     if (hits.length > 0) {
       const tile = hits[0].object;
       return tile.userData as TileUserData;
@@ -134,16 +192,14 @@ export class InputManager {
   }
 
   getMouseGround(): THREE.Vector3 | null {
-    this._mouse.x = (this._mouseX / innerWidth) * 2 - 1;
-    this._mouse.y = -(this._mouseY / innerHeight) * 2 + 1;
+    this._getNormalizedMouse();
     this._ray.setFromCamera(this._mouse, this._camera);
     const hit = this._ray.ray.intersectPlane(this._plane, this._groundTarget);
     return hit ? this._groundTarget.clone() : null;
   }
 
   getMouseTower(towers: Tower[]): Tower | null {
-    this._mouse.x = (this._mouseX / innerWidth) * 2 - 1;
-    this._mouse.y = -(this._mouseY / innerHeight) * 2 + 1;
+    this._getNormalizedMouse();
     this._ray.setFromCamera(this._mouse, this._camera);
 
     const meshes: THREE.Object3D[] = [];
@@ -222,7 +278,7 @@ export class InputManager {
     if (e.key === 'Escape') { this._cb.onEscape(); return; }
 
     const k = e.key.toLowerCase();
-    
+
     // Auto-detect layout for ability labels only
     if (!this._savedLayout && !this._layoutDetected) {
       if (k === 'w') { this._kbLayout = 'qwerty'; this._layoutDetected = true; }
@@ -233,7 +289,7 @@ export class InputManager {
     const qer = ['q', 'e', 'r'];
     const az = ['a', 'e', 'r'];
     const keys = this._kbLayout === 'azerty' ? az : qer;
-    
+
     const idx = keys.indexOf(k);
     if (idx >= 0) this._cb.onAbility(idx);
   };
@@ -251,7 +307,7 @@ export class InputManager {
   private _onPointerDown = (e: PointerEvent): void => {
     // Only handle Left Click (button 0)
     if (e.button !== 0) return;
-    
+
     // Stop propagation so we don't trigger multiple handlers
     e.stopPropagation();
 

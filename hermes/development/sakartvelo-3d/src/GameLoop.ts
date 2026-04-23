@@ -73,6 +73,7 @@ export class GameLoop {
       this._updateTowers(dt);
       this._updateProjectiles(dt);
       this._updateHero(dt);
+      this._updateHeroBuilding(dt);
       updateEnemyDeaths(this._scene, this._camera);
       updateEffects(dt, this._camera);
       this._updateWallHpBillboards();
@@ -151,6 +152,28 @@ export class GameLoop {
         }
         gs.projectilePool.release(proj);
       }
+    }
+  }
+
+  private _updateHeroBuilding(dt: number): void {
+    if (!gs.hero || !gs.hero.pendingBuild) return;
+
+    // Check if build is complete (using 1.5s as base build time)
+    if (gs.hero.buildTimer >= 1.5) {
+      const b = gs.hero.pendingBuild;
+      const placed = gs.placeTower(b.type, b.gx, b.gy, b.isPath, this._scene);
+      if (placed) {
+        // Only clear pending build if placement was successful
+        gs.hero.pendingBuild = null;
+        gs.hero.buildTimer = 0;
+        // Do NOT set gs.selectedType = null; this allows batch building
+      } else {
+        // Placement failed (e.g. not enough gold anymore?), cancel
+        gs.hero.pendingBuild = null;
+        gs.hero.buildTimer = 0;
+        gs.selectedType = null;
+      }
+      this._ui.update();
     }
   }
 
