@@ -112,9 +112,15 @@ function startLevel(era: number, level: number): void {
   // Expose grid for input manager
   (window as any).__grid = gs.grid;
 
-  // Reset wave countdown on first wave
+  // Level 1 stays manual so tutorial text can run before combat begins.
   if (gs.waveMgr && !gs.waveMgr.active) {
-    gs.startWaveCountdown();
+    if (lvl.level === 1) {
+      gs.waveCountdownActive = false;
+      ui.$waveBtn.disabled = false;
+      ui.$waveBtn.textContent = '▶ Start Wave';
+    } else {
+      gs.startWaveCountdown();
+    }
   }
 
   ui.screens.showGameUI();
