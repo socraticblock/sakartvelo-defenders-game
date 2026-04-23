@@ -64,7 +64,7 @@ export class Teleprompter {
       if (!audioEl || !this._wordEls) return;
       
       this.updateProgress(audioEl.currentTime, audioEl.duration || duration);
-      this.syncWords(audioEl.currentTime, audioEl.duration || duration);
+      this.sync(audioEl.currentTime, audioEl.duration || duration);
       
       onTick?.();
 
@@ -92,7 +92,7 @@ export class Teleprompter {
     this._progressEl.textContent = `⏱ ${fmt(elapsed)} / ${fmt(total)}`;
   }
 
-  private syncWords(elapsed: number, duration: number): void {
+  sync(elapsed: number, duration: number): void {
     if (!this._wordEls || this._wordTimes.length === 0 || duration <= 0) return;
 
     const lastTime = this._wordTimes[this._wordTimes.length - 1] || 1;

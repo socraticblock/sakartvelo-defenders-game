@@ -106,6 +106,20 @@ export class AudioManager {
     this.resetEraPlayButton(this._eraAudioEl?.ended ? '▶ Play Narration' : '▶ Resume');
   }
 
+  seekEraNarration(delta: number): void {
+    if (!this._eraAudioEl || isNaN(this._eraAudioDuration) || this._eraAudioDuration === 0) return;
+    
+    const newTime = Math.max(0, Math.min(this._eraAudioDuration, this._eraAudioEl.currentTime + delta));
+    this._eraAudioEl.currentTime = newTime;
+    
+    if (newTime >= this._eraAudioDuration) {
+      this.stopEraNarration();
+    } else if (this._eraAudioEl.paused) {
+      teleprompter.updateProgress(newTime, this._eraAudioDuration);
+      teleprompter.sync(newTime, this._eraAudioDuration);
+    }
+  }
+
   private resetEraPlayButton(label = '▶ Play Narration'): void {
     const playBtn = document.getElementById('btn-era-play') as HTMLButtonElement;
     if (playBtn) {

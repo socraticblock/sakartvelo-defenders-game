@@ -104,6 +104,14 @@ export class ScreenManager {
       else audio.startEraNarration();
     });
 
+    document.getElementById('btn-era-prev')?.addEventListener('click', () => {
+      audio.seekEraNarration(-10);
+    });
+
+    document.getElementById('btn-era-next')?.addEventListener('click', () => {
+      audio.seekEraNarration(10);
+    });
+
     document.getElementById('btn-era-continue')?.addEventListener('click', () => {
       audio.stopEraNarration();
       this.showLevelSelect();
