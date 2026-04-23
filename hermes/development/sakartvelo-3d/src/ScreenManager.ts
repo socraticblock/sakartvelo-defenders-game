@@ -182,22 +182,32 @@ export class ScreenManager {
 
   updateAbilities(hero: Hero): void {
     const abs = hero.abilities.abilities;
-    this._updateAbility('ability-q', abs[0]?.cooldown ?? 0, abs[0]?.maxCd ?? 1);
-    this._updateAbility('ability-w', abs[1]?.cooldown ?? 0, abs[1]?.maxCd ?? 1);
-    this._updateAbility('ability-e', abs[2]?.cooldown ?? 0, abs[2]?.maxCd ?? 1);
+    this._updateAbility('ability-q', abs[0]?.cooldown ?? 0, abs[0]?.maxCd ?? 1, abs[0]?.active ?? false);
+    this._updateAbility('ability-w', abs[1]?.cooldown ?? 0, abs[1]?.maxCd ?? 1, abs[1]?.active ?? false);
+    this._updateAbility('ability-e', abs[2]?.cooldown ?? 0, abs[2]?.maxCd ?? 1, abs[2]?.active ?? false);
   }
 
-  private _updateAbility(id: string, cd: number, maxCd: number): void {
+  private _updateAbility(id: string, cd: number, maxCd: number, active: boolean): void {
     const el = document.getElementById(id) as HTMLButtonElement;
     if (!el) return;
+
+    const overlay = el.querySelector('.cd-overlay') as HTMLElement;
+    if (!overlay) return;
+
+    if (active) {
+      el.classList.add('ability-active');
+    } else {
+      el.classList.remove('ability-active');
+    }
+
     if (cd > 0) {
       el.disabled = true;
-      el.style.opacity = '0.5';
-      el.textContent = `${Math.ceil(cd)}s`;
+      overlay.style.display = 'flex';
+      overlay.textContent = `${Math.ceil(cd)}s`;
     } else {
       el.disabled = false;
-      el.style.opacity = '1';
-      el.textContent = id.split('-')[1].toUpperCase();
+      overlay.style.display = 'none';
+      overlay.textContent = '';
     }
   }
 

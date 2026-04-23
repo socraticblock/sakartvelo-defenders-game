@@ -146,35 +146,71 @@
     }
 
     .ability-btn {
-      padding: 6px 12px;
+      position: relative;
+      width: 54px;
+      height: 54px;
+      padding: 0;
       border: 2px solid #4a1a6b;
-      border-radius: 6px;
-      background: rgba(74, 26, 107, 0.3);
-      color: #f0e6d2;
+      border-radius: 8px;
+      background: rgba(74, 26, 107, 0.2);
       cursor: pointer;
-      font-family: 'Georgia', serif;
-      font-size: 12px;
+      overflow: hidden;
       transition: all 0.2s;
-      min-width: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ability-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .ability-btn .hotkey {
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      background: rgba(0, 0, 0, 0.8);
+      color: #d4a017;
+      font-size: 10px;
+      font-weight: bold;
+      padding: 1px 4px;
+      border-radius: 3px;
+      border: 1px solid rgba(212, 160, 23, 0.4);
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .ability-btn .cd-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 2;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 14px;
+      font-weight: bold;
+      pointer-events: none;
     }
 
     .ability-btn:hover:not(:disabled) {
-      background: rgba(74, 26, 107, 0.6);
+      border-color: #9b59b6;
+      box-shadow: 0 0 12px rgba(155, 89, 182, 0.5);
+      transform: translateY(-2px);
     }
 
     .ability-btn:disabled {
-      opacity: 0.4;
       cursor: not-allowed;
+      filter: grayscale(0.8);
     }
 
     .ability-btn.ability-active {
-      background: rgba(68, 255, 136, 0.3);
       border-color: #44ff88;
-    }
-
-    .ability-btn.ability-cd {
-      background: rgba(100, 100, 100, 0.3);
-      border-color: #666;
+      box-shadow: 0 0 15px rgba(68, 255, 136, 0.4);
     }
 
     /* Tower info panel (appears when clicking a placed tower) */
@@ -782,9 +818,21 @@
     <span style="color:#d4a017;font-weight:bold;">♛ Medea</span>
     <span id="hero-hp">❤️ 250/250</span>
     <span id="hero-status" style="color:#ff6666;font-size:11px;"></span>
-    <button class="ability-btn" id="ability-q">☠️ [Q]</button>
-    <button class="ability-btn" id="ability-w">🌿 [W]</button>
-    <button class="ability-btn" id="ability-e">⚗️ [E]</button>
+    <button class="ability-btn" id="ability-q" title="Colchian Poison">
+      <img src="images/abilities/poison.png" alt="Poison">
+      <span class="hotkey">Q</span>
+      <div class="cd-overlay"></div>
+    </button>
+    <button class="ability-btn" id="ability-w" title="War Chant">
+      <img src="images/abilities/chant.png" alt="Chant">
+      <span class="hotkey">W</span>
+      <div class="cd-overlay"></div>
+    </button>
+    <button class="ability-btn" id="ability-e" title="Colchian Fire">
+      <img src="images/abilities/fire.png" alt="Fire">
+      <span class="hotkey">E</span>
+      <div class="cd-overlay"></div>
+    </button>
   </div>
 
   <div id="bottom-bar" class="game-ui">
