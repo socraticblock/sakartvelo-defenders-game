@@ -94,8 +94,10 @@ export class TowerPanel {
 
   private _bindUpgradeSell(): void {
     this.$upgradeBtn.addEventListener('click', () => {
-      if (!gs.selectedTower || gs.gameOver) return;
-      gs.upgradeTower(gs.selectedTower);
+      if (!gs.selectedTower || gs.gameOver || !gs.hero || !gs.hero.alive) return;
+      const t = gs.selectedTower;
+      gs.pendingUpgradeTower = t;
+      gs.hero.moveTo(t.gx + 0.5, t.gy + 0.5);
     });
     this.$sellBtn.addEventListener('click', () => {
       if (!gs.selectedTower || gs.gameOver || !gs.grid) return;

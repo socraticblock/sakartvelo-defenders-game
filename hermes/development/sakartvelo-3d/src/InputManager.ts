@@ -111,12 +111,10 @@ export class InputManager {
     if (selectedType !== this._lastHoverType) {
       this._lastHoverType = selectedType;
       this._rebuildGhost(hoverGroup, selectedType);
-      this._mouseDirty = true; // Force update when type changes
     }
 
-    if (!this._mouseDirty) return;
-    this._mouseDirty = false;
-
+    // Always raycast while placing: if the first frame missed the grid (cursor over UI),
+    // `_mouseDirty` could stay false and the ghost would never update until the mouse moved.
     const cell = this.getMouseGrid(grid);
     if (!cell) {
       hoverGroup.visible = false;
@@ -333,18 +331,6 @@ export class InputManager {
       this._cb.onDeselect();
     }
   };
-
-  private _dispatchClick(e: PointerEvent): void {
-    this._mouseX = e.clientX;
-    this._mouseY = e.clientY;
-
-    // Callers will do tower check — we just expose position
-    const grid = (window as any).__gs_grid as Grid | null;
-    if (!grid) return;
-
-    const cell = this.getMouseGrid(grid);
-    if (cell) this._cb.onGridClick(cell.gx, cell.gy, cell.isPath);
-  }
 
   private _onContextMenu = (e: MouseEvent): void => {
     e.preventDefault();

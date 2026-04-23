@@ -13,28 +13,6 @@ import { SaveManager } from './SaveManager';
 import { Tower } from './Tower';
 import { screenMgr } from './ScreenManager';
 
-// ─── Global refs for external access (SET IMMEDIATELY) ──────────────────
-(window as any).__navigateToLevelSelect = () => {
-  try {
-    console.log('--- FOOLPROOF NAV TRIGGERED ---');
-    audio.stopEraNarration();
-    screenMgr.showLevelSelect(0);
-  } catch (err: any) {
-    alert('NAV ERROR: ' + err.message);
-  }
-};
-(window as any).__showEraScreen = () => {
-  try {
-    screenMgr.showEraScreen();
-  } catch (err: any) {
-    alert('BEGIN ERROR: ' + err.message);
-  }
-};
-(window as any).__audioMgr = audio;
-(window as any).__screenMgr = screenMgr;
-(window as any).__gs = gs;
-(window as any).__saveManager = SaveManager;
-
 // ─── Scene ────────────────────────────────────────────────────────────────
 
 const scene = new THREE.Scene();
@@ -147,10 +125,6 @@ function startLevel(era: number, level: number): void {
   ui.update();
 }
 
-function onWaveStart(bonus: number): void {
-  gs.startWave(bonus);
-}
-
 // ─── Init subsystems ─────────────────────────────────────────────────────
 
 ui.init(
@@ -168,14 +142,15 @@ input.init(
       // Cancel any in-progress build so move orders are not overridden by build AI.
       gs.hero.pendingBuild = null;
       gs.hero.buildTimer = 0;
+      gs.pendingUpgradeTower = null;
       gs.hero.moveTo(x, z);
     },
     onGridClick: (gx: number, gy: number, isPath: boolean) => {
-      if (gs.gameOver || !gs.grid || !gs.selectedType || !gs.hero) return;
-      if (gs.waveMgr?.active) return;
+      if (gs.gameOver || !gs.grid || !gs.selectedType || !gs.hero || !gs.hero.alive) return;
 
       const type = gs.selectedType;
       gs.hero.pendingBuild = { type, gx, gy, isPath };
+      gs.hero.buildTimer = 0;
       // Drop placement mode immediately so the ghost is cleared this frame (no batch lock).
       gs.selectedType = null;
       ui.panel.towerButtons.forEach((b: HTMLButtonElement) => b.classList.remove('selected'));
@@ -216,23 +191,6 @@ renderer.domElement.addEventListener('contextmenu', (e) => {
   e.preventDefault();
   const pos = input.getMouseGround();
   if (pos) gs.hero?.moveTo(pos.x, pos.z);
-});
-
-// ─── Wave button ───────────────────────────────────────────────────────────
-
-document.getElementById('wave-btn')?.addEventListener('click', () => {
-  if (gs.gameOver || !gs.waveMgr || gs.waveMgr.active || gs.waveMgr.inBuildPhase) return;
-  const bonus = gs.waveCountdownActive ? gs.getCountdownBonus() : 0;
-  gs.startWave(bonus);
-  ui.$waveBtn.disabled = true;
-  ui.$waveBtn.textContent = '⚔ Wave in progress...';
-});
-
-// ─── Menu button ───────────────────────────────────────────────────────────
-
-document.getElementById('go-menu')?.addEventListener('click', () => {
-  ui.screens.hideGameOver();
-  ui.screens.showLevelSelect();
 });
 
 // ─── Escape ───────────────────────────────────────────────────────────────

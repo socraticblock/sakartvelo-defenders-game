@@ -23,6 +23,7 @@ export class CulturalFacts {
   }
 
   start(): void {
+    if (this._intervalId !== null) return;
     this.rotate();
     this._intervalId = window.setInterval(() => this.rotate(), 15000);
   }

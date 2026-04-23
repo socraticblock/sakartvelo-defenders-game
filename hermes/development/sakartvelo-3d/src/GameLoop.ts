@@ -18,6 +18,7 @@ import {
 import { updateEnemySlow, updateEnemyWallAttacks, updateEnemyDeaths } from './EnemyAI';
 
 export class GameLoop {
+  private readonly _UPGRADE_RANGE = 1.6;
   private _renderer!: THREE.WebGLRenderer;
   private _scene!: THREE.Scene;
   private _camera!: THREE.PerspectiveCamera;
@@ -73,6 +74,7 @@ export class GameLoop {
       this._updateTowers(dt);
       this._updateProjectiles(dt);
       this._updateHero(dt);
+      this._updateHeroUpgrades();
       this._updateHeroBuilding(dt);
       updateEnemyDeaths(this._scene, this._camera);
       updateEffects(dt, this._camera);
@@ -190,6 +192,25 @@ export class GameLoop {
     } else {
       this._moveRing.visible = false;
     }
+  }
+
+  private _updateHeroUpgrades(): void {
+    if (!gs.hero || !gs.pendingUpgradeTower) return;
+    const t = gs.pendingUpgradeTower;
+
+    // Tower was sold or removed while walking.
+    if (!gs.towers.includes(t)) {
+      gs.pendingUpgradeTower = null;
+      return;
+    }
+
+    const targetPos = new THREE.Vector3(t.gx + 0.5, 0, t.gy + 0.5);
+    const dist = gs.hero.getPos().distanceTo(targetPos);
+    if (dist > this._UPGRADE_RANGE) return;
+
+    gs.upgradeTower(t);
+    gs.pendingUpgradeTower = null;
+    this._ui.update();
   }
 
   private _updateWallHpBillboards(): void {

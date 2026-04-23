@@ -29,6 +29,7 @@ export class GameState {
   // ─── Selection ───────────────────────────────────────────
   selectedType: string | null = null;   // tower type being placed
   selectedTower: Tower | null = null;   // existing tower clicked
+  pendingUpgradeTower: Tower | null = null; // tower to upgrade once hero reaches it
 
   // ─── Level ──────────────────────────────────────────────
   currentLevel: LevelData | null = null;
@@ -82,6 +83,7 @@ export class GameState {
     this.paused = false;
     this.selectedTower = null;
     this.selectedType = null;
+    this.pendingUpgradeTower = null;
     this.waveCountdownActive = false;
     this.waveCompleteProcessed = false;
     this.popupDismissed = false;
