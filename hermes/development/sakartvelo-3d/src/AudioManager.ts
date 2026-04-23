@@ -55,9 +55,9 @@ export class AudioManager {
     slider.addEventListener('input', () => {
       val.textContent = slider.value;
       updateBg(slider);
-      if (this._narrationAudio) {
-        this._narrationAudio.volume = parseInt(slider.value) / 100;
-      }
+      const vol = parseInt(slider.value) / 100;
+      if (this._narrationAudio) this._narrationAudio.volume = vol;
+      if (this._eraAudioEl) this._eraAudioEl.volume = vol;
     });
     updateBg(slider);
   }
@@ -96,8 +96,8 @@ export class AudioManager {
       utterance.onboundary = (e) => {
         if (e.name === 'word') times.push(e.charIndex);
       };
-      utterance.onend = () => resolve(times);
-      utterance.onerror = () => resolve([]);
+      utterance.onend = () => { this._tpWordTimes = times; resolve(times); };
+      utterance.onerror = () => { this._tpWordTimes = []; resolve([]); };
       speechSynthesis.cancel();
       speechSynthesis.speak(utterance);
     });
