@@ -72,6 +72,7 @@ export class TowerPanel {
       const cost = TOWER_CONFIGS[type].cost;
       const locked = !gs.unlockedTowers.has(type);
       const tooPoor = gs.gold < cost;
+      btn.style.display = locked ? 'none' : '';
       btn.disabled = locked || tooPoor;
       btn.classList.toggle('too-poor', tooPoor && !locked);
       btn.classList.toggle('ls-locked', locked);
