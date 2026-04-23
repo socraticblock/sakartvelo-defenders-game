@@ -44,9 +44,15 @@ export class ScreenManager {
   }
 
   showLevelSelect(): void {
-    const container = document.getElementById('level-select');
+    const container = document.getElementById('screen-level-select');
     if (container) {
-      container.innerHTML = LevelSelect(gs.allLevels, (e, l) => this._onLevelSelect?.(e, l));
+      LevelSelect.show(
+        0, 
+        container, 
+        gs.allLevels, 
+        (e, l) => this._onLevelSelect?.(e, l),
+        () => this._onEscape?.()
+      );
     }
     this._showScreen('screen-level-select');
   }

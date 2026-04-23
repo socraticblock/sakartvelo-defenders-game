@@ -135,6 +135,9 @@
         text-align: center;
       }
       .intro-overlay.visible { display: flex; }
+      
+      .screen { display: none; }
+      .screen.visible:not(.intro-overlay) { display: block; }
 
       .intro-title {
         font-size: 48px; font-weight: bold;
@@ -417,10 +420,10 @@
     </div>
     
     <!-- Level select screen -->
-    <div id="level-select" style="display:none; position:absolute; inset:0; background:rgba(8,14,8,0.97); color:#f0e6d2; font-family:'Georgia',serif; padding:40px 20px; overflow-y:auto; z-index:150;"></div>
+    <div id="screen-level-select" class="screen" style="position:absolute; inset:0; background:rgba(8,14,8,0.97); color:#f0e6d2; font-family:'Georgia',serif; padding:40px 20px; overflow-y:auto; z-index:150;"></div>
 
     <!-- Level complete overlay -->
-    <div id="level-complete" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; background:rgba(0,0,0,0.9); padding:40px 60px; border-radius:16px; border:2px solid #d4a017; color:#f0e6d2; font-family:'Georgia',serif; z-index:200; min-width:340px;">
+    <div id="screen-level-complete" class="screen" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; background:rgba(0,0,0,0.9); padding:40px 60px; border-radius:16px; border:2px solid #d4a017; color:#f0e6d2; font-family:'Georgia',serif; z-index:200; min-width:340px;">
       <h2 id="lc-title" style="font-size:30px; margin-bottom:16px;"></h2>
       <div id="lc-stars" style="font-size:44px; margin-bottom:14px;"></div>
       <p id="lc-msg" style="font-size:15px; margin-bottom:24px; color:#aaa;"></p>
@@ -432,7 +435,10 @@
 
     <div id="pause-overlay">⏸ PAUSED</div>
 
-    <div id="game-over">
+    <div id="screen-game-over" class="screen" style="position:absolute; top:50%; left:50%;
+        transform: translate(-50%, -50%); text-align: center;
+        background: rgba(0,0,0,0.85); padding: 40px 60px;
+        border-radius: 16px; border: 2px solid #d4a017; color: #f0e6d2; z-index: 210;">
       <h2 id="game-over-title">VICTORY!</h2>
       <p id="game-over-msg"></p>
       <div id="game-over-stars"></div>
@@ -459,7 +465,7 @@
     </div>
 
     <!-- ─── SCREEN 0: TITLE CARD ─── -->
-    <div id="screen-title" class="intro-overlay visible">
+    <div id="screen-title" class="intro-overlay screen visible">
       <div class="intro-flag">🇬🇪</div>
       <div class="intro-title">Sakartvelo</div>
       <div class="intro-title" style="font-size:32px; margin-top:-4px; margin-bottom:8px;">Defenders</div>
@@ -470,7 +476,7 @@
     </div>
 
     <!-- ─── SCREEN 1: ERA INTRO ─── -->
-    <div id="screen-era" class="intro-overlay">
+    <div id="screen-era" class="intro-overlay screen">
       <div id="volume-panel">
         <div class="vol-row">
           <span class="vol-icon">🎙</span>
@@ -504,7 +510,7 @@
     </div>
 
     <!-- ─── SCREEN 2: CHAPTER I INTRO ─── -->
-    <div id="screen-chapter" class="intro-overlay">
+    <div id="screen-chapter" class="intro-overlay screen">
       <div class="intro-chapter-num">Chapter I</div>
       <div class="intro-title" style="font-size:36px;">The Bronze Age</div>
       <div class="intro-era-label">~1500 BC — ~600 BC</div>

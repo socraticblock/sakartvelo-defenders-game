@@ -173,12 +173,11 @@ export const LevelSelect = {
     onBack = onBackFn;
     allLevels = levels;
     container = containerEl;
-    containerEl.style.display = 'block';
     render(era);
   },
 
   hide() {
-    if (container) container.style.display = 'none';
+    // No-op, managed by classes
   },
 
   refresh() {
