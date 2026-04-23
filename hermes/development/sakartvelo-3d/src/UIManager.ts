@@ -6,7 +6,7 @@
  */
 import { gs } from './GameState';
 import { TowerPanel } from './TowerPanel';
-import { ScreenManager } from './ScreenManager';
+import { screenMgr } from './ScreenManager';
 
 type OnLevelSelect = (era: number, level: number) => void;
 type OnEscape = () => void;
@@ -29,11 +29,10 @@ export class UIManager {
 
   // Sub-managers
   panel: TowerPanel;
-  screens: ScreenManager;
+  screens = screenMgr; // Use the singleton
 
   constructor() {
     this.panel = new TowerPanel();
-    this.screens = new ScreenManager();
   }
 
   init(onLevelSelect: OnLevelSelect, onEscape: OnEscape): void {

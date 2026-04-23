@@ -1,52 +1,20 @@
 /**
  * AudioManager.ts
- * Narration, volume controls, Web Speech API calibration, teleprompter.
- * All audio and speech-related functionality in one place.
+ * Narration, volume controls, and Web Speech API calibration.
  */
+import { ERA_PARAGRAPHS } from './EraData';
+import { teleprompter } from './Teleprompter';
+
 export class AudioManager {
-  // ─── Narration ────────────────────────────────────────
-
   private _narrationAudio: HTMLAudioElement | null = null;
-
-  playNarration(src: string): void {
-    console.log('[Narration] play:', src);
-    if (this._narrationAudio) {
-      this._narrationAudio.pause();
-      this._narrationAudio = null;
-    }
-    this._narrationAudio = new Audio(src);
-    this._narrationAudio.addEventListener('error', e =>
-      console.warn('[Narration] load error:', e)
-    );
-    this._narrationAudio.addEventListener('canplay', () => {
-      this._narrationAudio?.play().catch(e =>
-        console.warn('[Narration] play blocked:', e.message)
-      );
-    }, { once: true });
-  }
-
-  stopNarration(): void {
-    if (this._narrationAudio) {
-      this._narrationAudio.pause();
-      this._narrationAudio = null;
-    }
-  }
-
-  // ─── Chapter narration (Chapter I: Bronze Age) ─────────────────────────────
-
-  playChapterNarration(): void {
-    this.playNarration('./audio/narration-chapter1-bronze-age.mp3');
-  }
-
-  stopChapterNarration(): void {
-    this.stopNarration();
-  }
-
-  // ─── Volume setup ───────────────────────────────────
+  private _eraAudioEl: HTMLAudioElement | null = null;
+  private _eraAudioDuration = 0;
+  _eraPlaying = false;
 
   init(): void {
     const slider = document.getElementById('vol-narration') as HTMLInputElement;
     const val = document.getElementById('vol-narration-val')!;
+    if (!slider) return;
 
     const updateBg = (el: HTMLInputElement) => {
       el.style.background = `linear-gradient(90deg, #8b6914 ${el.value}%, #3a3020 ${el.value}%)`;
@@ -60,221 +28,115 @@ export class AudioManager {
       if (this._eraAudioEl) this._eraAudioEl.volume = vol;
     });
     updateBg(slider);
+    
+    teleprompter.init();
   }
 
-  // ─── Teleprompter / Era narration ────────────────────
+  // ─── Narration ────────────────────────────────────────
 
-  private _tpWordTimes: number[] = [];
-  private _tpWordEls: NodeListOf<HTMLElement> | null = null;
-  private _tpRafId: number | null = null;
-  private _tpAudioDuration = 0;
-  _eraPlaying = false;
-  _eraAudioEl: HTMLAudioElement | null = null;
-
-  private readonly ERA_PARAGRAPHS = [
-    "On the eastern shores of the Black Sea, where the Caucasus Mountains plunge into the sea, a civilization flourished for fifteen centuries.",
-    "Long before Rome existed, long before Athens wrote its first plays, Bronze Age farmers here were already mining gold, smelting iron, and building sophisticated settlements.",
-    "By the sixth century before Christ, Greek ships began arriving at ports along this coast, drawn by Colchis's legendary wealth.",
-    "The Greeks told stories in return: Jason and the Argonauts sailing east to steal the Golden Fleece from King Aeetes. The myth was rooted in something real — Colchian gold was extracted by placing sheepskins in mountain streams, trapping gold flakes in the wool.",
-    "The Greeks called the people Colchians. Herodotus, visiting in the fifth century BC, noted they resembled Egyptians, a connection that still puzzles historians today.",
-    "This was the land of Medea, the sorceress princess. And this was the land archaeologists call Vani, a sacred city of temples and trade, one of the most important Colchian sites.",
-    "Colchis endured until eighty-three before the common era, when Mithridates of Pontus conquered it. But the people endured. Their language became Kartuli. Their story never ended.",
-    "This is the story of Sakartvelo — a land that refused to fall.",
-  ];
-
-  // ─── Web Speech API calibration ──────────────────────
-
-  calibrateWordTimes(): Promise<number[]> {
-    return new Promise(resolve => {
-      const generateFallback = () => {
-        const fullText = this.ERA_PARAGRAPHS.join(' ');
-        const words = fullText.split(/\s+/);
-        const fallbackTimes: number[] = [];
-        let charIdx = 0;
-        words.forEach(w => {
-          fallbackTimes.push(charIdx);
-          charIdx += w.length + 1;
-        });
-        this._tpWordTimes = fallbackTimes;
-        resolve(fallbackTimes);
-      };
-
-      if (!('speechSynthesis' in window)) { generateFallback(); return; }
-      
-      const fullText = this.ERA_PARAGRAPHS.join(' ');
-      const utterance = new SpeechSynthesisUtterance(fullText);
-      utterance.rate = 1.0;
-      utterance.volume = 0; 
-      
-      const times: number[] = [];
-      utterance.onboundary = (e) => {
-        if (e.name === 'word') times.push(e.charIndex);
-      };
-      utterance.onend = () => { 
-        if (times.length > 0) { this._tpWordTimes = times; resolve(times); }
-        else generateFallback();
-      };
-      utterance.onerror = () => generateFallback();
-      
-      // Timeout fallback in case speech API hangs
-      setTimeout(() => { if (times.length === 0) generateFallback(); }, 1500);
-
-      speechSynthesis.cancel();
-      speechSynthesis.speak(utterance);
-    });
+  playNarration(src: string): void {
+    if (this._narrationAudio) {
+      this._narrationAudio.pause();
+      this._narrationAudio = null;
+    }
+    this._narrationAudio = new Audio(src);
+    this._narrationAudio.addEventListener('canplay', () => {
+      this._narrationAudio?.play().catch(e => console.warn('[Narration] play blocked:', e.message));
+    }, { once: true });
   }
 
-  // ─── Teleprompter rendering ───────────────────────────
-
-  buildEraTeleprompter(): void {
-    const track = document.getElementById('era-tp-track')!;
-    track.innerHTML = '';
-    this.ERA_PARAGRAPHS.forEach(para => {
-      const words = para.split(' ');
-      words.forEach(word => {
-        const span = document.createElement('span');
-        span.className = 'tp-word';
-        span.textContent = word + ' ';
-        track.appendChild(span);
-      });
-      const sep = document.createElement('span');
-      sep.className = 'tp-para-end';
-      track.appendChild(sep);
-    });
-    this._tpWordEls = document.querySelectorAll<HTMLElement>('#era-tp-track .tp-word');
+  stopNarration(): void {
+    if (this._narrationAudio) {
+      this._narrationAudio.pause();
+      this._narrationAudio = null;
+    }
   }
 
-  // ─── Era narration playback ──────────────────────────
+  playChapterNarration(): void {
+    this.playNarration('./audio/narration-chapter1-bronze-age.mp3');
+  }
+
+  // ─── Era Narration ───────────────────────────────────
 
   startEraNarration(): void {
     const playBtn = document.getElementById('btn-era-play') as HTMLButtonElement;
     
-    // If already exists and paused, just resume
     if (this._eraAudioEl && !this._eraPlaying) {
       this._eraPlaying = true;
       playBtn.textContent = '⏸ Pause';
       this._eraAudioEl.play();
-      if (this._tpRafId) cancelAnimationFrame(this._tpRafId);
-      this._tpRafId = requestAnimationFrame(() => this._tpTick());
+      teleprompter.start(this._eraAudioEl, this._eraAudioDuration);
       return;
     }
 
-    this.buildEraTeleprompter();
+    this._eraPlaying = true;
     playBtn.textContent = '⏳ Loading...';
     playBtn.classList.add('playing');
     playBtn.disabled = true;
-    this._eraPlaying = true;
+
+    teleprompter.buildTrack(); // Render text immediately
+    teleprompter.updateProgress(0, 0); // Show initial 0:00
 
     const slider = document.getElementById('vol-narration') as HTMLInputElement;
     this._eraAudioEl = new Audio('./audio/narration-era0-intro.mp3');
-    this._eraAudioEl.preload = 'auto';
-    this._eraAudioEl.volume = parseInt(slider.value) / 100;
+    this._eraAudioEl.volume = slider ? parseInt(slider.value) / 100 : 1;
 
     this._eraAudioEl.addEventListener('error', () => {
-      playBtn.textContent = '▶ Play Narration';
-      playBtn.disabled = false;
-      playBtn.classList.remove('playing');
+      this.resetEraPlayButton();
       this._eraPlaying = false;
       this._eraAudioEl = null;
     });
 
     this._eraAudioEl.addEventListener('canplay', () => {
       if (!this._eraAudioEl) return;
-      this._tpAudioDuration = this._eraAudioEl.duration;
-      this.updateTpProgress();
+      this._eraAudioDuration = this._eraAudioEl.duration;
       playBtn.textContent = '⏸ Pause';
       playBtn.disabled = false;
-      this._eraAudioEl.play().catch(e => {
-        console.warn('[Narration] play blocked:', e.message);
-        playBtn.textContent = '▶ Play Narration';
-        playBtn.disabled = false;
-        playBtn.classList.remove('playing');
-        this._eraPlaying = false;
+      this._eraAudioEl.play();
+      teleprompter.start(this._eraAudioEl, this._eraAudioDuration, () => {
+        if (this._eraAudioEl?.ended) this.stopEraNarration();
       });
-      if (this._tpRafId) cancelAnimationFrame(this._tpRafId);
-      this._tpRafId = requestAnimationFrame(() => this._tpTick());
     }, { once: true });
   }
 
   stopEraNarration(): void {
     this._eraPlaying = false;
-    if (this._tpRafId) { cancelAnimationFrame(this._tpRafId); this._tpRafId = null; }
-    if (this._eraAudioEl) { this._eraAudioEl.pause(); }
+    if (this._eraAudioEl) this._eraAudioEl.pause();
+    teleprompter.stop();
+    this.resetEraPlayButton(this._eraAudioEl?.ended ? '▶ Play Narration' : '▶ Resume');
+  }
+
+  private resetEraPlayButton(label = '▶ Play Narration'): void {
     const playBtn = document.getElementById('btn-era-play') as HTMLButtonElement;
-    playBtn.textContent = '▶ Resume';
-    playBtn.disabled = false;
-    playBtn.classList.remove('playing');
+    if (playBtn) {
+      playBtn.textContent = label;
+      playBtn.disabled = false;
+      playBtn.classList.remove('playing');
+    }
   }
 
-  // ─── Per-frame teleprompter tick ────────────────────
+  // ─── Calibration ─────────────────────────────────────
 
-  updateTpProgress(): void {
-    const elapsed = this._eraAudioEl?.currentTime || 0;
-    const audioDur = this._eraAudioEl?.duration || this._tpAudioDuration || 0;
-    const prog = document.getElementById('era-tp-progress')!;
-    if (!prog) return;
-    const fmt = (s: number) => {
-      if (isNaN(s) || s < 0) return '0:00';
-      return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-    };
-    prog.textContent = `⏱ ${fmt(elapsed)} / ${fmt(audioDur)}`;
-  }
-
-  private _tpTick(): void {
-    if (!this._eraAudioEl || !this._tpWordEls) return;
-    this.updateTpProgress();
-
-    const elapsed = this._eraAudioEl.currentTime;
-    const audioDur = this._eraAudioEl.duration || this._tpAudioDuration;
-
-    if (audioDur > 0) {
-      // If we still have no timings, generate a linear fallback now
-      if (this._tpWordTimes.length === 0) {
-        let charIdx = 0;
-        this._tpWordTimes = this.ERA_PARAGRAPHS.join(' ').split(/\s+/).map(w => {
-          const t = charIdx;
-          charIdx += w.length + 1;
-          return t;
-        });
-      }
-
-      const lastTime = this._tpWordTimes[this._tpWordTimes.length - 1] || 1;
-      const scale = audioDur / lastTime;
+  calibrateWordTimes(): Promise<number[]> {
+    return new Promise(resolve => {
+      const fallback = () => resolve(teleprompter.generateFallbackTimes());
+      if (!('speechSynthesis' in window)) return fallback();
       
-      // Add a small 200ms lookahead so highlighting feels "responsive" to the voice
-      const scaledElapsed = (elapsed + 0.2) / scale;
-
-      let lo = 0, hi = this._tpWordTimes.length - 1;
-      while (lo < hi) {
-        const mid = (lo + hi + 1) >> 1;
-        if (this._tpWordTimes[mid] <= scaledElapsed) lo = mid;
-        else hi = mid - 1;
-      }
-
-      const wordIdx = Math.min(lo, this._tpWordEls.length - 1);
-      const activeWord = this._tpWordEls[wordIdx];
-      
-      if (activeWord && !activeWord.classList.contains('active')) {
-        this._tpWordEls.forEach(el => el.classList.remove('active'));
-        activeWord.classList.add('active');
-        
-        // Use a more reliable scroll method
-        activeWord.scrollIntoView({
-          block: 'center',
-          inline: 'nearest',
-          behavior: 'smooth'
-        });
-      }
-    }
-
-    if (this._eraPlaying && !this._eraAudioEl.ended) {
-      this._tpRafId = requestAnimationFrame(() => this._tpTick());
-    } else if (this._eraAudioEl?.ended) {
-      this.stopEraNarration();
-    }
+      const fullText = ERA_PARAGRAPHS.join(' ');
+      const utterance = new SpeechSynthesisUtterance(fullText);
+      utterance.volume = 0; 
+      const times: number[] = [];
+      utterance.onboundary = (e) => { if (e.name === 'word') times.push(e.charIndex); };
+      utterance.onend = () => {
+        if (times.length > 0) { teleprompter.setWordTimes(times); resolve(times); }
+        else fallback();
+      };
+      utterance.onerror = fallback;
+      setTimeout(() => { if (times.length === 0) fallback(); }, 1500);
+      speechSynthesis.cancel();
+      speechSynthesis.speak(utterance);
+    });
   }
 }
-
-// ─── Module-level instance (accessible via window for teleprompter controls) ──
 
 export const audio = new AudioManager();
