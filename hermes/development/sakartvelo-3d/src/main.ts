@@ -17,7 +17,7 @@ import { screenMgr } from './ScreenManager';
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x151d15);
-scene.fog = new THREE.FogExp2(0x151d15, 0.02);
+scene.fog = new THREE.FogExp2(0x151d15, 0.025); // Slightly thicker for depth
 
 const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 120);
 
@@ -27,12 +27,12 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0;
+renderer.toneMappingExposure = 0.85; // Crushed exposure for cinematic look
 document.body.appendChild(renderer.domElement);
 
-// Lighting
-scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-scene.add(new THREE.HemisphereLight(0xaaaaff, 0x444422, 0.4));
+// Lighting - Phase 4 Step 1 (Cinematic Shadows)
+scene.add(new THREE.AmbientLight(0xffffff, 0.2)); 
+scene.add(new THREE.HemisphereLight(0xaaaaff, 0x444422, 0.2));
 const sun = new THREE.DirectionalLight(0xffffff, 2.2);
 sun.position.set(20, 40, 20);
 sun.castShadow = true;
