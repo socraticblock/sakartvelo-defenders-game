@@ -382,7 +382,11 @@ export class InputManager {
     const cell = this.getMouseGrid(grid);
     if (cell) {
       const pos = this.getMouseGround();
-      if (pos) this._cb.onHeroMove(pos.x, pos.z);
+      if (pos) {
+        this._cb.onHeroMove(pos.x, pos.z);
+        // Clear tower selection when moving hero or clicking away
+        this._cb.onDeselect();
+      }
     } else {
       this._cb.onDeselect();
     }

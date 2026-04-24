@@ -135,8 +135,18 @@ input.init(renderer, camera, scene, {
     ui.update();
   },
   onAbility: (idx) => gs.hero?.activateAbility(idx, gs.enemies, gs.towers),
-  onEscape: () => { gs.selectedType = null; gs.selectedTower = null; },
-  onDeselect: () => { gs.selectedType = null; gs.selectedTower = null; },
+  onEscape: () => { 
+    if (gs.selectedTower) gs.selectedTower.showRange(false);
+    gs.selectedType = null; 
+    gs.selectedTower = null; 
+    ui.update(); 
+  },
+  onDeselect: () => { 
+    if (gs.selectedTower) gs.selectedTower.showRange(false);
+    gs.selectedType = null; 
+    gs.selectedTower = null; 
+    ui.update(); 
+  },
 });
 
 renderer.domElement.addEventListener('contextmenu', (e) => {
