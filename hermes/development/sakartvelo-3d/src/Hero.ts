@@ -281,7 +281,7 @@ export class Hero {
   // ─── Model ────────────────────────────────────────────────────────────────
 
   private buildModel() {
-    const C = { robe: 0x4a1a6b, gold: 0xd4a017, skin: 0xd2b08e, hair: 0x1a0a2a, wood: 0x735938 };
+    const C = { robe: 0x6a3a8b, gold: 0xd4a017, skin: 0xd2b08e, hair: 0x3a2a4a, wood: 0x735938 };
     const p = (geo: THREE.BufferGeometry, c: number, pos: [number, number, number], par?: THREE.Object3D) =>
       makePart(geo, c, pos, undefined, par ?? this.rootGroup);
 

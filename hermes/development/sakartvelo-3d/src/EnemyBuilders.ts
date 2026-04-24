@@ -5,7 +5,7 @@
  */
 import * as THREE from 'three';
 import { toon, outlineGroup, addOutlineTo } from './CelShader';
-import { mythic } from './MythicMaterials';
+import { mythic, mythicToon } from './MythicMaterials';
 
 export const P = {
   skin: 0xd2b08e,
@@ -29,7 +29,8 @@ export function makePart(
   parent?: THREE.Object3D,
   metal = 0.1, rough = 0.8, emissive = 0x000000
 ): THREE.Mesh {
-  const m = new THREE.Mesh(geo, mythic(color, metal, rough, emissive));
+  // Use mythicToon for character parts for the hand-painted look
+  const m = new THREE.Mesh(geo, mythicToon(color, emissive));
   m.position.set(...pos);
   if (rot) m.rotation.set(...rot);
   m.castShadow = true;

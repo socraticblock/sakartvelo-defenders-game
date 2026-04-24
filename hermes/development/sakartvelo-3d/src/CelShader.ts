@@ -11,17 +11,25 @@ import * as THREE from 'three';
 
 // ─── GRADIENT MAP ───────────────────────────────────────────
 // 4 discrete shading steps (shadow → dark-mid → mid → highlight)
-const GRADIENT_SIZE = 4;
-const gradientData = new Uint8Array(GRADIENT_SIZE);
+const GRADIENT_SIZE = 64;
+const gradientData = new Uint8Array(GRADIENT_SIZE * 4);
 for (let i = 0; i < GRADIENT_SIZE; i++) {
-  // Values: shadow=50, dark-mid=100, mid=180, highlight=255
-  gradientData[i] = Math.floor(50 + (i / (GRADIENT_SIZE - 1)) * 205);
+  const f = i / (GRADIENT_SIZE - 1);
+  let v = 255;
+  if (f < 0.3) v = 190;      // Shadow (Very Bright)
+  else if (f < 0.7) v = 230; // Mid
+  
+  const idx = i * 4;
+  gradientData[idx] = v;
+  gradientData[idx+1] = v;
+  gradientData[idx+2] = v;
+  gradientData[idx+3] = 255;
 }
-const gradientMap = new THREE.DataTexture(
+export const gradientMap = new THREE.DataTexture(
   gradientData,
   GRADIENT_SIZE,
   1,
-  THREE.RedFormat
+  THREE.RGBAFormat
 );
 gradientMap.minFilter = THREE.NearestFilter;
 gradientMap.magFilter = THREE.NearestFilter;

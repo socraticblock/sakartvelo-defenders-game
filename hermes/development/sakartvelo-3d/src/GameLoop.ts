@@ -142,23 +142,35 @@ export class GameLoop {
   }
 
   private _updateOcclusion(): void {
-    // 1. Get units that need visibility (Hero + closest enemies)
+    // 1. Get units that need visibility (Hero + enemies)
     const targets: THREE.Vector3[] = [];
     if (gs.hero) targets.push(gs.hero.group.position);
-    gs.enemies.slice(0, 10).forEach(e => targets.push(e.group.position));
+    gs.enemies.slice(0, 15).forEach(e => targets.push(e.group.position));
+
+    const tempV = new THREE.Vector3();
+    const towerScreenPos = new THREE.Vector2();
+    const targetScreenPos = new THREE.Vector2();
 
     for (const tower of gs.towers) {
       let occluded = false;
-      const tPos = tower.group.position;
       
+      // Get tower screen position (center-ish)
+      tempV.copy(tower.group.position).y += 0.8; // Offset to tower mid-height
+      tempV.project(this._camera);
+      towerScreenPos.set(tempV.x, tempV.y);
+
       for (const targetPos of targets) {
-        // Simple logic: Is the target "behind" the tower relative to the camera?
-        // Our camera is at +Z and +Y. So "behind" means target.z < tower.z and target.x is close.
-        const dx = Math.abs(targetPos.x - tPos.x);
-        const dz = targetPos.z - tPos.z;
+        // Project target to screen
+        tempV.copy(targetPos).y += 0.2; // Offset to unit head
+        tempV.project(this._camera);
+        targetScreenPos.set(tempV.x, tempV.y);
+
+        // Calculate screen-space distance
+        const distSq = towerScreenPos.distanceToSquared(targetScreenPos);
         
-        // If target is slightly "north" (behind) the tower and horizontally aligned
-        if (dz < -0.2 && dz > -1.5 && dx < 0.6) {
+        // If target is "behind" in world Z and close on screen
+        const isBehind = targetPos.z < tower.group.position.z;
+        if (isBehind && distSq < 0.04) { // 0.04 is ~20% of screen width squared
           occluded = true;
           break;
         }
@@ -166,17 +178,12 @@ export class GameLoop {
 
       // Smoothly transition opacity
       const targetOpacity = occluded ? 0.3 : 1.0;
-      tower.group.traverse(child => {
+      tower.group.traverse((child: any) => {
         if (child instanceof THREE.Mesh) {
-          if (Array.isArray(child.material)) {
-            child.material.forEach((m: any) => {
-              m.transparent = true;
-              m.opacity = THREE.MathUtils.lerp(m.opacity, targetOpacity, 0.1);
-            });
-          } else {
-            const m = child.material as any;
-            m.transparent = true;
-            m.opacity = THREE.MathUtils.lerp(m.opacity, targetOpacity, 0.1);
+          const mat = Array.isArray(child.material) ? child.material[0] : child.material;
+          if (mat) {
+            mat.transparent = true;
+            mat.opacity = THREE.MathUtils.lerp(mat.opacity, targetOpacity, 0.1);
           }
         }
       });

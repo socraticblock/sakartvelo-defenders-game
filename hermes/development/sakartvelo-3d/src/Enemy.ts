@@ -82,8 +82,9 @@ export class Enemy {
 
     // Collect materials for flash effect
     this.rig.root.traverse(child => {
-      if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
-        this.flashMat.push(child.material);
+      if (child instanceof THREE.Mesh) {
+        const mat = child.material as any;
+        if (mat.emissive) this.flashMat.push(mat);
       }
     });
 

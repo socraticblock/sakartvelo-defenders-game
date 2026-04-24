@@ -5,11 +5,13 @@
  */
 import * as THREE from 'three';
 import { toon, outlineGroup } from './CelShader';
-import { mythic } from './MythicMaterials';
+import { mythic, mythicToon } from './MythicMaterials';
 
 export function buildArcherMesh(
   group: THREE.Group, lv: number, scaleMult: number, color: number,
 ): void {
+  // Lighten the color for better visibility in Toon shader
+  const lightened = new THREE.Color(color).addScalar(0.2).getHex();
   const isL3 = lv >= 3;
   
   // 1. THE FOUNDATION (Stone-Heavy for L3)
@@ -23,7 +25,7 @@ export function buildArcherMesh(
   // 2. THE MAIN SHAFT (Vertical stretch for L3)
   const shaftHeight = isL3 ? 1.4 * scaleMult : 0.7 * scaleMult;
   const shaftGeo = new THREE.CylinderGeometry(0.18 * scaleMult, 0.24 * scaleMult, shaftHeight, 8);
-  const shaft = new THREE.Mesh(shaftGeo, mythic(color, 0.1, 0.8));
+  const shaft = new THREE.Mesh(shaftGeo, mythicToon(lightened));
   shaft.position.y = (isL3 ? 0.2 : 0) + shaftHeight / 2;
   shaft.castShadow = true;
   group.add(shaft);
@@ -31,7 +33,7 @@ export function buildArcherMesh(
   // 3. THE BATTLEMENTS / GALLERY
   const topY = (isL3 ? 0.2 : 0) + shaftHeight;
   const topPlatformGeo = new THREE.CylinderGeometry(0.28 * scaleMult, 0.22 * scaleMult, 0.15, 8);
-  const topPlatform = new THREE.Mesh(topPlatformGeo, mythic(color, 0.1, 0.8));
+  const topPlatform = new THREE.Mesh(topPlatformGeo, mythicToon(lightened));
   topPlatform.position.y = topY;
   group.add(topPlatform);
 
@@ -52,7 +54,7 @@ export function buildArcherMesh(
   const roofHeight = isL3 ? 1.0 * scaleMult : 0.4 * scaleMult;
   const roofGeo = new THREE.ConeGeometry(0.35 * scaleMult, roofHeight, 8);
   const roofColor = lv === 1 ? 0x6b4914 : lv === 2 ? 0x8b6914 : 0xd4a017;
-  const roof = new THREE.Mesh(roofGeo, mythic(roofColor, isL3 ? 0.4 : 0.1, 0.5));
+  const roof = new THREE.Mesh(roofGeo, mythicToon(roofColor));
   roof.position.y = topY + (isL3 ? 0.3 : 0.1) + roofHeight / 2;
   group.add(roof);
 
@@ -90,11 +92,12 @@ export function buildCatapultMesh(
   group: THREE.Group, lv: number, scaleMult: number,
 ): void {
   const isL3 = lv >= 3;
+  const lightened = new THREE.Color(isL3 ? 0x444444 : 0x735938).addScalar(0.2).getHex();
   
   // 1. CHASSIS (Reinforced Stone/Iron for L3)
   const platform = new THREE.Mesh(
     new THREE.BoxGeometry(0.6 * scaleMult, isL3 ? 0.25 : 0.15 * scaleMult, 0.5 * scaleMult),
-    mythic(isL3 ? 0x444444 : 0x735938, 0.1, 0.9)
+    mythicToon(lightened)
   );
   platform.position.y = isL3 ? 0.12 : 0.075; 
   platform.castShadow = true;
@@ -126,7 +129,7 @@ export function buildCatapultMesh(
   const bucketSize = isL3 ? 0.3 * scaleMult : 0.2 * scaleMult;
   const bucket = new THREE.Mesh(
     new THREE.BoxGeometry(bucketSize, 0.1 * scaleMult, bucketSize),
-    mythic(isL3 ? 0xd4a017 : 0x8d6e63, 0.1, 0.8)
+    mythicToon(isL3 ? 0xd4a017 : 0x8d6e63)
   );
   bucket.position.set(0, 0.4 * scaleMult + Math.sin(Math.PI / 4) * (armHeight / 2), -0.1 * scaleMult - Math.cos(Math.PI / 4) * (armHeight / 2));
   group.add(bucket);
@@ -161,7 +164,7 @@ export function buildWallMesh(
 
   const mainWall = new THREE.Mesh(
     new THREE.BoxGeometry(0.92, wallH - baseH, 0.92),
-    mythic(wallColor, 0.1, 0.9)
+    mythicToon(wallColor)
   );
   mainWall.position.y = baseH + (wallH - baseH) / 2;
   mainWall.castShadow = true;
@@ -173,7 +176,7 @@ export function buildWallMesh(
     for (const dz of [-1, 1]) {
       const tooth = new THREE.Mesh(
         new THREE.BoxGeometry(bSize, bSize, bSize),
-        mythic(wallColor, 0.1, 0.9)
+        mythicToon(wallColor)
       );
       tooth.position.set(dx * 0.35, wallH + bSize / 2, dz * 0.35);
       group.add(tooth);

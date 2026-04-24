@@ -31,15 +31,19 @@ renderer.toneMappingExposure = 1.0;
 document.body.appendChild(renderer.domElement);
 
 // Lighting - Prestige Balance (Moody but Visible)
-scene.add(new THREE.AmbientLight(0xffffff, 0.3));
-scene.add(new THREE.HemisphereLight(0xaaaaff, 0x444422, 0.2));
-const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+scene.add(new THREE.HemisphereLight(0xaaaaff, 0x444422, 0.6));
+const sun = new THREE.DirectionalLight(0xffffff, 2.5);
 sun.position.set(20, 40, 20);
 sun.castShadow = true;
 sun.shadow.camera.left = -30; sun.shadow.camera.right = 30;
 sun.shadow.camera.top = 30; sun.shadow.camera.bottom = -30;
 sun.shadow.mapSize.set(2048, 2048);
 scene.add(sun);
+
+const fillLight = new THREE.DirectionalLight(0xffffff, 1.0);
+fillLight.position.set(-20, 10, -20); 
+scene.add(fillLight);
 
 const ground = new THREE.Mesh(
   new THREE.PlaneGeometry(120, 120),
