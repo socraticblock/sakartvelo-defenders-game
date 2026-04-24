@@ -17,6 +17,7 @@ export interface LevelData {
   waves: WaveData[];
   historical_fact: string;
   boss: BossData | null;
+  build_nodes?: number[][];
 }
 
 export interface WaveData {

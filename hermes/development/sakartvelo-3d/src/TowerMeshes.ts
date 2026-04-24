@@ -10,130 +10,135 @@ import { mythic } from './MythicMaterials';
 export function buildArcherMesh(
   group: THREE.Group, lv: number, scaleMult: number, color: number,
 ): void {
-  // 1. THE FOUNDATION (Beveled Octagonal Base)
-  const baseGeo = new THREE.CylinderGeometry(0.32 * scaleMult, 0.38 * scaleMult, 0.2, 8);
-  const base = new THREE.Mesh(baseGeo, mythic(lv >= 3 ? 0x999988 : 0x777766, 0.1, 0.9));
-  base.position.y = 0.1; 
+  const isL3 = lv >= 3;
+  
+  // 1. THE FOUNDATION (Stone-Heavy for L3)
+  const baseRadius = isL3 ? 0.38 * scaleMult : 0.32 * scaleMult;
+  const baseGeo = new THREE.CylinderGeometry(baseRadius, 0.4 * scaleMult, isL3 ? 0.4 : 0.2, 8);
+  const base = new THREE.Mesh(baseGeo, mythic(isL3 ? 0x6a6a5a : 0x777766, 0.1, 0.9));
+  base.position.y = isL3 ? 0.2 : 0.1; 
   base.castShadow = true;
   group.add(base);
 
-  // 2. THE MAIN SHAFT (Tapered with a decorative "Belt")
-  const shaftGeo = new THREE.CylinderGeometry(0.18 * scaleMult, 0.24 * scaleMult, 0.7 * scaleMult, 8);
+  // 2. THE MAIN SHAFT (Vertical stretch for L3)
+  const shaftHeight = isL3 ? 1.4 * scaleMult : 0.7 * scaleMult;
+  const shaftGeo = new THREE.CylinderGeometry(0.18 * scaleMult, 0.24 * scaleMult, shaftHeight, 8);
   const shaft = new THREE.Mesh(shaftGeo, mythic(color, 0.1, 0.8));
-  shaft.position.y = 0.45 * scaleMult;
+  shaft.position.y = (isL3 ? 0.2 : 0) + shaftHeight / 2;
   shaft.castShadow = true;
   group.add(shaft);
 
-  // Decorative Belt (Level 2+)
-  if (lv >= 2) {
-    const beltGeo = new THREE.CylinderGeometry(0.22 * scaleMult, 0.22 * scaleMult, 0.05 * scaleMult, 8);
-    const belt = new THREE.Mesh(beltGeo, mythic(0x554433, 0.1, 0.9));
-    belt.position.y = 0.5 * scaleMult;
-    group.add(belt);
-  }
-
-  // 3. THE BATTLEMENTS (Crenellations)
-  const topPlatformGeo = new THREE.CylinderGeometry(0.26 * scaleMult, 0.22 * scaleMult, 0.1, 8);
+  // 3. THE BATTLEMENTS / GALLERY
+  const topY = (isL3 ? 0.2 : 0) + shaftHeight;
+  const topPlatformGeo = new THREE.CylinderGeometry(0.28 * scaleMult, 0.22 * scaleMult, 0.15, 8);
   const topPlatform = new THREE.Mesh(topPlatformGeo, mythic(color, 0.1, 0.8));
-  topPlatform.position.y = 0.8 * scaleMult;
+  topPlatform.position.y = topY;
   group.add(topPlatform);
 
-  // Add 4 crenellations (teeth)
-  for (let i = 0; i < 4; i++) {
-    const tooth = new THREE.Mesh(
-      new THREE.BoxGeometry(0.08 * scaleMult, 0.1 * scaleMult, 0.08 * scaleMult),
-      mythic(color, 0.1, 0.8)
-    );
-    const angle = (i / 4) * Math.PI * 2 + Math.PI / 8;
-    const dist = 0.22 * scaleMult;
-    tooth.position.set(Math.cos(angle) * dist, 0.85 * scaleMult + 0.05, Math.sin(angle) * dist);
-    tooth.rotation.y = -angle;
-    group.add(tooth);
+  if (isL3) {
+    // Level 3 Cathedral Features: Open Column Gallery
+    for (let i = 0; i < 8; i++) {
+      const col = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.03, 0.03, 0.3, 6),
+        mythic(0xd4a017, 0.5, 0.5)
+      );
+      const angle = (i / 8) * Math.PI * 2;
+      col.position.set(Math.cos(angle) * 0.24, topY + 0.15, Math.sin(angle) * 0.24);
+      group.add(col);
+    }
   }
 
-  // 4. THE ROOF (High-Peak Mythic Style)
+  // 4. THE ROOF (High-Peak Spire for L3)
+  const roofHeight = isL3 ? 1.0 * scaleMult : 0.4 * scaleMult;
+  const roofGeo = new THREE.ConeGeometry(0.35 * scaleMult, roofHeight, 8);
   const roofColor = lv === 1 ? 0x6b4914 : lv === 2 ? 0x8b6914 : 0xd4a017;
-  const roofGeo = new THREE.ConeGeometry(0.32 * scaleMult, 0.4 * scaleMult, 8);
-  const roof = new THREE.Mesh(roofGeo, mythic(roofColor, lv === 3 ? 0.4 : 0.1, 0.5));
-  roof.position.y = 0.8 * scaleMult + 0.2 * scaleMult + 0.1;
+  const roof = new THREE.Mesh(roofGeo, mythic(roofColor, isL3 ? 0.4 : 0.1, 0.5));
+  roof.position.y = topY + (isL3 ? 0.3 : 0.1) + roofHeight / 2;
   group.add(roof);
 
-  // 5. THE ARCHERS (Detailed Sphere-base units)
+  if (isL3) {
+    // Legendary Flag
+    const flagPole = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.4), mythic(0x333333, 0.1, 0.9));
+    flagPole.position.y = roof.position.y + roofHeight / 2 + 0.15;
+    group.add(flagPole);
+    const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.15), toon(0xd63031));
+    flag.position.set(0.12, flagPole.position.y + 0.1, 0);
+    flag.rotation.y = Math.PI / 2;
+    group.add(flag);
+  }
+
+  // 5. THE ARCHERS
   const archerGeo = new THREE.SphereGeometry(0.09 * scaleMult, 8, 6);
-  const archer = new THREE.Mesh(archerGeo, toon(0xd2b08e));
-  archer.position.set(0, 0.85 * scaleMult + 0.05, 0.15 * scaleMult);
-  group.add(archer);
+  const archerPos = topY + 0.08;
+  const archer1 = new THREE.Mesh(archerGeo, toon(0xd2b08e));
+  archer1.position.set(0, archerPos, 0.18 * scaleMult);
+  group.add(archer1);
 
   if (lv >= 2) {
     const archer2 = new THREE.Mesh(archerGeo, toon(0xd2b08e));
-    archer2.position.set(-0.12 * scaleMult, 0.85 * scaleMult + 0.05, -0.1 * scaleMult);
+    archer2.position.set(-0.15 * scaleMult, archerPos, -0.12 * scaleMult);
     group.add(archer2);
   }
-
-  // 6. LEGENDARY ACCENT (Level 3)
   if (lv >= 3) {
-    const band = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.23 * scaleMult, 0.23 * scaleMult, 0.04, 8),
-      mythic(0xd4a017, 0.9, 0.1, 0xffaa00)
-    );
-    band.position.y = 0.8 * scaleMult;
-    group.add(band);
+    const archer3 = new THREE.Mesh(archerGeo, toon(0xd2b08e));
+    archer3.position.set(0.15 * scaleMult, archerPos, -0.12 * scaleMult);
+    group.add(archer3);
   }
 }
 
 export function buildCatapultMesh(
   group: THREE.Group, lv: number, scaleMult: number,
 ): void {
+  const isL3 = lv >= 3;
+  
+  // 1. CHASSIS (Reinforced Stone/Iron for L3)
   const platform = new THREE.Mesh(
-    new THREE.BoxGeometry(0.6 * scaleMult, 0.15 * scaleMult, 0.5 * scaleMult),
-    mythic(lv >= 3 ? 0x554422 : 0x735938, 0.1, 0.9)
+    new THREE.BoxGeometry(0.6 * scaleMult, isL3 ? 0.25 : 0.15 * scaleMult, 0.5 * scaleMult),
+    mythic(isL3 ? 0x444444 : 0x735938, 0.1, 0.9)
   );
-  platform.position.y = 0.075; platform.castShadow = true;
+  platform.position.y = isL3 ? 0.12 : 0.075; 
+  platform.castShadow = true;
   group.add(platform);
 
+  // Wheels
   for (const x of [-0.25, 0.25]) {
-    const wheel = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.1 * scaleMult, 0.1 * scaleMult, 0.05, 8),
-      mythic(lv >= 3 ? 0x555555 : 0x444444, 0.2, 0.7)
-    );
-    wheel.rotation.z = Math.PI / 2;
-    wheel.position.set(x * scaleMult, 0.1, 0.22);
-    group.add(wheel);
-  }
-
-  const arm = new THREE.Mesh(
-    new THREE.BoxGeometry(0.06, 0.5 * scaleMult, 0.06),
-    mythic(0x735938, 0.1, 0.8)
-  );
-  arm.position.set(0, 0.4 * scaleMult, -0.1);
-  arm.rotation.x = -0.4;
-  group.add(arm);
-
-  const bucket = new THREE.Mesh(
-    new THREE.BoxGeometry(0.12 * scaleMult, 0.08 * scaleMult, 0.12 * scaleMult),
-    mythic(lv >= 2 ? 0x666666 : 0x555555, 0.4, 0.6)
-  );
-  bucket.position.set(0, 0.55 * scaleMult, -0.28);
-  group.add(bucket);
-
-  if (lv >= 2) {
-    for (let i = 0; i < 2; i++) {
-      const ammo = new THREE.Mesh(
-        new THREE.SphereGeometry(0.04, 6, 4),
-        toon(0x666666)
+    for (const z of [-0.2, 0.2]) {
+      const wheel = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.12 * scaleMult, 0.12 * scaleMult, 0.08, 8),
+        mythic(isL3 ? 0x222222 : 0x444444, 0.2, 0.7)
       );
-      ammo.position.set(0.15 + i * 0.06, 0.18, -0.15);
-      group.add(ammo);
+      wheel.rotation.z = Math.PI / 2;
+      wheel.position.set(x * scaleMult, 0.12, z * scaleMult);
+      group.add(wheel);
     }
   }
 
-  if (lv >= 3) {
-    const frame = new THREE.Mesh(
-      new THREE.BoxGeometry(0.62 * scaleMult, 0.04, 0.52 * scaleMult),
-      mythic(0xd4a017, 0.9, 0.2, 0xd4a017)
-    );
-    frame.position.y = 0.16;
-    group.add(frame);
+  // 2. THE ARM & BUCKET (Heavier for L3)
+  const armHeight = isL3 ? 0.9 * scaleMult : 0.6 * scaleMult;
+  const arm = new THREE.Mesh(
+    new THREE.BoxGeometry(0.08 * scaleMult, armHeight, 0.08 * scaleMult),
+    mythic(0x5d4037, 0.1, 0.9)
+  );
+  arm.rotation.x = -Math.PI / 4;
+  arm.position.set(0, 0.4 * scaleMult, -0.1 * scaleMult);
+  group.add(arm);
+
+  const bucketSize = isL3 ? 0.3 * scaleMult : 0.2 * scaleMult;
+  const bucket = new THREE.Mesh(
+    new THREE.BoxGeometry(bucketSize, 0.1 * scaleMult, bucketSize),
+    mythic(isL3 ? 0xd4a017 : 0x8d6e63, 0.1, 0.8)
+  );
+  bucket.position.set(0, 0.4 * scaleMult + Math.sin(Math.PI / 4) * (armHeight / 2), -0.1 * scaleMult - Math.cos(Math.PI / 4) * (armHeight / 2));
+  group.add(bucket);
+
+  if (isL3) {
+    // War Banner for Catapult
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.6), mythic(0x333333, 0.1, 0.9));
+    pole.position.set(0.2, 0.5, 0.2);
+    group.add(pole);
+    const banner = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 0.3), toon(0xd63031));
+    banner.position.set(0.2, 0.65, 0.27);
+    group.add(banner);
   }
 }
 

@@ -81,6 +81,7 @@ export class GameLoop {
       updateEffects(dt, this._camera);
       this._updateWallHpBillboards();
       this._checkWaveComplete();
+      gs.grid.update(performance.now() * 0.001, gs.selectedType !== null);
     }
 
     this._updateHover();
@@ -136,6 +137,48 @@ export class GameLoop {
           spawn.towerType, spawn.isCrit, spawn.splashRadius,
         );
       }
+    }
+    this._updateOcclusion();
+  }
+
+  private _updateOcclusion(): void {
+    // 1. Get units that need visibility (Hero + closest enemies)
+    const targets: THREE.Vector3[] = [];
+    if (gs.hero) targets.push(gs.hero.group.position);
+    gs.enemies.slice(0, 10).forEach(e => targets.push(e.group.position));
+
+    for (const tower of gs.towers) {
+      let occluded = false;
+      const tPos = tower.group.position;
+      
+      for (const targetPos of targets) {
+        // Simple logic: Is the target "behind" the tower relative to the camera?
+        // Our camera is at +Z and +Y. So "behind" means target.z < tower.z and target.x is close.
+        const dx = Math.abs(targetPos.x - tPos.x);
+        const dz = targetPos.z - tPos.z;
+        
+        // If target is slightly "north" (behind) the tower and horizontally aligned
+        if (dz < -0.2 && dz > -1.5 && dx < 0.6) {
+          occluded = true;
+          break;
+        }
+      }
+
+      // Smoothly transition opacity
+      const targetOpacity = occluded ? 0.3 : 1.0;
+      tower.group.traverse(child => {
+        if (child instanceof THREE.Mesh) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach(m => {
+              m.transparent = true;
+              m.opacity = THREE.MathUtils.lerp(m.opacity, targetOpacity, 0.1);
+            });
+          } else {
+            child.material.transparent = true;
+            child.material.opacity = THREE.MathUtils.lerp(child.material.opacity, targetOpacity, 0.1);
+          }
+        }
+      });
     }
   }
 

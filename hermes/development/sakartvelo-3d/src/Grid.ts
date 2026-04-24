@@ -4,6 +4,7 @@ import { LevelData } from './types';
 export class Grid {
   group: THREE.Group = new THREE.Group();
   private tiles: THREE.Mesh[][] = [];
+  private plinths: THREE.Group[] = [];
   private pathCells = new Set<string>();
   private occupiedCells = new Map<string, boolean>();
   worldPath: THREE.Vector3[] = [];
@@ -19,8 +20,25 @@ export class Grid {
     this.computeWorldPath(level.path_waypoints);
     this.createOrganicGround();
     this.createPathRibbon(level.path_waypoints);
+    this.createPlinths(level.build_nodes || []);
     this.createHitTestTiles();
+    this.createEnvironmentDecorations();
     this.addDecorations();
+  }
+
+  /** Update method for animating pulsing auras (Mobile UX) */
+  update(time: number, isSelecting: boolean) {
+    this.plinths.forEach(p => {
+      const aura = p.userData.aura as THREE.Mesh;
+      if (isSelecting && !p.userData.occupied) {
+        aura.visible = true;
+        // Breathtaking pulse animation
+        aura.material.opacity = 0.3 + Math.sin(time * 5) * 0.2;
+        aura.scale.setScalar(1 + Math.sin(time * 5) * 0.05);
+      } else {
+        aura.visible = false;
+      }
+    });
   }
 
   private computePathCells(waypoints: number[][]) {
@@ -160,6 +178,46 @@ export class Grid {
     this.group.add(borderMesh);
   }
 
+  private createPlinths(nodes: number[][]) {
+    // Octagonal beveled stone geometry
+    const stoneGeo = new THREE.CylinderGeometry(0.42, 0.48, 0.08, 8);
+    const stoneMat = new THREE.MeshStandardMaterial({ 
+      color: 0x6a6a5a, 
+      roughness: 0.9, 
+      metalness: 0.1 
+    });
+
+    // Golden glow ring for building "intent"
+    const auraGeo = new THREE.RingGeometry(0.45, 0.55, 32);
+    auraGeo.rotateX(-Math.PI / 2);
+
+    const auraMat = new THREE.MeshBasicMaterial({ 
+      color: 0xffcc44, 
+      transparent: true, 
+      opacity: 0.8, 
+      visible: true,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+
+    nodes.forEach(([x, y]) => {
+      const group = new THREE.Group();
+      group.position.set(x + 0.5, 0.04, y + 0.5);
+
+      const stone = new THREE.Mesh(stoneGeo, stoneMat);
+      stone.receiveShadow = true;
+      group.add(stone);
+
+      const aura = new THREE.Mesh(auraGeo, auraMat);
+      aura.position.y = 0.05; // Slightly above stone top
+      group.add(aura);
+
+      group.userData = { gx: x, gy: y, aura, occupied: false };
+      this.plinths.push(group);
+      this.group.add(group);
+    });
+  }
+
   // ─── HIT-TEST TILES (invisible, for raycasting only) ──────────────────
 
   private createHitTestTiles() {
@@ -180,24 +238,57 @@ export class Grid {
     }
   }
 
+  private createEnvironmentDecorations() {
+    // Keep only rocks as requested
+    const rockCount = Math.floor(this.width * this.height * 0.4);
+    const rockGeo = new THREE.DodecahedronGeometry(0.18, 0);
+    const rockMat = new THREE.MeshStandardMaterial({ color: 0x7a7a72, roughness: 0.9 });
+    const rockMesh = new THREE.InstancedMesh(rockGeo, rockMat, rockCount);
+
+    const dummy = new THREE.Object3D();
+    let rIdx = 0;
+
+    const numClusters = Math.floor((this.width * this.height) / 4);
+    for (let c = 0; c < numClusters; c++) {
+      const cx = Math.random() * this.width;
+      const cy = Math.random() * this.height;
+      if (this.pathCells.has(`${Math.floor(cx)},${Math.floor(cy)}`)) continue;
+
+      const itemsInCluster = 2 + Math.floor(Math.random() * 3);
+      for (let i = 0; i < itemsInCluster; i++) {
+        const ox = (Math.random() - 0.5) * 1.5;
+        const oy = (Math.random() - 0.5) * 1.5;
+        const finalX = cx + ox;
+        const finalY = cy + oy;
+
+        if (finalX < 0 || finalX >= this.width || finalY < 0 || finalY >= this.height) continue;
+        if (this.pathCells.has(`${Math.floor(finalX)},${Math.floor(finalY)}`)) continue;
+
+        if (rIdx < rockCount) {
+          dummy.position.set(finalX, 0, finalY);
+          dummy.rotation.set(Math.random(), Math.random(), Math.random());
+          dummy.scale.setScalar(0.4 + Math.random() * 0.8);
+          dummy.updateMatrix();
+          rockMesh.setMatrixAt(rIdx++, dummy.matrix);
+        }
+      }
+    }
+
+    rockMesh.count = rIdx;
+    rockMesh.castShadow = true;
+    rockMesh.receiveShadow = true;
+    this.group.add(rockMesh);
+  }
+
   private addDecorations() {
-    // Start marker (green glow)
+    // Markers are now redundant with plinths but kept for path debugging
     const startGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.02, 16);
-    const startMat = new THREE.MeshBasicMaterial({ color: 0x44ff44, transparent: true, opacity: 0.4 });
+    const startMat = new THREE.MeshBasicMaterial({ color: 0x44ff44, transparent: true, opacity: 0.2 });
     const start = new THREE.Mesh(startGeo, startMat);
     const first = this.worldPath[0];
     if (first) {
       start.position.set(first.x, 0.08, first.z);
       this.group.add(start);
-    }
-
-    // End marker (red glow)
-    const endMat = new THREE.MeshBasicMaterial({ color: 0xff4444, transparent: true, opacity: 0.4 });
-    const end = new THREE.Mesh(startGeo.clone(), endMat);
-    const last = this.worldPath[this.worldPath.length - 1];
-    if (last) {
-      end.position.set(last.x, 0.08, last.z);
-      this.group.add(end);
     }
   }
 
@@ -205,6 +296,13 @@ export class Grid {
 
   isBuildable(gx: number, gy: number, isWall: boolean = false): boolean {
     if (gx < 0 || gx >= this.width || gy < 0 || gy >= this.height) return false;
+    
+    // If plinths are defined, only allow building ON plinths (except walls)
+    if (this.plinths.length > 0 && !isWall) {
+      const onPlinth = this.plinths.some(p => p.userData.gx === gx && p.userData.gy === gy && !p.userData.occupied);
+      return onPlinth;
+    }
+
     if (this.occupiedCells.has(`${gx},${gy}`)) return false;
     // Walls can be placed ON the path; others cannot
     if (this.pathCells.has(`${gx},${gy}`)) return isWall;
@@ -213,15 +311,19 @@ export class Grid {
 
   occupy(gx: number, gy: number) {
     this.occupiedCells.set(`${gx},${gy}`, true);
+    const plinth = this.plinths.find(p => p.userData.gx === gx && p.userData.gy === gy);
+    if (plinth) plinth.userData.occupied = true;
   }
 
   free(gx: number, gy: number) {
     this.occupiedCells.delete(`${gx},${gy}`);
+    const plinth = this.plinths.find(p => p.userData.gx === gx && p.userData.gy === gy);
+    if (plinth) plinth.userData.occupied = false;
   }
 
   /** Flash a tile's emissive to signal successful placement */
   flashTile(gx: number, gy: number, colorHex: number) {
-    // No-op in organic mode — placement feedback handled by tower mesh itself
+    // No-op in organic mode
   }
 
   getAllTileMeshes(): THREE.Object3D[] {

@@ -117,10 +117,17 @@ ui.init(
 input.init(renderer, camera, scene, {
   onHeroMove: (x, z) => { gs.hero?.moveTo(x, z); },
   onGridClick: (gx, gy, isPath) => {
-    if (gs.gameOver || !gs.selectedType || !gs.hero) return;
-    gs.hero.pendingBuild = { type: gs.selectedType, gx, gy, isPath };
-    gs.selectedType = null;
-    ui.panel.towerButtons.forEach(b => b.classList.remove('selected'));
+    if (gs.gameOver || !gs.selectedType || !gs.hero || !gs.grid) return;
+    
+    // ONLY walk if the spot is actually buildable (on a plinth)
+    if (gs.grid.isBuildable(gx, gy, gs.selectedType === 'wall')) {
+      gs.hero.pendingBuild = { type: gs.selectedType, gx, gy, isPath };
+      gs.selectedType = null;
+      ui.panel.towerButtons.forEach(b => b.classList.remove('selected'));
+    } else {
+      // Optional: Visual feedback for "Can't build here"
+      console.log("Invalid build location");
+    }
   },
   onTowerClick: (tower) => {
     gs.selectedTower = tower;
