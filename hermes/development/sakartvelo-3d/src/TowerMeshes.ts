@@ -5,20 +5,21 @@
  */
 import * as THREE from 'three';
 import { toon, outlineGroup } from './CelShader';
+import { mythic } from './MythicMaterials';
 
 export function buildArcherMesh(
   group: THREE.Group, lv: number, scaleMult: number, color: number,
 ): void {
   // 1. THE FOUNDATION (Beveled Octagonal Base)
   const baseGeo = new THREE.CylinderGeometry(0.32 * scaleMult, 0.38 * scaleMult, 0.2, 8);
-  const base = new THREE.Mesh(baseGeo, toon(lv >= 3 ? 0x999988 : 0x777766));
+  const base = new THREE.Mesh(baseGeo, mythic(lv >= 3 ? 0x999988 : 0x777766, 0.1, 0.9));
   base.position.y = 0.1; 
   base.castShadow = true;
   group.add(base);
 
   // 2. THE MAIN SHAFT (Tapered with a decorative "Belt")
   const shaftGeo = new THREE.CylinderGeometry(0.18 * scaleMult, 0.24 * scaleMult, 0.7 * scaleMult, 8);
-  const shaft = new THREE.Mesh(shaftGeo, toon(color));
+  const shaft = new THREE.Mesh(shaftGeo, mythic(color, 0.1, 0.8));
   shaft.position.y = 0.45 * scaleMult;
   shaft.castShadow = true;
   group.add(shaft);
@@ -26,14 +27,14 @@ export function buildArcherMesh(
   // Decorative Belt (Level 2+)
   if (lv >= 2) {
     const beltGeo = new THREE.CylinderGeometry(0.22 * scaleMult, 0.22 * scaleMult, 0.05 * scaleMult, 8);
-    const belt = new THREE.Mesh(beltGeo, toon(0x554433));
+    const belt = new THREE.Mesh(beltGeo, mythic(0x554433, 0.1, 0.9));
     belt.position.y = 0.5 * scaleMult;
     group.add(belt);
   }
 
   // 3. THE BATTLEMENTS (Crenellations)
   const topPlatformGeo = new THREE.CylinderGeometry(0.26 * scaleMult, 0.22 * scaleMult, 0.1, 8);
-  const topPlatform = new THREE.Mesh(topPlatformGeo, toon(color));
+  const topPlatform = new THREE.Mesh(topPlatformGeo, mythic(color, 0.1, 0.8));
   topPlatform.position.y = 0.8 * scaleMult;
   group.add(topPlatform);
 
@@ -41,7 +42,7 @@ export function buildArcherMesh(
   for (let i = 0; i < 4; i++) {
     const tooth = new THREE.Mesh(
       new THREE.BoxGeometry(0.08 * scaleMult, 0.1 * scaleMult, 0.08 * scaleMult),
-      toon(color)
+      mythic(color, 0.1, 0.8)
     );
     const angle = (i / 4) * Math.PI * 2 + Math.PI / 8;
     const dist = 0.22 * scaleMult;
@@ -53,7 +54,7 @@ export function buildArcherMesh(
   // 4. THE ROOF (High-Peak Mythic Style)
   const roofColor = lv === 1 ? 0x6b4914 : lv === 2 ? 0x8b6914 : 0xd4a017;
   const roofGeo = new THREE.ConeGeometry(0.32 * scaleMult, 0.4 * scaleMult, 8);
-  const roof = new THREE.Mesh(roofGeo, toon(roofColor));
+  const roof = new THREE.Mesh(roofGeo, mythic(roofColor, lv === 3 ? 0.4 : 0.1, 0.5));
   roof.position.y = 0.8 * scaleMult + 0.2 * scaleMult + 0.1;
   group.add(roof);
 
@@ -73,7 +74,7 @@ export function buildArcherMesh(
   if (lv >= 3) {
     const band = new THREE.Mesh(
       new THREE.CylinderGeometry(0.23 * scaleMult, 0.23 * scaleMult, 0.04, 8),
-      new THREE.MeshLambertMaterial({ color: 0xd4a017, emissive: 0xd4a017, emissiveIntensity: 1.5 })
+      mythic(0xd4a017, 0.9, 0.1, 0xffaa00)
     );
     band.position.y = 0.8 * scaleMult;
     group.add(band);
@@ -85,7 +86,7 @@ export function buildCatapultMesh(
 ): void {
   const platform = new THREE.Mesh(
     new THREE.BoxGeometry(0.6 * scaleMult, 0.15 * scaleMult, 0.5 * scaleMult),
-    toon(lv >= 3 ? 0x554422 : 0x735938)
+    mythic(lv >= 3 ? 0x554422 : 0x735938, 0.1, 0.9)
   );
   platform.position.y = 0.075; platform.castShadow = true;
   group.add(platform);
@@ -93,7 +94,7 @@ export function buildCatapultMesh(
   for (const x of [-0.25, 0.25]) {
     const wheel = new THREE.Mesh(
       new THREE.CylinderGeometry(0.1 * scaleMult, 0.1 * scaleMult, 0.05, 8),
-      toon(lv >= 3 ? 0x555555 : 0x444444)
+      mythic(lv >= 3 ? 0x555555 : 0x444444, 0.2, 0.7)
     );
     wheel.rotation.z = Math.PI / 2;
     wheel.position.set(x * scaleMult, 0.1, 0.22);
@@ -102,7 +103,7 @@ export function buildCatapultMesh(
 
   const arm = new THREE.Mesh(
     new THREE.BoxGeometry(0.06, 0.5 * scaleMult, 0.06),
-    toon(0x735938)
+    mythic(0x735938, 0.1, 0.8)
   );
   arm.position.set(0, 0.4 * scaleMult, -0.1);
   arm.rotation.x = -0.4;
@@ -110,7 +111,7 @@ export function buildCatapultMesh(
 
   const bucket = new THREE.Mesh(
     new THREE.BoxGeometry(0.12 * scaleMult, 0.08 * scaleMult, 0.12 * scaleMult),
-    toon(lv >= 2 ? 0x666666 : 0x555555)
+    mythic(lv >= 2 ? 0x666666 : 0x555555, 0.4, 0.6)
   );
   bucket.position.set(0, 0.55 * scaleMult, -0.28);
   group.add(bucket);
@@ -129,7 +130,7 @@ export function buildCatapultMesh(
   if (lv >= 3) {
     const frame = new THREE.Mesh(
       new THREE.BoxGeometry(0.62 * scaleMult, 0.04, 0.52 * scaleMult),
-      new THREE.MeshLambertMaterial({ color: 0xd4a017, emissive: 0xd4a017, emissiveIntensity: 1.5 })
+      mythic(0xd4a017, 0.9, 0.2, 0xd4a017)
     );
     frame.position.y = 0.16;
     group.add(frame);
@@ -147,7 +148,7 @@ export function buildWallMesh(
   const baseH = 0.1;
   const bastionBase = new THREE.Mesh(
     new THREE.BoxGeometry(0.98, baseH, 0.98),
-    toon(wallColor)
+    mythic(wallColor, 0.1, 0.9)
   );
   bastionBase.position.y = baseH / 2;
   bastionBase.castShadow = true;
@@ -155,7 +156,7 @@ export function buildWallMesh(
 
   const mainWall = new THREE.Mesh(
     new THREE.BoxGeometry(0.92, wallH - baseH, 0.92),
-    toon(wallColor)
+    mythic(wallColor, 0.1, 0.9)
   );
   mainWall.position.y = baseH + (wallH - baseH) / 2;
   mainWall.castShadow = true;
@@ -167,7 +168,7 @@ export function buildWallMesh(
     for (const dz of [-1, 1]) {
       const tooth = new THREE.Mesh(
         new THREE.BoxGeometry(bSize, bSize, bSize),
-        toon(wallColor)
+        mythic(wallColor, 0.1, 0.9)
       );
       tooth.position.set(dx * 0.35, wallH + bSize / 2, dz * 0.35);
       group.add(tooth);
@@ -179,7 +180,7 @@ export function buildWallMesh(
     for (let i = -1; i <= 1; i++) {
       const stake = new THREE.Mesh(
         new THREE.ConeGeometry(0.04, 0.25, 4),
-        toon(0x735938)
+        mythic(0x735938, 0.1, 0.8)
       );
       stake.position.set(i * 0.2, wallH + 0.12, 0.45);
       stake.rotation.x = -0.4;
@@ -191,7 +192,7 @@ export function buildWallMesh(
   if (lv >= 3) {
     const band = new THREE.Mesh(
       new THREE.BoxGeometry(0.95, 0.05, 0.95),
-      toon(0x555555)
+      mythic(0x555555, 0.8, 0.3)
     );
     band.position.y = wallH * 0.7;
     group.add(band);

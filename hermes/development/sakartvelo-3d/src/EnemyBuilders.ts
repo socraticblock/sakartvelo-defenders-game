@@ -5,6 +5,7 @@
  */
 import * as THREE from 'three';
 import { toon, outlineGroup, addOutlineTo } from './CelShader';
+import { mythic } from './MythicMaterials';
 
 export const P = {
   skin: 0xd2b08e,
@@ -25,9 +26,10 @@ export const P = {
 export function makePart(
   geo: THREE.BufferGeometry, color: number,
   pos: [number, number, number], rot?: [number, number, number],
-  parent?: THREE.Object3D
+  parent?: THREE.Object3D,
+  metal = 0.1, rough = 0.8, emissive = 0x000000
 ): THREE.Mesh {
-  const m = new THREE.Mesh(geo, toon(color));
+  const m = new THREE.Mesh(geo, mythic(color, metal, rough, emissive));
   m.position.set(...pos);
   if (rot) m.rotation.set(...rot);
   m.castShadow = true;
@@ -80,7 +82,7 @@ export function createHumanoid(cfg: {
   // Pauldrons (Beveled Guards)
   if (cfg.pauldrons || cfg.helmet) {
     for (const side of [-1, 1]) {
-      makePart(new THREE.CylinderGeometry(0.12 * s, 0.08 * s, 0.15 * s, 5), cfg.helmetColor || P.iron, [side * 0.22 * s, 0.78 * s, 0], [0, 0, side * 1.8], root);
+      makePart(new THREE.CylinderGeometry(0.12 * s, 0.08 * s, 0.15 * s, 5), cfg.helmetColor || P.iron, [side * 0.22 * s, 0.78 * s, 0], [0, 0, side * 1.8], root, 0.7, 0.4);
     }
   }
 
@@ -101,11 +103,20 @@ export function createHumanoid(cfg: {
 
   if (cfg.helmet) {
     const hc = cfg.helmetColor || P.iron;
-    // Mythic Crown/Helmet
-    makePart(new THREE.CylinderGeometry(0.12 * s, 0.16 * s, 0.15 * s, 6), hc, [0, 0.12 * s, 0], undefined, headGroup);
-    makePart(new THREE.CylinderGeometry(0.04 * s, 0.02 * s, 0.12 * s, 4), hc, [0, -0.02 * s, 0.11 * s], [Math.PI/2, 0, 0], headGroup);
-    // Ornament
-    makePart(new THREE.CylinderGeometry(0.01 * s, 0.01 * s, 0.1 * s, 4), P.gold, [0, 0.2 * s, 0], undefined, headGroup);
+    // Mythic Crown/Helmet - High Metalness
+    const h1 = new THREE.Mesh(new THREE.CylinderGeometry(0.12 * s, 0.16 * s, 0.15 * s, 6), mythic(hc, 0.8, 0.3));
+    h1.position.set(0, 0.12 * s, 0);
+    headGroup.add(h1);
+
+    const h2 = new THREE.Mesh(new THREE.CylinderGeometry(0.04 * s, 0.02 * s, 0.12 * s, 4), mythic(hc, 0.8, 0.3));
+    h2.position.set(0, -0.02 * s, 0.11 * s);
+    h2.rotation.x = Math.PI/2;
+    headGroup.add(h2);
+
+    // Ornament - Gold
+    const h3 = new THREE.Mesh(new THREE.CylinderGeometry(0.01 * s, 0.01 * s, 0.1 * s, 4), mythic(P.gold, 0.9, 0.2, P.gold));
+    h3.position.set(0, 0.2 * s, 0);
+    headGroup.add(h3);
   }
 
   // 3. LIMBS (Tapered Faceted Prisms)
@@ -136,8 +147,11 @@ export function createHumanoid(cfg: {
     wGroup.position.set(0, -0.15 * s, 0);
     rightArmMesh.add(wGroup);
     makePart(new THREE.CylinderGeometry(0.02 * s, 0.02 * s, 0.4 * s, 4), P.wood, [0, -0.2 * s, 0], undefined, wGroup);
-    // Beveled Axe blade
-    makePart(new THREE.CylinderGeometry(0.1 * s, 0.14 * s, 0.04 * s, 3), P.iron, [0.08 * s, -0.32 * s, 0], [0, 0, Math.PI / 2], wGroup);
+    // Beveled Axe blade - Metallic
+    const blade = new THREE.Mesh(new THREE.CylinderGeometry(0.1 * s, 0.14 * s, 0.04 * s, 3), mythic(P.iron, 0.8, 0.3));
+    blade.position.set(0.08 * s, -0.32 * s, 0);
+    blade.rotation.z = Math.PI / 2;
+    wGroup.add(blade);
     weapon = wGroup;
   } else if (cfg.weaponType === 'spear') {
     const wGroup = new THREE.Group();

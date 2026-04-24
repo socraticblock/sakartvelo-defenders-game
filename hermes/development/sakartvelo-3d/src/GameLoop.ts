@@ -8,6 +8,7 @@ import { gs } from './GameState';
 import { UIManager } from './UIManager';
 import { InputManager } from './InputManager';
 import { AudioManager } from './AudioManager';
+import { visuals } from './VisualsManager';
 import { showPopup } from './HistoricalPopup';
 import {
   spawnFloatingGold,
@@ -84,7 +85,9 @@ export class GameLoop {
 
     this._updateHover();
     this._updateCameraSway();
-    this._renderer.render(this._scene, this._camera);
+    
+    // Use the visuals manager for high-end rendering
+    visuals.render(this._renderer, this._scene, this._camera);
   };
 
   private _updateHover(): void {
