@@ -1,0 +1,145 @@
+/* tutorial.css — Tutorial, Build Phase, and cultural facts */
+
+#build-overlay {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 100;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(10, 20, 10, 0.9);
+  border: 2px solid #44ff88;
+  border-radius: 12px;
+  padding: 20px;
+  color: #f0e6d2;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(68, 255, 136, 0.1);
+  pointer-events: all;
+  width: 280px;
+  backdrop-filter: blur(8px);
+}
+
+#build-overlay.visible {
+  display: flex;
+}
+
+#build-overlay h2 {
+  color: #44ff88;
+  font-size: 14px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+#build-timer-container {
+  font-size: 48px;
+  font-weight: bold;
+  color: #f0e6d2;
+  margin-bottom: 8px;
+}
+
+#bp-enemy-list-container {
+  font-size: 12px;
+  color: #8a9a8a;
+  margin-bottom: 20px;
+  font-style: italic;
+}
+
+#build-start-btn {
+  padding: 12px 32px;
+  border: 2px solid #44ff88;
+  border-radius: 8px;
+  background: rgba(68, 255, 136, 0.15);
+  color: #44ff88;
+  cursor: pointer;
+  font-family: 'Georgia', serif;
+  font-size: 15px;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+
+#build-start-btn:hover {
+  background: rgba(68, 255, 136, 0.35);
+  box-shadow: 0 0 15px rgba(68, 255, 136, 0.3);
+}
+
+#tutorial-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 90;
+  pointer-events: all;
+  cursor: pointer;
+}
+
+#tutorial-overlay.visible {
+  display: block !important;
+}
+
+.tutorial-content {
+  position: absolute;
+  bottom: 130px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(30, 20, 10, 0.95);
+  border: 2px solid #8b6914;
+  border-radius: 12px;
+  padding: 20px 32px;
+  color: #f0e6d2;
+  font-size: 16px;
+  text-align: center;
+  max-width: 480px;
+  line-height: 1.6;
+  box-shadow: 0 0 30px rgba(139, 105, 20, 0.4);
+  pointer-events: none;
+}
+
+#tutorial-text {
+  margin-bottom: 12px;
+}
+
+.tutorial-hint {
+  font-size: 12px;
+  opacity: 0.5;
+  margin-top: 8px;
+}
+
+.tutorial-title {
+  color: #d4a017;
+  font-weight: bold;
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.tutorial-box {
+  text-align: left;
+  font-size: 14px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.ability-info {
+  margin-bottom: 8px;
+}
+
+.ability-name-poison { color: #44ff88; }
+.ability-name-chant { color: #ffdd44; }
+.ability-name-fire { color: #8844ff; }
+
+#cultural-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.4) 60%, transparent 100%);
+  padding: 14px 20px 10px;
+  text-align: center;
+  color: #8a7a5a;
+  font-size: 12px;
+  font-family: 'Georgia', serif;
+  pointer-events: none;
+  z-index: 50;
+  font-style: italic;
+}

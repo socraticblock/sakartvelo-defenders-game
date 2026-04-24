@@ -1,0 +1,291 @@
+/* hud.css — In-game Heads-Up Display and interaction panels */
+
+#hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, transparent 100%);
+  color: #f0e6d2;
+  font-size: 18px;
+  pointer-events: none;
+}
+
+#hud > div {
+  pointer-events: all;
+}
+
+.hud-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 20px;
+}
+
+.hud-icon {
+  font-size: 22px;
+}
+
+#bottom-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.7) 0%, transparent 100%);
+  color: #f0e6d2;
+}
+
+.tower-btn {
+  padding: 10px 16px;
+  border: 2px solid #8b6914;
+  border-radius: 8px;
+  background: rgba(139, 105, 20, 0.3);
+  color: #f0e6d2;
+  cursor: pointer;
+  font-family: 'Georgia', serif;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.tower-btn:hover:not(:disabled) {
+  background: rgba(139, 105, 20, 0.6);
+}
+
+.tower-btn.selected {
+  background: rgba(139, 105, 20, 0.8);
+  border-color: #d4a017;
+  box-shadow: 0 0 10px rgba(212, 160, 23, 0.5);
+}
+
+.tower-btn.too-poor, .tower-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.wave-btn {
+  padding: 12px 24px;
+  border: 2px solid #c0392b;
+  border-radius: 8px;
+  background: rgba(192, 57, 43, 0.4);
+  color: #f0e6d2;
+  cursor: pointer;
+  font-family: 'Georgia', serif;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.wave-btn:hover {
+  background: rgba(192, 57, 43, 0.7);
+}
+
+.wave-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#hero-bar {
+  position: absolute;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 12px;
+  border: 1px solid rgba(74, 26, 107, 0.5);
+  color: #f0e6d2;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.hero-name {
+  color: #d4a017;
+  font-weight: bold;
+}
+
+#hero-status {
+  color: #ff6666;
+  font-size: 11px;
+}
+
+.ability-btn {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  padding: 0;
+  border: 2px solid #4a1a6b;
+  border-radius: 8px;
+  background: rgba(74, 26, 107, 0.2);
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ability-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ability-btn .hotkey {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #d4a017;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 1px 4px;
+  border-radius: 3px;
+  border: 1px solid rgba(212, 160, 23, 0.4);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.ability-btn .cd-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 2;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  pointer-events: none;
+}
+
+.ability-btn:hover:not(:disabled) {
+  border-color: #9b59b6;
+  box-shadow: 0 0 12px rgba(155, 89, 182, 0.5);
+  transform: translateY(-2px);
+}
+
+.ability-btn:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.8);
+}
+
+.ability-btn.ability-active {
+  border-color: #44ff88;
+  box-shadow: 0 0 15px rgba(68, 255, 136, 0.4);
+}
+
+#tower-panel {
+  display: none;
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 20px;
+  background: rgba(0, 0, 0, 0.75);
+  border-radius: 12px;
+  border: 2px solid #8b6914;
+  color: #f0e6d2;
+  font-size: 14px;
+  min-width: 180px;
+}
+
+#tower-panel h3 {
+  font-size: 16px;
+  color: #d4a017;
+  margin-bottom: 4px;
+}
+
+#tower-panel-level {
+  color: #aaa;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.panel-btn {
+  padding: 8px 14px;
+  border: 2px solid #8b6914;
+  border-radius: 6px;
+  background: rgba(139, 105, 20, 0.3);
+  color: #f0e6d2;
+  cursor: pointer;
+  font-family: 'Georgia', serif;
+  font-size: 12px;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.panel-btn:hover:not(:disabled) {
+  background: rgba(139, 105, 20, 0.6);
+}
+
+.panel-btn.too-poor, .panel-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#sell-btn {
+  border-color: #666;
+  background: rgba(100, 100, 100, 0.3);
+}
+
+#sell-btn:hover {
+  background: rgba(100, 100, 100, 0.6);
+}
+
+#pause-overlay {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #f0e6d2;
+  font-size: 32px;
+  pointer-events: none;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+#level-info {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  color: #d4a017;
+  font-size: 14px;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+#controls-hint {
+  position: absolute;
+  top: 82px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #889988;
+  font-size: 11px;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0.7;
+}

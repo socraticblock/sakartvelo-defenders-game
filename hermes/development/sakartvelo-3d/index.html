@@ -5,790 +5,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sakartvelo Defenders — Era 0: Ancient Colchis</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      overflow: hidden;
-      background: #1a1a2e;
-      font-family: 'Georgia', serif;
-    }
-
-    canvas {
-      display: block;
-      touch-action: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      z-index: 0;
-    }
-
-    #hud {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 1;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 20px;
-      background: linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, transparent 100%);
-      color: #f0e6d2;
-      font-size: 18px;
-      pointer-events: none;
-    }
-
-    #hud>div {
-      pointer-events: all;
-    }
-
-    .hud-item {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-right: 20px;
-    }
-
-    .hud-icon {
-      font-size: 22px;
-    }
-
-    #bottom-bar {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 20px;
-      background: linear-gradient(0deg, rgba(0, 0, 0, 0.7) 0%, transparent 100%);
-      color: #f0e6d2;
-    }
-
-    .tower-btn {
-      padding: 10px 16px;
-      border: 2px solid #8b6914;
-      border-radius: 8px;
-      background: rgba(139, 105, 20, 0.3);
-      color: #f0e6d2;
-      cursor: pointer;
-      font-family: 'Georgia', serif;
-      font-size: 13px;
-      transition: all 0.2s;
-    }
-
-    .tower-btn:hover:not(:disabled) {
-      background: rgba(139, 105, 20, 0.6);
-    }
-
-    .tower-btn.selected {
-      background: rgba(139, 105, 20, 0.8);
-      border-color: #d4a017;
-      box-shadow: 0 0 10px rgba(212, 160, 23, 0.5);
-    }
-
-    .tower-btn.too-poor {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    .tower-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    .wave-btn {
-      padding: 12px 24px;
-      border: 2px solid #c0392b;
-      border-radius: 8px;
-      background: rgba(192, 57, 43, 0.4);
-      color: #f0e6d2;
-      cursor: pointer;
-      font-family: 'Georgia', serif;
-      font-size: 14px;
-      font-weight: bold;
-      transition: all 0.2s;
-    }
-
-    .wave-btn:hover {
-      background: rgba(192, 57, 43, 0.7);
-    }
-
-    .wave-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    #hero-bar {
-      position: absolute;
-      bottom: 70px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 1;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      background: rgba(0, 0, 0, 0.6);
-      border-radius: 12px;
-      border: 1px solid rgba(74, 26, 107, 0.5);
-      color: #f0e6d2;
-      font-size: 13px;
-      white-space: nowrap;
-    }
-
-    .ability-btn {
-      position: relative;
-      width: 54px;
-      height: 54px;
-      padding: 0;
-      border: 2px solid #4a1a6b;
-      border-radius: 8px;
-      background: rgba(74, 26, 107, 0.2);
-      cursor: pointer;
-      overflow: hidden;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .ability-btn img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .ability-btn .hotkey {
-      position: absolute;
-      bottom: 2px;
-      right: 2px;
-      background: rgba(0, 0, 0, 0.8);
-      color: #d4a017;
-      font-size: 10px;
-      font-weight: bold;
-      padding: 1px 4px;
-      border-radius: 3px;
-      border: 1px solid rgba(212, 160, 23, 0.4);
-      z-index: 3;
-      pointer-events: none;
-    }
-
-    .ability-btn .cd-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.7);
-      z-index: 2;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-size: 14px;
-      font-weight: bold;
-      pointer-events: none;
-    }
-
-    .ability-btn:hover:not(:disabled) {
-      border-color: #9b59b6;
-      box-shadow: 0 0 12px rgba(155, 89, 182, 0.5);
-      transform: translateY(-2px);
-    }
-
-    .ability-btn:disabled {
-      cursor: not-allowed;
-      filter: grayscale(0.8);
-    }
-
-    .ability-btn.ability-active {
-      border-color: #44ff88;
-      box-shadow: 0 0 15px rgba(68, 255, 136, 0.4);
-    }
-
-    /* Tower info panel (appears when clicking a placed tower) */
-    #tower-panel {
-      display: none;
-      position: absolute;
-      left: 20px;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 1;
-      flex-direction: column;
-      gap: 8px;
-      padding: 16px 20px;
-      background: rgba(0, 0, 0, 0.75);
-      border-radius: 12px;
-      border: 2px solid #8b6914;
-      color: #f0e6d2;
-      font-size: 14px;
-      min-width: 180px;
-    }
-
-    #tower-panel h3 {
-      font-size: 16px;
-      color: #d4a017;
-      margin-bottom: 4px;
-    }
-
-    #tower-panel-level {
-      color: #aaa;
-      font-size: 12px;
-      margin-bottom: 8px;
-    }
-
-    .panel-btn {
-      padding: 8px 14px;
-      border: 2px solid #8b6914;
-      border-radius: 6px;
-      background: rgba(139, 105, 20, 0.3);
-      color: #f0e6d2;
-      cursor: pointer;
-      font-family: 'Georgia', serif;
-      font-size: 12px;
-      transition: all 0.2s;
-      text-align: center;
-    }
-
-    .panel-btn:hover:not(:disabled) {
-      background: rgba(139, 105, 20, 0.6);
-    }
-
-    .panel-btn.too-poor {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    .panel-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    #sell-btn {
-      border-color: #666;
-      background: rgba(100, 100, 100, 0.3);
-    }
-
-    #sell-btn:hover {
-      background: rgba(100, 100, 100, 0.6);
-    }
-
-    /* Pause overlay */
-    #pause-overlay {
-      display: none;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-      color: #f0e6d2;
-      font-size: 32px;
-      pointer-events: none;
-      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
-    }
-
-    #game-over {
-      display: none;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-      background: rgba(0, 0, 0, 0.85);
-      padding: 40px 60px;
-      border-radius: 16px;
-      border: 2px solid #d4a017;
-      color: #f0e6d2;
-    }
-
-    #game-over h2 {
-      font-size: 36px;
-      margin-bottom: 16px;
-    }
-
-    #game-over-stars {
-      font-size: 28px;
-      margin: 16px 0;
-    }
-
-    #game-over button {
-      margin-top: 20px;
-      padding: 12px 30px;
-      border: 2px solid #8b6914;
-      border-radius: 8px;
-      background: rgba(139, 105, 20, 0.5);
-      color: #f0e6d2;
-      cursor: pointer;
-      font-family: 'Georgia', serif;
-      font-size: 16px;
-    }
-
-    #game-over button:hover {
-      background: rgba(139, 105, 20, 0.8);
-    }
-
-    #level-info {
-      position: absolute;
-      top: 60px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 1;
-      color: #d4a017;
-      font-size: 14px;
-      text-align: center;
-      pointer-events: none;
-      opacity: 0.8;
-    }
-
-    #controls-hint {
-      position: absolute;
-      top: 82px;
-      left: 50%;
-      transform: translateX(-50%);
-      color: #889988;
-      font-size: 11px;
-      text-align: center;
-      pointer-events: none;
-      opacity: 0.7;
-    }
-
-    /* ─── INTRO OVERLAYS ─── */
-    .intro-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 300;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: rgba(8, 14, 8, 0.97);
-      color: #f0e6d2;
-      font-family: 'Georgia', serif;
-      text-align: center;
-    }
-
-    .intro-overlay.visible {
-      display: flex;
-    }
-
-    .screen {
-      display: none;
-    }
-
-    .screen.visible:not(.intro-overlay) {
-      display: block;
-    }
-
-    .intro-title {
-      font-size: 48px;
-      font-weight: bold;
-      color: #d4a017;
-      letter-spacing: 4px;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-      text-shadow: 0 0 30px rgba(212, 160, 23, 0.4);
-      overflow-wrap: break-word;
-      max-width: 100%;
-    }
-
-    .intro-subtitle {
-      font-size: 16px;
-      color: #8a7a5a;
-      letter-spacing: 2px;
-      margin-bottom: 40px;
-      font-style: italic;
-    }
-
-    .intro-flag {
-      font-size: 56px;
-      margin-bottom: 24px;
-    }
-
-    .intro-sound-hint {
-      font-size: 13px;
-      color: #6a5a3a;
-      letter-spacing: 1px;
-      font-family: 'Georgia', serif;
-      margin-bottom: 20px;
-      font-style: italic;
-    }
-
-    .intro-divider {
-      width: 120px;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, #8b6914, transparent);
-      margin: 20px auto;
-    }
-
-    .intro-era-label {
-      font-size: 11px;
-      letter-spacing: 4px;
-      color: #6a5a3a;
-      text-transform: uppercase;
-      margin-bottom: 12px;
-    }
-
-    .intro-body {
-      font-size: 18px;
-      line-height: 1.9;
-      color: #c0b090;
-      max-width: 520px;
-      margin: 0 auto 40px;
-      max-height: 320px;
-      overflow-y: auto;
-      padding: 0 20px;
-      position: relative;
-      scrollbar-width: thin;
-      scrollbar-color: #8b6914 #2a2a1a;
-    }
-
-    .intro-body::-webkit-scrollbar {
-      width: 4px;
-    }
-
-    .intro-body::-webkit-scrollbar-track {
-      background: #2a2a1a;
-      border-radius: 2px;
-    }
-
-    .intro-body::-webkit-scrollbar-thumb {
-      background: #8b6914;
-      border-radius: 2px;
-    }
-
-    /* Top/bottom gradient fade masks */
-    .intro-body::before,
-    .intro-body::after {
-      content: '';
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 40px;
-      pointer-events: none;
-      z-index: 1;
-    }
-
-    .intro-body::before {
-      top: 0;
-      background: linear-gradient(to bottom, rgba(8, 14, 8, 1) 0%, rgba(8, 14, 8, 0) 100%);
-    }
-
-    .intro-body::after {
-      bottom: 40px;
-      background: linear-gradient(to top, rgba(8, 14, 8, 1) 0%, rgba(8, 14, 8, 0) 100%);
-    }
-
-    .intro-btn {
-      padding: 14px 48px;
-      border: 2px solid #d4a017;
-      border-radius: 8px;
-      background: rgba(212, 160, 23, 0.15);
-      color: #f0e6d2;
-      cursor: pointer;
-      font-family: 'Georgia', serif;
-      font-size: 16px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      transition: all 0.25s;
-    }
-
-    .intro-btn:hover {
-      background: rgba(212, 160, 23, 0.35);
-      box-shadow: 0 0 20px rgba(212, 160, 23, 0.3);
-    }
-
-    /* Chapter intro extra */
-    .intro-chapter-num {
-      font-size: 13px;
-      letter-spacing: 5px;
-      color: #6a5a3a;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-
-    /* Volume controls */
-    #volume-panel {
-      position: absolute;
-      top: 20px;
-      right: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      background: rgba(0, 0, 0, 0.5);
-      border: 1px solid rgba(139, 105, 20, 0.3);
-      border-radius: 10px;
-      padding: 14px 16px;
-      z-index: 10;
-    }
-
-    .vol-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .vol-icon {
-      font-size: 16px;
-    }
-
-    .vol-val {
-      font-size: 11px;
-      color: #8a7a5a;
-      min-width: 28px;
-      text-align: right;
-    }
-
-    #vol-narration {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 90px;
-      height: 4px;
-      background: linear-gradient(90deg, #8b6914 var(--pct, 70%), #3a3020 var(--pct, 70%));
-      border-radius: 2px;
-      outline: none;
-      cursor: pointer;
-    }
-
-    #vol-narration::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #d4a017;
-      cursor: pointer;
-      box-shadow: 0 0 6px rgba(212, 160, 23, 0.5);
-    }
-
-    #vol-narration::-moz-range-thumb {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #d4a017;
-      cursor: pointer;
-      border: none;
-    }
-
-    /* Paragraph display */
-    /* ─── TELEPROMPTER ─────────────────────────────────────────────── */
-    #era-teleprompter {
-      height: 220px;
-      width: 100%;
-      max-width: 680px;
-      margin: 0 auto 14px;
-      overflow: hidden;
-      position: relative;
-      /* Fade edges — text disappears at top/bottom of viewport */
-      /* Soften the focus for better readability */
-      -webkit-mask-image: linear-gradient(to bottom,
-          transparent 0%,
-          black 15%,
-          black 85%,
-          transparent 100%);
-      mask-image: linear-gradient(to bottom,
-          transparent 0%,
-          black 15%,
-          black 85%,
-          transparent 100%);
-    }
-
-    /* Reading guide line — fixed at 28% from top */
-    #era-tp-reading-line {
-      position: absolute;
-      top: 50%;
-      /* Center the focus */
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(90deg,
-          transparent 0%,
-          rgba(212, 160, 23, 0.1) 15%,
-          rgba(212, 160, 23, 0.8) 50%,
-          rgba(212, 160, 23, 0.1) 85%,
-          transparent 100%);
-      box-shadow: 0 0 15px rgba(212, 160, 23, 0.4);
-      pointer-events: none;
-      z-index: 2;
-      transform: translateY(-50%);
-    }
-
-    /* ─── BUILD PHASE OVERLAY ─── */
-    #build-overlay {
-      position: fixed;
-      top: 80px;
-      right: 20px;
-      z-index: 100;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      background: rgba(10, 20, 10, 0.9);
-      border: 2px solid #44ff88;
-      border-radius: 12px;
-      padding: 20px;
-      color: #f0e6d2;
-      box-shadow: 0 0 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(68, 255, 136, 0.1);
-      pointer-events: all;
-      width: 280px;
-      backdrop-filter: blur(8px);
-    }
-
-    #build-overlay.visible {
-      display: flex;
-    }
-
-    #tutorial-overlay.visible {
-      display: block !important;
-    }
-
-    #build-overlay h2 {
-      color: #44ff88;
-      font-size: 14px;
-      letter-spacing: 4px;
-      text-transform: uppercase;
-      margin-bottom: 12px;
-    }
-
-    #build-timer-container {
-      font-size: 48px;
-      font-weight: bold;
-      color: #f0e6d2;
-      margin-bottom: 8px;
-    }
-
-    #bp-enemy-list-container {
-      font-size: 12px;
-      color: #8a9a8a;
-      margin-bottom: 20px;
-      font-style: italic;
-    }
-
-    #build-start-btn {
-      padding: 12px 32px;
-      border: 2px solid #44ff88;
-      border-radius: 8px;
-      background: rgba(68, 255, 136, 0.15);
-      color: #44ff88;
-      cursor: pointer;
-      font-family: 'Georgia', serif;
-      font-size: 15px;
-      letter-spacing: 1px;
-      transition: all 0.2s;
-    }
-
-    #build-start-btn:hover {
-      background: rgba(68, 255, 136, 0.35);
-      box-shadow: 0 0 15px rgba(68, 255, 136, 0.3);
-    }
-
-    /* Era Narration / Teleprompter Buttons */
-    .era-play-btn {
-      padding: 12px 32px;
-      border: 2px solid #d4a017;
-      border-radius: 8px;
-      background: rgba(212, 160, 23, 0.15);
-      color: #f0e6d2;
-      cursor: pointer;
-      font-family: 'Georgia', serif;
-      font-size: 15px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      transition: all 0.25s;
-    }
-
-    .era-play-btn:hover {
-      background: rgba(212, 160, 23, 0.35);
-      box-shadow: 0 0 20px rgba(212, 160, 23, 0.3);
-    }
-
-    .era-play-btn.playing {
-      background: rgba(212, 160, 23, 0.45);
-      box-shadow: 0 0 16px rgba(212, 160, 23, 0.25);
-    }
-
-    .era-nav-btn {
-      padding: 12px 24px;
-      border: 2px solid #d4a017;
-      border-radius: 8px;
-      background: rgba(212, 160, 23, 0.1);
-      color: #f0e6d2;
-      cursor: pointer;
-      font-family: 'Georgia', serif;
-      font-size: 14px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      transition: all 0.2s;
-    }
-
-    .era-nav-btn:hover {
-      background: rgba(212, 160, 23, 0.3);
-    }
-
-    .era-nav-btn:disabled {
-      opacity: 0.3;
-      cursor: default;
-    }
-
-    #era-controls {
-      display: flex;
-      gap: 14px;
-      align-items: center;
-      margin-bottom: 24px;
-    }
-
-    #era-tp-progress {
-      font-size: 14px;
-      letter-spacing: 2px;
-      color: #8a7a5a;
-      margin-bottom: 16px;
-      font-family: 'Georgia', serif;
-    }
-
-    #era-tp-track {
-      font-size: 20px;
-      line-height: 2.5;
-      color: #6a5a3a;
-      text-align: center;
-      padding: 45% 24px 60%;
-      transition: transform 0.1s ease-out;
-    }
-
-    .tp-word {
-      transition: all 0.3s ease;
-      display: inline-block;
-      padding: 0 4px;
-    }
-
-    .tp-word.active {
-      color: #f0e6d2;
-      text-shadow: 0 0 15px rgba(212, 160, 23, 0.6);
-      transform: scale(1.15);
-    }
-
-    /* Legacy — hide old paragraph display */
-    #era-para-container {
-      display: none;
-    }
-
-    #era-progress {
-      display: none;
-    }
-  </style>
+  <link rel="stylesheet" href="/src/base.css">
+  <link rel="stylesheet" href="/src/hud.css">
+  <link rel="stylesheet" href="/src/screens.css">
+  <link rel="stylesheet" href="/src/intro.css">
+  <link rel="stylesheet" href="/src/tutorial.css">
 </head>
 
 <body>
   <!-- Emergency Debug Overlay -->
-  <div id="debug-overlay" style="
-      position:fixed; bottom:10px; left:10px; z-index:9999;
-      background:rgba(0,0,0,0.8); color:#0f0; font-family:monospace; font-size:12px;
-      padding:8px 12px; border:1px solid #0f0; border-radius:4px;
-      pointer-events:none; display:block;">
+  <div id="debug-overlay">
     STATE: <span id="debug-state">INIT</span><br />
     LEVELS: <span id="debug-levels">0</span><br />
     TARGET: <span id="debug-target">NONE</span>
@@ -819,9 +45,9 @@
   </div>
 
   <div id="hero-bar" class="game-ui">
-    <span style="color:#d4a017;font-weight:bold;">♛ Medea</span>
+    <span class="hero-name">♛ Medea</span>
     <span id="hero-hp">❤️ 250/250</span>
-    <span id="hero-status" style="color:#ff6666;font-size:11px;"></span>
+    <span id="hero-status"></span>
     <button class="ability-btn" id="ability-q" title="Colchian Poison">
       <img src="images/abilities/poison.png" alt="Poison">
       <span class="hotkey">Q</span>
@@ -847,32 +73,23 @@
   </div>
 
   <!-- Level select screen -->
-  <div id="screen-level-select" class="screen"
-    style="position:absolute; inset:0; background:rgba(8,14,8,0.97); color:#f0e6d2; font-family:'Georgia',serif; padding:40px 20px; overflow-y:auto; z-index:150;">
+  <div id="screen-level-select" class="screen">
   </div>
 
   <!-- Level complete overlay -->
-  <div id="screen-level-complete" class="screen"
-    style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; background:rgba(0,0,0,0.9); padding:40px 60px; border-radius:16px; border:2px solid #d4a017; color:#f0e6d2; font-family:'Georgia',serif; z-index:200; min-width:340px;">
-    <h2 id="lc-title" style="font-size:30px; margin-bottom:16px;"></h2>
-    <div id="lc-stars" style="font-size:44px; margin-bottom:14px;"></div>
-    <p id="lc-msg" style="font-size:15px; margin-bottom:24px; color:#aaa;"></p>
-    <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
-      <button id="lc-menu"
-        style="padding:11px 22px; border:2px solid #8b6914; border-radius:8px; background:rgba(139,105,20,0.4); color:#f0e6d2; cursor:pointer; font-family:'Georgia',serif; font-size:14px; transition:background 0.2s;">Level
-        Select</button>
-      <button id="lc-next"
-        style="padding:11px 22px; border:2px solid #d4a017; border-radius:8px; background:rgba(212,160,23,0.25); color:#f0e6d2; cursor:pointer; font-family:'Georgia',serif; font-size:14px; transition:background 0.2s;">Next
-        Level →</button>
+  <div id="screen-level-complete" class="screen">
+    <h2 id="lc-title"></h2>
+    <div id="lc-stars"></div>
+    <p id="lc-msg"></p>
+    <div class="lc-btn-group">
+      <button id="lc-menu">Level Select</button>
+      <button id="lc-next">Next Level →</button>
     </div>
   </div>
 
   <div id="pause-overlay">⏸ PAUSED</div>
 
-  <div id="screen-game-over" class="screen" style="position:absolute; top:50%; left:50%;
-        transform: translate(-50%, -50%); text-align: center;
-        background: rgba(0,0,0,0.85); padding: 40px 60px;
-        border-radius: 16px; border: 2px solid #d4a017; color: #f0e6d2; z-index: 210;">
+  <div id="screen-game-over" class="screen">
     <h2 id="game-over-title">VICTORY!</h2>
     <p id="game-over-msg"></p>
     <div id="game-over-stars"></div>
@@ -888,13 +105,7 @@
   </div>
 
   <!-- Cultural footer (rotating Georgian facts) -->
-  <div id="cultural-footer" style="
-      position:fixed; bottom:0; left:0; right:0;
-      background:linear-gradient(0deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
-      padding:14px 20px 10px; text-align:center;
-      color:#8a7a5a; font-size:12px; font-family:'Georgia',serif;
-      pointer-events:none; z-index:50;
-      font-style:italic;">
+  <div id="cultural-footer">
     <span id="cf-text"></span>
   </div>
 
@@ -902,7 +113,7 @@
   <div id="screen-title" class="intro-overlay screen visible">
     <div class="intro-flag">🇬🇪</div>
     <div class="intro-title">Sakartvelo</div>
-    <div class="intro-title" style="font-size:32px; margin-top:-4px; margin-bottom:8px;">Defenders</div>
+    <div class="intro-title intro-title-alt">Defenders</div>
     <div class="intro-subtitle">2,000 years of Georgian history · one tower at a time</div>
     <div class="intro-sound-hint">🔊 Sound on — click Begin to start</div>
     <div class="intro-divider"></div>
@@ -920,8 +131,8 @@
     </div>
 
     <div class="intro-era-label">Era 0 · Ancient Colchis</div>
-    <div class="intro-title" style="font-size:36px;">~1500 BC</div>
-    <div class="intro-title" style="font-size:22px; letter-spacing:2px; margin-top:4px;">~100 BC</div>
+    <div class="intro-title intro-title-era-start">~1500 BC</div>
+    <div class="intro-title intro-title-era-end">~100 BC</div>
     <div class="intro-divider"></div>
 
     <!-- Teleprompter display -->
@@ -940,14 +151,13 @@
       <button id="btn-era-next" class="era-nav-btn">Next →</button>
     </div>
 
-    <button class="intro-btn" id="btn-era-continue" onclick="window.__navigateToLevelSelect()"
-      style="margin-top:8px; position:relative; z-index:999;">Continue</button>
+    <button class="intro-btn" id="btn-era-continue" onclick="window.__navigateToLevelSelect()">Continue</button>
   </div>
 
   <!-- ─── SCREEN 2: CHAPTER I INTRO ─── -->
   <div id="screen-chapter" class="intro-overlay screen">
     <div class="intro-chapter-num">Chapter I</div>
-    <div class="intro-title" style="font-size:36px;">The Bronze Age</div>
+    <div class="intro-title intro-title-era-start">The Bronze Age</div>
     <div class="intro-era-label">~1500 BC — ~600 BC</div>
     <div class="intro-divider"></div>
     <div class="intro-body">
@@ -963,34 +173,10 @@
   </div>
 
   <!-- Tutorial overlay — shown once per level, dismisses on click/key -->
-  <div id="tutorial-overlay" style="
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.65);
-      z-index: 90;
-      pointer-events: all;
-      cursor: pointer;
-    ">
-    <div style="
-        position: absolute;
-        bottom: 130px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(30,20,10,0.95);
-        border: 2px solid #8b6914;
-        border-radius: 12px;
-        padding: 20px 32px;
-        color: #f0e6d2;
-        font-size: 16px;
-        text-align: center;
-        max-width: 480px;
-        line-height: 1.6;
-        box-shadow: 0 0 30px rgba(139,105,20,0.4);
-        pointer-events: none;
-      ">
-      <div id="tutorial-text" style="margin-bottom: 12px;"></div>
-      <div style="font-size: 12px; opacity: 0.5; margin-top: 8px;">Click or press any key to continue</div>
+  <div id="tutorial-overlay">
+    <div class="tutorial-content">
+      <div id="tutorial-text"></div>
+      <div class="tutorial-hint">Click or press any key to continue</div>
     </div>
   </div>
 

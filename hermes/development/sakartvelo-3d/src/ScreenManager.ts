@@ -109,17 +109,17 @@ export class ScreenManager {
       const text = document.getElementById('tutorial-text');
       if (text) {
         text.innerHTML = `
-          <div style="color: #d4a017; font-weight: bold; font-size: 20px; margin-bottom: 8px;">Hero Abilities</div>
+          <div class="tutorial-title">Hero Abilities</div>
           Meet <b>Medea</b>, your hero. She can move and attack automatically, but her real power lies in her <b>Abilities</b> (Q, W, E).<br><br>
-          <div style="text-align: left; font-size: 14px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px;">
-            <div style="margin-bottom: 8px;">
-              <b style="color: #44ff88;">[Q] Colchian Poison:</b> Deals <b>8 DPS</b> to all enemies within <b>4.2m</b> for 5 seconds. Great for thinning out crowds.
+          <div class="tutorial-box">
+            <div class="ability-info">
+              <b class="ability-name-poison">[Q] Colchian Poison:</b> Deals <b>8 DPS</b> to all enemies within <b>4.2m</b> for 5 seconds. Great for thinning out crowds.
             </div>
-            <div style="margin-bottom: 8px;">
-              <b style="color: #ffdd44;">[W] War Chant:</b> Boosts towers within <b>4m</b> for 8 seconds: <b>+50% Damage</b> and <b>+30% Attack Speed</b>.
+            <div class="ability-info">
+              <b class="ability-name-chant">[W] War Chant:</b> Boosts towers within <b>4m</b> for 8 seconds: <b>+50% Damage</b> and <b>+30% Attack Speed</b>.
             </div>
             <div>
-              <b style="color: #8844ff;">[E] Colchian Fire:</b> Supercharges towers within <b>5m</b> for 10 seconds: <b>+100% Damage</b>, <b>+50% Attack Speed</b>, and <b>+30% Range</b>.
+              <b class="ability-name-fire">[E] Colchian Fire:</b> Supercharges towers within <b>5m</b> for 10 seconds: <b>+100% Damage</b>, <b>+50% Attack Speed</b>, and <b>+30% Range</b>.
             </div>
           </div>
         `;

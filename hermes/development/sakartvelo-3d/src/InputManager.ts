@@ -4,6 +4,7 @@
  * Handles QWERTY/AZERTY auto-detection, raycasting, and event dispatch.
  */
 import * as THREE from 'three';
+import { gs } from './GameState';
 import { Grid } from './Grid';
 import { Tower } from './Tower';
 import { TileUserData, TOWER_CONFIGS } from './types';
@@ -305,9 +306,8 @@ export class InputManager {
     this._mouseX = e.clientX;
     this._mouseY = e.clientY;
 
-    const gs = (window as any).__gs;
-    const grid = (window as any).__grid || (window as any).__gs_grid || gs?.grid;
-    if (!gs || !grid) return;
+    const grid = gs.grid;
+    if (!grid) return;
 
     // Placement mode: ray hits tall tower meshes before the ground tile — always use grid.
     if (gs.selectedType) {

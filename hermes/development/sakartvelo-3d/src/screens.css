@@ -1,0 +1,120 @@
+/* screens.css — Full-screen overlays and level selection UI */
+
+.screen {
+  display: none;
+}
+
+.screen.visible:not(.intro-overlay) {
+  display: block;
+}
+
+#screen-level-select {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 14, 8, 0.97);
+  color: #f0e6d2;
+  font-family: 'Georgia', serif;
+  padding: 40px 20px;
+  overflow-y: auto;
+  z-index: 150;
+}
+
+#screen-level-complete {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  background: rgba(0, 0, 0, 0.9);
+  padding: 40px 60px;
+  border-radius: 16px;
+  border: 2px solid #d4a017;
+  color: #f0e6d2;
+  font-family: 'Georgia', serif;
+  z-index: 200;
+  min-width: 340px;
+}
+
+#lc-title {
+  font-size: 30px;
+  margin-bottom: 16px;
+}
+
+#lc-stars {
+  font-size: 44px;
+  margin-bottom: 14px;
+}
+
+#lc-msg {
+  font-size: 15px;
+  margin-bottom: 24px;
+  color: #aaa;
+}
+
+.lc-btn-group {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+#lc-menu, #lc-next {
+  padding: 11px 22px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Georgia', serif;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+#lc-menu {
+  border: 2px solid #8b6914;
+  background: rgba(139, 105, 20, 0.4);
+  color: #f0e6d2;
+}
+
+#lc-next {
+  border: 2px solid #d4a017;
+  background: rgba(212, 160, 23, 0.25);
+  color: #f0e6d2;
+}
+
+#screen-game-over {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  background: rgba(0, 0, 0, 0.85);
+  padding: 40px 60px;
+  border-radius: 16px;
+  border: 2px solid #d4a017;
+  color: #f0e6d2;
+  z-index: 210;
+}
+
+#game-over-title {
+  font-size: 36px;
+  margin-bottom: 16px;
+}
+
+#game-over-stars {
+  font-size: 28px;
+  margin: 16px 0;
+}
+
+#game-over button, #go-menu {
+  margin-top: 20px;
+  padding: 12px 30px;
+  border: 2px solid #8b6914;
+  border-radius: 8px;
+  background: rgba(139, 105, 20, 0.5);
+  color: #f0e6d2;
+  cursor: pointer;
+  font-family: 'Georgia', serif;
+  font-size: 16px;
+}
+
+#game-over button:hover, #go-menu:hover {
+  background: rgba(139, 105, 20, 0.8);
+}

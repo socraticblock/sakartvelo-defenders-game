@@ -4,6 +4,28 @@
  * Extracted from LevelSelect.ts.
  */
 export const LEVEL_SELECT_CSS = `
+  .ls-container { max-width: 560px; margin: 0 auto; }
+  .ls-header { text-align: center; margin-bottom: 28px; }
+  .ls-era-title { color: #d4a017; font-size: 24px; margin-bottom: 6px; }
+  .ls-era-years { color: #7a8a6a; font-size: 12px; }
+  .ls-footer { text-align: center; margin-top: 32px; display: flex; justify-content: center; gap: 20px; }
+  
+  #ls-back-btn {
+    padding: 10px 28px; border: 2px solid #8b6914; border-radius: 8px;
+    background: rgba(139, 105, 20, 0.35); color: #f0e6d2;
+    cursor: pointer; font-family: Georgia; font-size: 14px;
+    transition: background 0.2s;
+  }
+  #ls-back-btn:hover { background: rgba(139, 105, 20, 0.5); }
+  
+  #ls-reset-btn {
+    padding: 10px 20px; border: 1px solid #600; border-radius: 8px;
+    background: rgba(100, 0, 0, 0.2); color: #f88;
+    cursor: pointer; font-family: Georgia; font-size: 12px;
+    transition: background 0.2s;
+  }
+  #ls-reset-btn:hover { background: rgba(100, 0, 0, 0.4); }
+
   #level-select { font-family: 'Georgia', serif; }
   .ls-chapter-header {
     text-align: center; margin: 24px 0 14px;

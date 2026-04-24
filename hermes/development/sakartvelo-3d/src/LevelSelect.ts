@@ -67,12 +67,12 @@ function render(era: number) {
   const eraLevels = allLevels.filter(l => l.era === era).sort((a, b) => a.level - b.level);
   
   let html = `
-    <div style="max-width:560px; margin:0 auto;">
-      <div style="text-align:center; margin-bottom:28px;">
-        <h2 style="color:#d4a017; font-size:24px; margin-bottom:6px;">
+    <div class="ls-container">
+      <div class="ls-header">
+        <h2 class="ls-era-title">
           Era ${era}: ${ERA_NAMES[era] || `Era ${era}`}
         </h2>
-        <p style="color:#7a8a6a; font-size:12px;">${ERA_YEARS[era] || ''}</p>
+        <p class="ls-era-years">${ERA_YEARS[era] || ''}</p>
       </div>
   `;
 
@@ -142,21 +142,9 @@ function render(era: number) {
   }
 
     html += `
-      <div style="text-align:center; margin-top:32px; display:flex; justify-content:center; gap:20px;">
-        <button id="ls-back-btn" style="
-          padding:10px 28px; border:2px solid #8b6914; border-radius:8px;
-          background:rgba(139,105,20,0.35); color:#f0e6d2;
-          cursor:pointer; font-family:Georgia; font-size:14px;
-          transition:background 0.2s;">
-          ← Back
-        </button>
-        <button id="ls-reset-btn" style="
-          padding:10px 20px; border:1px solid #600; border-radius:8px;
-          background:rgba(100,0,0,0.2); color:#f88;
-          cursor:pointer; font-family:Georgia; font-size:12px;
-          transition:background 0.2s;">
-          Clear Progress
-        </button>
+      <div class="ls-footer">
+        <button id="ls-back-btn">← Back</button>
+        <button id="ls-reset-btn">Clear Progress</button>
       </div>
     </div>`;
 
