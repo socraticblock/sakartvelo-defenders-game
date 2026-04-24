@@ -7,6 +7,7 @@ export class Grid {
   private plinths: THREE.Group[] = [];
   private pathCells = new Set<string>();
   private occupiedCells = new Map<string, boolean>();
+  private _curve: THREE.CatmullRomCurve3 | null = null;
   worldPath: THREE.Vector3[] = [];
 
   readonly width: number;
@@ -102,6 +103,7 @@ export class Grid {
     // 1. Create a smooth spline from waypoints
     const points = waypoints.map(wp => new THREE.Vector3(wp[0] + 0.5, 0.01, wp[1] + 0.5));
     const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal', 0.5);
+    this._curve = curve;
     const curvePoints = curve.getPoints(waypoints.length * 10); // High resolution for smoothness
 
     const pathWidth = 1.15;
@@ -203,7 +205,37 @@ export class Grid {
 
     nodes.forEach(([x, y]) => {
       const group = new THREE.Group();
-      group.position.set(x + 0.5, 0.04, y + 0.5);
+      const pPos = new THREE.Vector3(x + 0.5, 0.04, y + 0.5);
+
+      // --- Repulsion Logic: Push plinth away from path center ---
+      if (this._curve) {
+        // Find closest point on curve (sampling for simplicity)
+        let minDistSq = Infinity;
+        let closestU = 0;
+        const SAMPLES = 100;
+        for (let i = 0; i <= SAMPLES; i++) {
+          const u = i / SAMPLES;
+          const cp = this._curve.getPoint(u);
+          const dSq = cp.distanceToSquared(pPos);
+          if (dSq < minDistSq) {
+            minDistSq = dSq;
+            closestU = u;
+          }
+        }
+        
+        const cp = this._curve.getPoint(closestU);
+        const dist = Math.sqrt(minDistSq);
+        
+        if (dist < 1.8) { // If plinth is close to path
+          const pushDir = new THREE.Vector3().subVectors(pPos, cp);
+          pushDir.y = 0;
+          pushDir.normalize();
+          // Nudge by 0.45 units (almost half a cell)
+          pPos.add(pushDir.multiplyScalar(0.45));
+        }
+      }
+
+      group.position.copy(pPos);
 
       const stone = new THREE.Mesh(stoneGeo, stoneMat);
       stone.receiveShadow = true;
