@@ -64,86 +64,104 @@ export function createHumanoid(cfg: {
   weaponType?: 'axe' | 'spear' | 'sword';
   shieldColor?: number;
   scale?: number;
+  pauldrons?: boolean;
 }): EnemyRig {
   const s = cfg.scale || 1;
   const headColor = cfg.headColor || P.skin;
 
   const root = new THREE.Group();
 
-  makePart(new THREE.BoxGeometry(0.35 * s, 0.35 * s, 0.22 * s), cfg.bodyColor, [0, 0.55 * s, 0], undefined, root);
-  makePart(new THREE.BoxGeometry(0.37 * s, 0.06 * s, 0.24 * s), cfg.beltColor || P.leather, [0, 0.4 * s, 0], undefined, root);
+  // 1. TORSO (Faceted & Tapered)
+  makePart(new THREE.CylinderGeometry(0.18 * s, 0.22 * s, 0.45 * s, 6), cfg.bodyColor, [0, 0.6 * s, 0], undefined, root);
+  
+  // Ornate Belt (Hexagonal)
+  makePart(new THREE.CylinderGeometry(0.22 * s, 0.22 * s, 0.08 * s, 6), cfg.beltColor || P.leather, [0, 0.42 * s, 0], undefined, root);
 
-  if (cfg.skirtColor) {
-    makePart(new THREE.CylinderGeometry(0.2 * s, 0.26 * s, 0.18 * s, 6), cfg.skirtColor, [0, 0.3 * s, 0], undefined, root);
+  // Pauldrons (Beveled Guards)
+  if (cfg.pauldrons || cfg.helmet) {
+    for (const side of [-1, 1]) {
+      makePart(new THREE.CylinderGeometry(0.12 * s, 0.08 * s, 0.15 * s, 5), cfg.helmetColor || P.iron, [side * 0.22 * s, 0.78 * s, 0], [0, 0, side * 1.8], root);
+    }
   }
 
+  if (cfg.skirtColor) {
+    makePart(new THREE.CylinderGeometry(0.2 * s, 0.3 * s, 0.22 * s, 6), cfg.skirtColor, [0, 0.32 * s, 0], undefined, root);
+  }
+
+  // 2. HEAD & HELMET (Faceted)
   const headGroup = new THREE.Group();
-  headGroup.position.set(0, 0.82 * s, 0);
+  headGroup.position.set(0, 0.88 * s, 0);
   root.add(headGroup);
-  makePart(new THREE.BoxGeometry(0.2 * s, 0.22 * s, 0.2 * s), headColor, [0, 0, 0], undefined, headGroup);
+  makePart(new THREE.CylinderGeometry(0.12 * s, 0.12 * s, 0.22 * s, 6), headColor, [0, 0, 0], undefined, headGroup);
 
   for (const side of [-1, 1]) {
-    const eye = makePart(new THREE.BoxGeometry(0.05 * s, 0.05 * s, 0.02 * s), 0xffffff, [side * 0.06 * s, 0.02 * s, 0.1 * s], undefined, headGroup);
-    makePart(new THREE.BoxGeometry(0.03 * s, 0.03 * s, 0.02 * s), P.dark, [0, 0, 0.01 * s], undefined, eye);
+    const eye = makePart(new THREE.BoxGeometry(0.04 * s, 0.04 * s, 0.02 * s), 0xffffff, [side * 0.06 * s, 0.04 * s, 0.1 * s], undefined, headGroup);
+    makePart(new THREE.BoxGeometry(0.02 * s, 0.02 * s, 0.02 * s), P.dark, [0, 0, 0.01 * s], undefined, eye);
   }
 
   if (cfg.helmet) {
     const hc = cfg.helmetColor || P.iron;
-    makePart(new THREE.CylinderGeometry(0.13 * s, 0.15 * s, 0.12 * s, 6), hc, [0, 0.12 * s, 0], undefined, headGroup);
-    makePart(new THREE.BoxGeometry(0.04 * s, 0.1 * s, 0.06 * s), hc, [0, -0.02 * s, 0.1 * s], undefined, headGroup);
+    // Mythic Crown/Helmet
+    makePart(new THREE.CylinderGeometry(0.12 * s, 0.16 * s, 0.15 * s, 6), hc, [0, 0.12 * s, 0], undefined, headGroup);
+    makePart(new THREE.CylinderGeometry(0.04 * s, 0.02 * s, 0.12 * s, 4), hc, [0, -0.02 * s, 0.11 * s], [Math.PI/2, 0, 0], headGroup);
+    // Ornament
+    makePart(new THREE.CylinderGeometry(0.01 * s, 0.01 * s, 0.1 * s, 4), P.gold, [0, 0.2 * s, 0], undefined, headGroup);
   }
 
+  // 3. LIMBS (Tapered Faceted Prisms)
   const leftArm = new THREE.Group();
-  leftArm.position.set(-0.22 * s, 0.65 * s, 0);
+  leftArm.position.set(-0.22 * s, 0.7 * s, 0);
   root.add(leftArm);
-  makePart(new THREE.BoxGeometry(0.1 * s, 0.28 * s, 0.1 * s), headColor, [0, -0.14 * s, 0], undefined, leftArm);
+  makePart(new THREE.CylinderGeometry(0.05 * s, 0.07 * s, 0.32 * s, 4), headColor, [0, -0.16 * s, 0], undefined, leftArm);
 
   const rightArm = new THREE.Group();
-  rightArm.position.set(0.22 * s, 0.65 * s, 0);
+  rightArm.position.set(0.22 * s, 0.7 * s, 0);
   root.add(rightArm);
-  const rightArmMesh = makePart(new THREE.BoxGeometry(0.1 * s, 0.28 * s, 0.1 * s), headColor, [0, -0.14 * s, 0], undefined, rightArm);
+  const rightArmMesh = makePart(new THREE.CylinderGeometry(0.05 * s, 0.07 * s, 0.32 * s, 4), headColor, [0, -0.16 * s, 0], undefined, rightArm);
 
   const leftLeg = new THREE.Group();
-  leftLeg.position.set(-0.1 * s, 0.22 * s, 0);
+  leftLeg.position.set(-0.12 * s, 0.22 * s, 0);
   root.add(leftLeg);
-  makePart(new THREE.BoxGeometry(0.11 * s, 0.24 * s, 0.11 * s), cfg.bodyColor, [0, -0.12 * s, 0], undefined, leftLeg);
+  makePart(new THREE.CylinderGeometry(0.07 * s, 0.05 * s, 0.28 * s, 4), cfg.bodyColor, [0, -0.14 * s, 0], undefined, leftLeg);
 
   const rightLeg = new THREE.Group();
-  rightLeg.position.set(0.1 * s, 0.22 * s, 0);
+  rightLeg.position.set(0.12 * s, 0.22 * s, 0);
   root.add(rightLeg);
-  makePart(new THREE.BoxGeometry(0.11 * s, 0.24 * s, 0.11 * s), cfg.bodyColor, [0, -0.12 * s, 0], undefined, rightLeg);
+  makePart(new THREE.CylinderGeometry(0.07 * s, 0.05 * s, 0.28 * s, 4), cfg.bodyColor, [0, -0.14 * s, 0], undefined, rightLeg);
 
+  // 4. WEAPONS (Sharper profiles)
   let weapon: THREE.Object3D | undefined;
   if (cfg.weaponType === 'axe') {
     const wGroup = new THREE.Group();
-    wGroup.position.set(0, -0.1 * s, 0);
+    wGroup.position.set(0, -0.15 * s, 0);
     rightArmMesh.add(wGroup);
-    makePart(new THREE.BoxGeometry(0.04 * s, 0.3 * s, 0.04 * s), P.wood, [0, -0.15 * s, 0], undefined, wGroup);
-    makePart(new THREE.BoxGeometry(0.14 * s, 0.1 * s, 0.03 * s), P.bone, [0.05 * s, -0.28 * s, 0], undefined, wGroup);
+    makePart(new THREE.CylinderGeometry(0.02 * s, 0.02 * s, 0.4 * s, 4), P.wood, [0, -0.2 * s, 0], undefined, wGroup);
+    // Beveled Axe blade
+    makePart(new THREE.CylinderGeometry(0.1 * s, 0.14 * s, 0.04 * s, 3), P.iron, [0.08 * s, -0.32 * s, 0], [0, 0, Math.PI / 2], wGroup);
     weapon = wGroup;
   } else if (cfg.weaponType === 'spear') {
     const wGroup = new THREE.Group();
-    wGroup.position.set(0, -0.1 * s, 0.05 * s);
+    wGroup.position.set(0, -0.15 * s, 0.05 * s);
     rightArmMesh.add(wGroup);
-    makePart(new THREE.BoxGeometry(0.03 * s, 0.5 * s, 0.03 * s), P.wood, [0, -0.25 * s, 0], undefined, wGroup);
-    makePart(new THREE.ConeGeometry(0.04 * s, 0.1 * s, 4), P.bone, [0, -0.52 * s, 0], undefined, wGroup);
+    makePart(new THREE.CylinderGeometry(0.015 * s, 0.015 * s, 0.6 * s, 4), P.wood, [0, -0.3 * s, 0], undefined, wGroup);
+    makePart(new THREE.ConeGeometry(0.05 * s, 0.15 * s, 4), P.iron, [0, -0.6 * s, 0], undefined, wGroup);
     weapon = wGroup;
   } else if (cfg.weaponType === 'sword') {
     const wGroup = new THREE.Group();
-    wGroup.position.set(0, -0.1 * s, 0.05 * s);
+    wGroup.position.set(0, -0.15 * s, 0.05 * s);
     rightArmMesh.add(wGroup);
-    makePart(new THREE.BoxGeometry(0.03 * s, 0.35 * s, 0.02 * s), P.iron, [0, -0.22 * s, 0], undefined, wGroup);
-    makePart(new THREE.BoxGeometry(0.1 * s, 0.03 * s, 0.03 * s), P.bone, [0, -0.04 * s, 0], undefined, wGroup);
+    makePart(new THREE.BoxGeometry(0.04 * s, 0.45 * s, 0.02 * s), P.iron, [0, -0.25 * s, 0], undefined, wGroup);
+    makePart(new THREE.BoxGeometry(0.12 * s, 0.04 * s, 0.04 * s), P.gold, [0, -0.05 * s, 0], undefined, wGroup);
     weapon = wGroup;
   }
 
   if (cfg.shieldColor) {
     const shield = makePart(
-      new THREE.CylinderGeometry(0.14 * s, 0.14 * s, 0.03 * s, 8),
-      cfg.shieldColor, [-0.08 * s, -0.12 * s, 0.08 * s],
+      new THREE.CylinderGeometry(0.18 * s, 0.2 * s, 0.04 * s, 8),
+      cfg.shieldColor, [-0.12 * s, -0.15 * s, 0.1 * s],
       [Math.PI / 2, 0, 0], leftArm
     );
-    makePart(new THREE.SphereGeometry(0.04 * s, 6, 4), P.bone, [0, 0, 0.02 * s], undefined, shield);
+    makePart(new THREE.SphereGeometry(0.05 * s, 6, 4), P.gold, [0, 0, 0.03 * s], undefined, shield);
   }
 
   outlineGroup(root);
@@ -160,41 +178,50 @@ export function createWolf(cfg: { furColor?: number; scale?: number }): EnemyRig
   const col = cfg.furColor || P.fur;
   const root = new THREE.Group();
 
-  makePart(new THREE.BoxGeometry(0.22 * s, 0.2 * s, 0.6 * s), col, [0, 0.25 * s, 0], undefined, root);
+  // 1. BODY (Beveled beasty)
+  makePart(new THREE.BoxGeometry(0.22 * s, 0.22 * s, 0.65 * s), col, [0, 0.28 * s, 0], undefined, root);
 
+  // 2. HEAD & MYTHIC MANE
   const headGroup = new THREE.Group();
-  headGroup.position.set(0, 0.32 * s, 0.32 * s);
+  headGroup.position.set(0, 0.35 * s, 0.35 * s);
   root.add(headGroup);
-  makePart(new THREE.BoxGeometry(0.16 * s, 0.16 * s, 0.2 * s), col, [0, 0, 0], undefined, headGroup);
-  makePart(new THREE.BoxGeometry(0.1 * s, 0.08 * s, 0.12 * s), col, [0, -0.02 * s, 0.1 * s], undefined, headGroup);
+  
+  // The Mane (neck fur)
+  makePart(new THREE.CylinderGeometry(0.15 * s, 0.18 * s, 0.2 * s, 6), col, [0, -0.05 * s, -0.1 * s], [Math.PI / 4, 0, 0], headGroup);
+  
+  makePart(new THREE.BoxGeometry(0.18 * s, 0.18 * s, 0.22 * s), col, [0, 0, 0], undefined, headGroup);
+  makePart(new THREE.BoxGeometry(0.1 * s, 0.08 * s, 0.15 * s), col, [0, -0.04 * s, 0.12 * s], undefined, headGroup);
+  
   for (const side of [-1, 1]) {
-    makePart(new THREE.BoxGeometry(0.04 * s, 0.04 * s, 0.02 * s), 0xffff44, [side * 0.05 * s, 0.03 * s, 0.09 * s], undefined, headGroup);
+    makePart(new THREE.BoxGeometry(0.04 * s, 0.04 * s, 0.02 * s), 0xffff44, [side * 0.05 * s, 0.04 * s, 0.1 * s], undefined, headGroup);
   }
   for (const side of [-1, 1]) {
-    makePart(new THREE.BoxGeometry(0.04 * s, 0.08 * s, 0.04 * s), col, [side * 0.06 * s, 0.1 * s, -0.04 * s], undefined, headGroup);
+    makePart(new THREE.BoxGeometry(0.05 * s, 0.1 * s, 0.04 * s), col, [side * 0.08 * s, 0.12 * s, -0.05 * s], [0, 0, side * 0.2], headGroup);
   }
 
-  makePart(new THREE.BoxGeometry(0.05 * s, 0.05 * s, 0.2 * s), col, [0, 0.3 * s, -0.38 * s], [0.3, 0, 0], root);
+  // Tail
+  makePart(new THREE.BoxGeometry(0.06 * s, 0.06 * s, 0.25 * s), col, [0, 0.35 * s, -0.42 * s], [0.4, 0, 0], root);
 
+  // 3. LEGS
   const leftArm = new THREE.Group();
-  leftArm.position.set(-0.1 * s, 0.18 * s, 0.18 * s);
+  leftArm.position.set(-0.1 * s, 0.18 * s, 0.2 * s);
   root.add(leftArm);
-  makePart(new THREE.BoxGeometry(0.06 * s, 0.2 * s, 0.06 * s), col, [0, -0.1 * s, 0], undefined, leftArm);
+  makePart(new THREE.BoxGeometry(0.07 * s, 0.22 * s, 0.07 * s), col, [0, -0.11 * s, 0], undefined, leftArm);
 
   const rightArm = new THREE.Group();
-  rightArm.position.set(0.1 * s, 0.18 * s, 0.18 * s);
+  rightArm.position.set(0.1 * s, 0.18 * s, 0.2 * s);
   root.add(rightArm);
-  makePart(new THREE.BoxGeometry(0.06 * s, 0.2 * s, 0.06 * s), col, [0, -0.1 * s, 0], undefined, rightArm);
+  makePart(new THREE.BoxGeometry(0.07 * s, 0.22 * s, 0.07 * s), col, [0, -0.11 * s, 0], undefined, rightArm);
 
   const leftLeg = new THREE.Group();
-  leftLeg.position.set(-0.1 * s, 0.18 * s, -0.18 * s);
+  leftLeg.position.set(-0.1 * s, 0.18 * s, -0.2 * s);
   root.add(leftLeg);
-  makePart(new THREE.BoxGeometry(0.06 * s, 0.2 * s, 0.06 * s), col, [0, -0.1 * s, 0], undefined, leftLeg);
+  makePart(new THREE.BoxGeometry(0.07 * s, 0.22 * s, 0.07 * s), col, [0, -0.11 * s, 0], undefined, leftLeg);
 
   const rightLeg = new THREE.Group();
-  rightLeg.position.set(0.1 * s, 0.18 * s, -0.18 * s);
+  rightLeg.position.set(0.1 * s, 0.18 * s, -0.2 * s);
   root.add(rightLeg);
-  makePart(new THREE.BoxGeometry(0.06 * s, 0.2 * s, 0.06 * s), col, [0, -0.1 * s, 0], undefined, rightLeg);
+  makePart(new THREE.BoxGeometry(0.07 * s, 0.22 * s, 0.07 * s), col, [0, -0.11 * s, 0], undefined, rightLeg);
 
   outlineGroup(root);
 
@@ -208,37 +235,40 @@ export function createWolf(cfg: { furColor?: number; scale?: number }): EnemyRig
 export function createSiegeRam(cfg: { scale?: number }): EnemyRig {
   const s = cfg.scale || 1;
   const root = new THREE.Group();
-  const wlGeo = new THREE.CylinderGeometry(0.1 * s, 0.1 * s, 0.06 * s, 8);
+  
+  // 1. THE CHASSIS (Beveled Heavy Plating)
+  makePart(new THREE.CylinderGeometry(0.25 * s, 0.3 * s, 0.25 * s, 6), P.wood, [0, 0.3 * s, 0], [0, 0, Math.PI / 2], root);
+  makePart(new THREE.CylinderGeometry(0.3 * s, 0.32 * s, 0.7 * s, 6), P.wood, [0, 0.3 * s, 0], [Math.PI / 2, 0, 0], root);
+  
+  // Roof (Layered)
+  makePart(new THREE.CylinderGeometry(0.35 * s, 0.25 * s, 0.6 * s, 4), P.leather, [0, 0.5 * s, 0], [Math.PI / 2, Math.PI / 4, 0], root);
 
-  makePart(new THREE.BoxGeometry(0.5 * s, 0.25 * s, 0.8 * s), P.wood, [0, 0.3 * s, 0], undefined, root);
-  makePart(new THREE.BoxGeometry(0.52 * s, 0.06 * s, 0.7 * s), P.wood, [0, 0.5 * s, 0], undefined, root);
-  makePart(new THREE.BoxGeometry(0.3 * s, 0.06 * s, 0.65 * s), P.leather, [0, 0.56 * s, 0], undefined, root);
-
+  // 2. THE RAM HEAD (Mythic Bone Carving)
   const headGroup = new THREE.Group();
   headGroup.position.set(0, 0.3 * s, 0.45 * s);
   root.add(headGroup);
-  makePart(new THREE.ConeGeometry(0.1 * s, 0.2 * s, 6), P.bone, [0, 0, 0.1 * s], [Math.PI / 2, 0, 0], headGroup);
-  makePart(new THREE.BoxGeometry(0.22 * s, 0.18 * s, 0.04 * s), P.bone, [0, 0, 0.05 * s], undefined, headGroup);
+  // Faceted Horns/Head
+  makePart(new THREE.ConeGeometry(0.12 * s, 0.25 * s, 6), P.bone, [0, 0, 0.15 * s], [Math.PI / 2, 0, 0], headGroup);
+  makePart(new THREE.CylinderGeometry(0.12 * s, 0.12 * s, 0.1 * s, 6), P.iron, [0, 0, 0.05 * s], [Math.PI / 2, 0, 0], headGroup);
 
+  // 3. WHEELS (Heavy Iron Hubs)
+  const wlGeo = new THREE.CylinderGeometry(0.12 * s, 0.12 * s, 0.08 * s, 8);
+  for (const side of [-1, 1]) {
+    for (const z of [-0.25, 0.25]) {
+      const wGroup = new THREE.Group();
+      wGroup.position.set(side * 0.32 * s, 0.12 * s, z * s);
+      root.add(wGroup);
+      makePart(wlGeo, P.iron, [0, 0, 0], [0, 0, Math.PI / 2], wGroup);
+      // Hubcap
+      makePart(new THREE.SphereGeometry(0.04 * s, 6, 4), P.gold, [side * 0.04 * s, 0, 0], undefined, wGroup);
+    }
+  }
+
+  // Stubs for animation
   const leftArm = new THREE.Group();
-  leftArm.position.set(-0.28 * s, 0.1 * s, 0.25 * s);
-  root.add(leftArm);
-  makePart(wlGeo, P.iron, [0, 0, 0], [0, 0, Math.PI / 2], leftArm);
-
   const rightArm = new THREE.Group();
-  rightArm.position.set(0.28 * s, 0.1 * s, 0.25 * s);
-  root.add(rightArm);
-  makePart(wlGeo.clone(), P.iron, [0, 0, 0], [0, 0, Math.PI / 2], rightArm);
-
   const leftLeg = new THREE.Group();
-  leftLeg.position.set(-0.28 * s, 0.1 * s, -0.25 * s);
-  root.add(leftLeg);
-  makePart(wlGeo.clone(), P.iron, [0, 0, 0], [0, 0, Math.PI / 2], leftLeg);
-
   const rightLeg = new THREE.Group();
-  rightLeg.position.set(0.28 * s, 0.1 * s, -0.25 * s);
-  root.add(rightLeg);
-  makePart(wlGeo.clone(), P.iron, [0, 0, 0], [0, 0, Math.PI / 2], rightLeg);
 
   outlineGroup(root);
 
@@ -281,10 +311,10 @@ export function createDevi(): EnemyRig {
   }
 
   const glow = new THREE.Mesh(
-    new THREE.SphereGeometry(0.8, 12, 8),
+    new THREE.CylinderGeometry(0.8, 1.0, 1.2, 6),
     new THREE.MeshBasicMaterial({ color: 0xff2222, transparent: true, opacity: 0.08 })
   );
-  glow.position.y = 0.5;
+  glow.position.y = 0.6;
   rig.root.add(glow);
 
   rig.bobAmp = 0.03;

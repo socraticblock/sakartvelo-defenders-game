@@ -41,8 +41,8 @@ export class HeroAbilities {
     this.alchemyVfx = alchemyVfx;
     this.abilities = [
       { name: 'Colchian Poison', icon: '☠️', maxCd: 15, cooldown: 0, active: false, duration: 5, timer: 0 },
-      { name: 'War Chant',       icon: '🌿', maxCd: 45, cooldown: 0, active: false, duration: 8, timer: 0 },
-      { name: 'Colchian Fire',   icon: '⚗️', maxCd: 120, cooldown: 0, active: false, duration: 10, timer: 0 },
+      { name: 'War Chant', icon: '🌿', maxCd: 45, cooldown: 0, active: false, duration: 8, timer: 0 },
+      { name: 'Colchian Fire', icon: '⚗️', maxCd: 120, cooldown: 0, active: false, duration: 10, timer: 0 },
     ];
   }
 
