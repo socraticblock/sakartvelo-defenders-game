@@ -363,6 +363,11 @@ export class Grid {
     return this.tiles.flat();
   }
 
+  getPlinthVisualPos(gx: number, gy: number): THREE.Vector3 | null {
+    const p = this.plinths.find(pl => pl.userData.gx === gx && pl.userData.gy === gy);
+    return p ? p.position.clone() : null;
+  }
+
   getWorldPath(): THREE.Vector3[] {
     return this.worldPath;
   }

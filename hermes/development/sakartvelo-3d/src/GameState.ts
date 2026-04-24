@@ -117,6 +117,11 @@ export class GameState {
 
     this.gold -= cost;
     const tower = new Tower(type, gx, gy, isPath);
+    
+    // Final check for nudged position
+    const vPos = this.grid.getPlinthVisualPos(gx, gy);
+    if (vPos) tower.group.position.copy(vPos);
+
     this.towers.push(tower);
     scene.add(tower.group);
     this.grid.occupy(gx, gy);

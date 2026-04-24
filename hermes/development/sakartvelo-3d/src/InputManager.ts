@@ -120,48 +120,44 @@ export class InputManager {
       return;
     }
 
-    // --- MAGNETIC SNAP LOGIC ---
+    // --- VISUAL SNAP LOGIC ---
     let cell = { ...rawCell };
-    const MAGNET_RANGE = 2.5;
+    const groundPos = this.getMouseGround(); 
     let closestPlinth = null;
-    let minDist = Infinity;
+    let minDist = 2.0; // Snap radius in world units
 
-    // Search for nearest unoccupied plinth
     const plinths = (grid as any).plinths as THREE.Group[];
-    if (plinths && selectedType !== 'wall') {
+    if (plinths && selectedType !== 'wall' && groundPos) {
       for (const p of plinths) {
         if (p.userData.occupied) continue;
-        const dx = rawCell.gx - p.userData.gx;
-        const dy = rawCell.gy - p.userData.gy;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < MAGNET_RANGE && dist < minDist) {
+        const dist = p.position.distanceTo(groundPos);
+        if (dist < minDist) {
           minDist = dist;
           closestPlinth = p;
         }
       }
     }
 
-    // If a plinth is nearby, SNAP!
     if (closestPlinth) {
       cell.gx = closestPlinth.userData.gx;
       cell.gy = closestPlinth.userData.gy;
+      hoverGroup.position.copy(closestPlinth.position);
+      hoverGroup.position.y += 0.02; 
+    } else {
+      hoverGroup.position.set(cell.gx + 0.5, 0.06, cell.gy + 0.5);
     }
-    // ----------------------------
 
     const cost = TOWER_CONFIGS[selectedType]?.cost ?? Infinity;
     const ok = grid.isBuildable(cell.gx, cell.gy, selectedType === 'wall') && gold >= cost;
 
-    // Match Tower.group Y so the preview sits on the same footprint as a real tower.
-    hoverGroup.position.set(cell.gx + 0.5, 0.06, cell.gy + 0.5);
     hoverGroup.visible = true;
 
-    // Fade the ghost based on buildability
     hoverGroup.traverse(c => {
-      if (c instanceof THREE.Mesh && c.material instanceof THREE.MeshLambertMaterial) {
-        // If snapped, use a brighter emissive
-        const emissiveColor = ok ? (closestPlinth ? 0x222200 : 0x000000) : 0x440000;
-        c.material.emissive.setHex(emissiveColor);
-        c.material.opacity = ok ? 0.6 : 0.2;
+      if (c instanceof THREE.Mesh) {
+        const mat = c.material as any;
+        if (mat.isMaterial) {
+          mat.opacity = ok ? 0.7 : 0.2;
+        }
       }
     });
   }
@@ -187,12 +183,17 @@ export class InputManager {
 
     group.traverse(c => {
       if (c instanceof THREE.Mesh) {
-        // Capture the color before replacing the material
-        const origColor = (c.material as THREE.MeshLambertMaterial).color?.getHex() ?? color;
-        c.material = new THREE.MeshLambertMaterial({
+        if (c.userData.isOutline) {
+          c.visible = false;
+          return;
+        }
+        const mat = Array.isArray(c.material) ? c.material[0] : c.material;
+        const origColor = (mat as any).color?.getHex() ?? color;
+
+        c.material = new THREE.MeshBasicMaterial({
           color: origColor,
           transparent: true,
-          opacity: 0.4,
+          opacity: 0.7,
           depthWrite: false
         });
       }
@@ -343,7 +344,7 @@ export class InputManager {
       if (rawCell) {
         let gx = rawCell.gx;
         let gy = rawCell.gy;
-        
+
         // APPLY MAGNET
         const MAGNET_RANGE = 2.5;
         const plinths = (grid as any).plinths as THREE.Group[];
@@ -354,7 +355,7 @@ export class InputManager {
             if (p.userData.occupied) continue;
             const dx = gx - p.userData.gx;
             const dy = gy - p.userData.gy;
-            const d = Math.sqrt(dx*dx + dy*dy);
+            const d = Math.sqrt(dx * dx + dy * dy);
             if (d < MAGNET_RANGE && d < minDist) {
               minDist = d;
               snapP = p;
@@ -365,7 +366,7 @@ export class InputManager {
             gy = snapP.userData.gy;
           }
         }
-        
+
         this._cb.onGridClick(gx, gy, rawCell.isPath);
       } else {
         this._cb.onDeselect();
