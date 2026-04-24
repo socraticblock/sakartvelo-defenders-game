@@ -169,13 +169,14 @@ export class GameLoop {
       tower.group.traverse(child => {
         if (child instanceof THREE.Mesh) {
           if (Array.isArray(child.material)) {
-            child.material.forEach(m => {
+            child.material.forEach((m: any) => {
               m.transparent = true;
               m.opacity = THREE.MathUtils.lerp(m.opacity, targetOpacity, 0.1);
             });
           } else {
-            child.material.transparent = true;
-            child.material.opacity = THREE.MathUtils.lerp(child.material.opacity, targetOpacity, 0.1);
+            const m = child.material as any;
+            m.transparent = true;
+            m.opacity = THREE.MathUtils.lerp(m.opacity, targetOpacity, 0.1);
           }
         }
       });

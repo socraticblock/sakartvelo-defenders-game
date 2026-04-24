@@ -114,13 +114,39 @@ export class InputManager {
       this._rebuildGhost(hoverGroup, selectedType);
     }
 
-    // Always raycast while placing: if the first frame missed the grid (cursor over UI),
-    // `_mouseDirty` could stay false and the ghost would never update until the mouse moved.
-    const cell = this.getMouseGrid(grid);
-    if (!cell) {
+    const rawCell = this.getMouseGrid(grid);
+    if (!rawCell) {
       hoverGroup.visible = false;
       return;
     }
+
+    // --- MAGNETIC SNAP LOGIC ---
+    let cell = { ...rawCell };
+    const MAGNET_RANGE = 2.5;
+    let closestPlinth = null;
+    let minDist = Infinity;
+
+    // Search for nearest unoccupied plinth
+    const plinths = (grid as any).plinths as THREE.Group[];
+    if (plinths && selectedType !== 'wall') {
+      for (const p of plinths) {
+        if (p.userData.occupied) continue;
+        const dx = rawCell.gx - p.userData.gx;
+        const dy = rawCell.gy - p.userData.gy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < MAGNET_RANGE && dist < minDist) {
+          minDist = dist;
+          closestPlinth = p;
+        }
+      }
+    }
+
+    // If a plinth is nearby, SNAP!
+    if (closestPlinth) {
+      cell.gx = closestPlinth.userData.gx;
+      cell.gy = closestPlinth.userData.gy;
+    }
+    // ----------------------------
 
     const cost = TOWER_CONFIGS[selectedType]?.cost ?? Infinity;
     const ok = grid.isBuildable(cell.gx, cell.gy, selectedType === 'wall') && gold >= cost;
@@ -132,8 +158,10 @@ export class InputManager {
     // Fade the ghost based on buildability
     hoverGroup.traverse(c => {
       if (c instanceof THREE.Mesh && c.material instanceof THREE.MeshLambertMaterial) {
-        c.material.emissive.setHex(ok ? 0x000000 : 0x440000);
-        c.material.opacity = ok ? 0.4 : 0.2;
+        // If snapped, use a brighter emissive
+        const emissiveColor = ok ? (closestPlinth ? 0x222200 : 0x000000) : 0x440000;
+        c.material.emissive.setHex(emissiveColor);
+        c.material.opacity = ok ? 0.6 : 0.2;
       }
     });
   }
@@ -311,9 +339,37 @@ export class InputManager {
 
     // Placement mode: ray hits tall tower meshes before the ground tile — always use grid.
     if (gs.selectedType) {
-      const cell = this.getMouseGrid(grid);
-      if (cell) this._cb.onGridClick(cell.gx, cell.gy, cell.isPath);
-      else this._cb.onDeselect();
+      const rawCell = this.getMouseGrid(grid);
+      if (rawCell) {
+        let gx = rawCell.gx;
+        let gy = rawCell.gy;
+        
+        // APPLY MAGNET
+        const MAGNET_RANGE = 2.5;
+        const plinths = (grid as any).plinths as THREE.Group[];
+        if (plinths && gs.selectedType !== 'wall') {
+          let minDist = Infinity;
+          let snapP = null;
+          for (const p of plinths) {
+            if (p.userData.occupied) continue;
+            const dx = gx - p.userData.gx;
+            const dy = gy - p.userData.gy;
+            const d = Math.sqrt(dx*dx + dy*dy);
+            if (d < MAGNET_RANGE && d < minDist) {
+              minDist = d;
+              snapP = p;
+            }
+          }
+          if (snapP) {
+            gx = snapP.userData.gx;
+            gy = snapP.userData.gy;
+          }
+        }
+        
+        this._cb.onGridClick(gx, gy, rawCell.isPath);
+      } else {
+        this._cb.onDeselect();
+      }
       return;
     }
 

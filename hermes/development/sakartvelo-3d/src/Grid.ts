@@ -33,7 +33,8 @@ export class Grid {
       if (isSelecting && !p.userData.occupied) {
         aura.visible = true;
         // Breathtaking pulse animation
-        aura.material.opacity = 0.3 + Math.sin(time * 5) * 0.2;
+        const mat = aura.material as THREE.MeshBasicMaterial;
+        mat.opacity = 0.3 + Math.sin(time * 5) * 0.2;
         aura.scale.setScalar(1 + Math.sin(time * 5) * 0.05);
       } else {
         aura.visible = false;
