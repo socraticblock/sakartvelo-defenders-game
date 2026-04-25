@@ -190,6 +190,7 @@
 #era-tp-progress { font-size: 14px; letter-spacing: 2px; color: #8a7a5a; margin-bottom: 16px; }
 
 #era-controls { display: flex; gap: 14px; align-items: center; margin-bottom: 24px; }
+#btn-era-lower-music { margin-bottom: 18px; }
 
 .era-play-btn, .era-nav-btn {
   border-radius: 8px; cursor: pointer; font-family: 'Georgia', serif; transition: all 0.25s;

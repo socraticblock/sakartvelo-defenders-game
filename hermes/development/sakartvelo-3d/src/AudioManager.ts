@@ -7,6 +7,7 @@ import { teleprompter } from './Teleprompter';
 
 export class AudioManager {
   private _bgm: HTMLAudioElement | null = null;
+  private _bgmVolume = 0.4;
   private _ctx: AudioContext | null = null;
   private _masterGain: GainNode | null = null;
 
@@ -30,7 +31,8 @@ export class AudioManager {
       const vol = parseInt(slider.value) / 100;
       if (this._narrationAudio) this._narrationAudio.volume = vol;
       if (this._eraAudioEl) this._eraAudioEl.volume = vol;
-      if (this._bgm) this._bgm.volume = vol * 0.4; // Music slightly quieter
+      this._bgmVolume = vol * 0.4; // Music slightly quieter than narration
+      if (this._bgm) this._bgm.volume = this._bgmVolume;
       if (this._masterGain && this._ctx) {
         this._masterGain.gain.setTargetAtTime(vol, this._ctx.currentTime, 0.1);
       }
@@ -75,11 +77,17 @@ export class AudioManager {
     }
     this._bgm = new Audio(src);
     this._bgm.loop = true;
-    this._bgm.volume = 0.4; // Default mix
+    this._bgm.volume = this._bgmVolume; // Default mix
     this._bgm.play().catch(() => {
       // Auto-play might be blocked until first interaction
       document.addEventListener('click', () => this._bgm?.play(), { once: true });
     });
+  }
+
+  lowerMusicVolume(step = 0.08): number {
+    this._bgmVolume = Math.max(0, this._bgmVolume - step);
+    if (this._bgm) this._bgm.volume = this._bgmVolume;
+    return Math.round(this._bgmVolume * 100);
   }
 
   // ─── Synthesized SFX (Zero Latency) ──────────────────
