@@ -43,7 +43,7 @@ export const TOWER_LEVEL_MULTS = {
     splash:  [0,   0.8, 1.5],
   },
   wall: {
-    hp:      [200, 400, 700],
+    hp:      [600, 1200, 2100],
     slow:    [0.25, 0.35, 0.5],
     reflect: [0,   0,   8],
   },

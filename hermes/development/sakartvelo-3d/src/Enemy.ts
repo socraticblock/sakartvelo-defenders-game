@@ -27,6 +27,7 @@ export class Enemy {
 
   alive = true;
   reachedEnd = false;
+  isBlocked = false;
   private flashMat: THREE.MeshStandardMaterial[] = [];
   private flashTime = 0;
 

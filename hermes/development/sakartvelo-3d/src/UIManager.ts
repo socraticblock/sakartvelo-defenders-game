@@ -34,6 +34,9 @@ export class UIManager {
   private $heroStatus = document.getElementById('hero-status');
   private $gameInfoModal = document.getElementById('game-info-modal');
   private $gameSettingsModal = document.getElementById('game-settings-modal');
+  private $bossHpContainer = document.getElementById('boss-hp-container');
+  private $bossName = document.getElementById('boss-name');
+  private $bossHpFill = document.getElementById('boss-hp-fill');
   private enemyIntroQueue: string[] = [];
   private enemyIntroOpen = false;
 
@@ -354,6 +357,19 @@ export class UIManager {
 
   hideLevelName(): void {
     if (this.$levelName) this.$levelName.textContent = '';
+  }
+
+  showBossHp(visible: boolean): void {
+    if (!this.$bossHpContainer) return;
+    if (visible) this.$bossHpContainer.classList.add('visible');
+    else this.$bossHpContainer.classList.remove('visible');
+  }
+
+  updateBossHp(hp: number, maxHp: number, name: string): void {
+    if (!this.$bossName || !this.$bossHpFill) return;
+    this.$bossName.textContent = name;
+    const ratio = Math.max(0, Math.min(1, hp / maxHp));
+    this.$bossHpFill.style.width = `${ratio * 100}%`;
   }
 
   showEnemyIntro(type: string): void {

@@ -552,7 +552,8 @@ export class Grid {
     if (this.occupiedCells.has(`${gx},${gy}`)) return false;
     // Walls can be placed ON the path; others cannot
     if (this.pathCells.has(`${gx},${gy}`)) return isWall;
-    return true;
+    // Walls can ONLY be built on the path; others (Archer/Catapult) can ONLY be built off-path.
+    return !isWall;
   }
 
   occupy(gx: number, gy: number) {

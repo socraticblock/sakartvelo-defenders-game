@@ -265,6 +265,113 @@ export function buildWallMesh(
   group: THREE.Group, lv: number,
   hpBg: THREE.Mesh, hpFill: THREE.Mesh,
 ): void {
+  const era = (window as any).__gs?.currentLevel?.era ?? 0;
+
+  if (era === 0) {
+    buildWoodenPalisade(group, lv, hpBg, hpFill);
+  } else {
+    buildStoneBastion(group, lv, hpBg, hpFill);
+  }
+}
+
+function buildWoodenPalisade(
+  group: THREE.Group, lv: number,
+  hpBg: THREE.Mesh, hpFill: THREE.Mesh,
+): void {
+  const wallH = 0.5 + (lv - 1) * 0.15;
+  const logColor = lv === 1 ? 0x6b4524 : lv === 2 ? 0x5d4037 : 0x4e342e;
+  const ropeColor = 0x8b7d6b;
+  const bronzeColor = 0xcd7f32;
+
+  const add = (mesh: THREE.Mesh) => {
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    group.add(mesh);
+    return mesh;
+  };
+
+  // 1. VERTICAL LOGS (Palisade)
+  // Create a tight row of logs with slight random height/rotation for "handcrafted" feel
+  const logCount = 5;
+  const logStep = 0.18;
+  for (let i = 0; i < logCount; i++) {
+    for (let j = 0; j < logCount; j++) {
+      // Only outer logs for the wall perimeter
+      if (i > 0 && i < logCount - 1 && j > 0 && j < logCount - 1) continue;
+
+      const x = (i - (logCount - 1) / 2) * logStep;
+      const z = (j - (logCount - 1) / 2) * logStep;
+      
+      const randH = wallH + (Math.random() * 0.1 - 0.05);
+      const log = add(new THREE.Mesh(
+        new THREE.CylinderGeometry(0.08, 0.09, randH, 6),
+        mythicToon(logColor)
+      ));
+      log.position.set(x, randH / 2, z);
+      log.rotation.y = Math.random() * Math.PI;
+      log.rotation.x = (Math.random() - 0.5) * 0.05;
+
+      // Pointed tip
+      const tipH = 0.15;
+      const tip = add(new THREE.Mesh(
+        new THREE.ConeGeometry(0.08, tipH, 6),
+        mythicToon(logColor)
+      ));
+      tip.position.set(x, randH + tipH / 2 - 0.02, z);
+      tip.rotation.y = log.rotation.y;
+    }
+  }
+
+  // 2. REINFORCEMENTS
+  if (lv === 1) {
+    // Rope bindings
+    for (const y of [wallH * 0.3, wallH * 0.7]) {
+      const rope = add(new THREE.Mesh(
+        new THREE.BoxGeometry(0.85, 0.03, 0.85),
+        mythic(ropeColor, 0, 0.9)
+      ));
+      rope.position.y = y;
+    }
+  } else {
+    // Bronze bands
+    for (const y of [wallH * 0.25, wallH * 0.75]) {
+      const band = add(new THREE.Mesh(
+        new THREE.BoxGeometry(0.9, 0.06, 0.9),
+        mythicToon(bronzeColor)
+      ));
+      band.position.y = y;
+    }
+  }
+
+  // 3. LEVEL 3 EXTRAS (Walkway & Spikes)
+  if (lv >= 3) {
+    const platform = add(new THREE.Mesh(
+      new THREE.BoxGeometry(0.7, 0.08, 0.7),
+      mythicToon(0x3e2723)
+    ));
+    platform.position.y = wallH * 0.6;
+
+    // Small bronze spikes at the base
+    for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
+      const spike = add(new THREE.Mesh(
+        new THREE.ConeGeometry(0.04, 0.2, 4),
+        mythicToon(bronzeColor)
+      ));
+      spike.position.set(Math.cos(angle) * 0.45, 0.1, Math.sin(angle) * 0.45);
+      spike.rotation.x = Math.PI / 2;
+      spike.lookAt(new THREE.Vector3(0, 1, 0));
+    }
+  }
+
+  // HP bar position
+  hpBg.position.y = wallH + 0.35;
+  hpFill.position.y = wallH + 0.35;
+}
+
+function buildStoneBastion(
+  group: THREE.Group, lv: number,
+  hpBg: THREE.Mesh, hpFill: THREE.Mesh,
+): void {
   const wallH = 0.4 + (lv - 1) * 0.12;
   const wallColor = lv === 1 ? 0x8a7a5a : lv === 2 ? 0x9a8a6a : 0xaaaaaa;
 

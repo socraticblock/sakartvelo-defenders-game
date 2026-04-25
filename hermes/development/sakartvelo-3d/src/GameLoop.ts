@@ -141,8 +141,19 @@ export class GameLoop {
   }
 
   private _updateEnemies(dt: number): void {
+    let boss: any = null;
     for (const enemy of gs.enemies) {
       enemy.update(dt, this._camera);
+      if (enemy.type === 'boss' && enemy.alive) {
+        boss = enemy;
+      }
+    }
+
+    if (boss) {
+      this._ui.showBossHp(true);
+      this._ui.updateBossHp(boss.hp, boss.maxHp, 'Ancient Devi');
+    } else {
+      this._ui.showBossHp(false);
     }
   }
 
@@ -154,6 +165,9 @@ export class GameLoop {
           spawn.origin, spawn.target, spawn.damage, spawn.speed,
           spawn.towerType, spawn.isCrit, spawn.splashRadius,
         );
+        if (spawn.towerType === 'archer') {
+          this._audio.playArrow();
+        }
       }
     }
     this._updateOcclusion();
@@ -356,7 +370,7 @@ export class GameLoop {
         this._ui.screens.showLevelComplete('Level Complete', stars);
       };
 
-      if (this._currentWaveHasBoss()) {
+      if (this._currentWaveHasBoss() && gs.bossKilled) {
         showVictoryPopup('Boss Defeated!', this._getBossVictoryText(), finishVictoryFlow);
       } else {
         showPopup(era, level, finishVictoryFlow);

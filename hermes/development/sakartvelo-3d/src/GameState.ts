@@ -43,6 +43,7 @@ export class GameState {
   waveCountdownActive = false;
   waveCompleteProcessed = false;
   popupDismissed = false;
+  bossKilled = false;
 
   // ─── Tower unlocks ───────────────────────────────────────
   unlockedTowers = new Set<string>(['archer', 'catapult', 'wall']);
@@ -87,6 +88,7 @@ export class GameState {
     this.waveCountdownActive = false;
     this.waveCompleteProcessed = false;
     this.popupDismissed = false;
+    this.bossKilled = false;
 
     this.grid = new Grid(lvl);
     scene.add(this.grid.group);

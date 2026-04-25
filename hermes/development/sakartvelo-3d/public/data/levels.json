@@ -126,7 +126,7 @@
             {
               "type": "boss",
               "count": 1,
-              "hp_mult": 1.11,
+              "hp_mult": 4.44,
               "speed_mult": 0.91,
               "spawn_interval": 0
             }

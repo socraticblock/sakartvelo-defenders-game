@@ -35,7 +35,11 @@ export function updateEnemySlow(): void {
         totalSlow = Math.max(totalSlow, w.t.getWallSlow());
       }
     }
-    enemy.speed = totalSlow > 0 ? enemy.baseSpeed * (1 - totalSlow) : enemy.baseSpeed;
+    if (enemy.isBlocked) {
+      enemy.speed = 0;
+    } else {
+      enemy.speed = totalSlow > 0 ? enemy.baseSpeed * (1 - totalSlow) : enemy.baseSpeed;
+    }
   }
 }
 
@@ -49,6 +53,7 @@ export function updateEnemyWallAttacks(scene: THREE.Scene, camera: THREE.Camera)
 
   for (const enemy of gs.enemies) {
     if (!enemy.alive) continue;
+    enemy.isBlocked = false; // Reset each frame; re-set below if still hitting a wall
     _enemyPos.copy(enemy.getPos());
     for (let wi = 0; wi < wallCache.length; wi++) {
       const w = wallCache[wi];
@@ -56,6 +61,8 @@ export function updateEnemyWallAttacks(scene: THREE.Scene, camera: THREE.Camera)
       const dx = _enemyPos.x - w.x;
       const dz = _enemyPos.z - w.z;
       if (dx * dx + dz * dz <= ATTACK_RANGE_SQ) {
+        enemy.isBlocked = true;
+        enemy.speed = 0;
         const dmg = ENEMY_CONFIGS[enemy.type]?.wallDmg ?? 10;
         const destroyed = w.t.takeWallDamage(dmg);
         w.t.billboardHp(camera);
@@ -85,6 +92,7 @@ export function updateEnemyDeaths(scene: THREE.Scene, camera: THREE.Camera): voi
       } else {
         gs.addGold(enemy.reward);
         spawnFloatingGold(scene, enemy.getPos(), enemy.reward, camera);
+        if (enemy.type === 'boss') gs.bossKilled = true;
       }
       gs.removeEnemy(enemy, scene);
     }

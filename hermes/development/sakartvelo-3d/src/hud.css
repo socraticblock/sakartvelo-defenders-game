@@ -16,6 +16,54 @@
   pointer-events: none;
 }
 
+#boss-hp-container {
+  display: none;
+  position: absolute;
+  top: 110px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid #aa3333;
+  border-radius: 8px;
+  padding: 10px;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 10;
+  pointer-events: none;
+  box-shadow: 0 0 20px rgba(170, 51, 51, 0.3);
+}
+
+#boss-hp-container.visible {
+  display: flex;
+}
+
+#boss-name {
+  color: #ff4444;
+  font-weight: bold;
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 0 8px rgba(255, 68, 68, 0.4);
+}
+
+#boss-hp-bar {
+  width: 100%;
+  height: 14px;
+  background: #222;
+  border-radius: 7px;
+  overflow: hidden;
+  border: 1px solid #444;
+}
+
+#boss-hp-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #880000, #ff4444);
+  transition: width 0.2s ease-out;
+}
+
 #hud > div {
   pointer-events: all;
 }

@@ -18,10 +18,13 @@ export class AudioManager {
   private _eraSessionId = 0;
   _eraPlaying = false;
 
+  private _arrowBuffer: AudioBuffer | null = null;
+
   init(): void {
     this.bindVolumeControls();
     
     teleprompter.init();
+    this._loadArrowSound();
 
     // Unlock audio context on first click
     document.addEventListener('click', (e) => {
@@ -171,6 +174,17 @@ export class AudioManager {
     return this._ctx;
   }
 
+  private async _loadArrowSound(): Promise<void> {
+    try {
+      const response = await fetch('/audio/arrow.mp3');
+      const arrayBuffer = await response.arrayBuffer();
+      const ctx = this._getCtx();
+      this._arrowBuffer = await ctx.decodeAudioData(arrayBuffer);
+    } catch (e) {
+      console.warn('[Audio] Failed to load arrow sound:', e);
+    }
+  }
+
   // ─── Background Music ────────────────────────────────
   
   playBGM(src: string): void {
@@ -260,6 +274,15 @@ export class AudioManager {
       osc.start(t);
       osc.stop(t + 1.0);
     });
+  }
+
+  playArrow(): void {
+    if (!this._arrowBuffer) return;
+    const ctx = this._getCtx();
+    const source = ctx.createBufferSource();
+    source.buffer = this._arrowBuffer;
+    source.connect(this._masterGain!);
+    source.start();
   }
 
   // ─── Narration ────────────────────────────────────────
