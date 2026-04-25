@@ -95,15 +95,15 @@ scene.add(moveRing);
 
 function setupCamera(gw: number, gh: number): void {
   const cx = gw / 2, cz = gh / 2;
-  const portrait = innerHeight > innerWidth && innerWidth <= 768;
-  const dist = Math.max(gw, gh) * (portrait ? 0.78 : 0.95);
-  camera.fov = portrait ? 52 : 45;
+  const portrait = innerHeight > innerWidth;
+  const dist = Math.max(gh * 0.72, gw * 1.08);
+  camera.fov = portrait ? 50 : 44;
   camera.position.set(
     cx,
-    dist * (portrait ? 1.08 : 0.85),
-    cz + dist * (portrait ? 0.72 : 0.95),
+    dist * (portrait ? 1.18 : 1.02),
+    cz + dist * (portrait ? 0.66 : 0.78),
   );
-  camera.lookAt(cx, 0, cz);
+  camera.lookAt(cx, 0, cz + (portrait ? -0.35 : 0));
   camera.updateProjectionMatrix();
   gs.cameraBaseX = cx;
 }
@@ -201,8 +201,8 @@ async function init(): Promise<void> {
   ui.screens.startCulturalFacts();
 
   try {
-    // FIX: Use absolute-style path for Vite public folder
-    const resp = await fetch('/data/levels.json');
+    // Keep level iteration honest during design passes; browsers can cache public JSON.
+    const resp = await fetch(`/data/levels.json?v=${Date.now()}`, { cache: 'no-store' });
     if (!resp.ok) throw new Error('Fetch failed: ' + resp.status);
     const raw = await resp.json();
     gs.allLevels = raw.levels || raw;

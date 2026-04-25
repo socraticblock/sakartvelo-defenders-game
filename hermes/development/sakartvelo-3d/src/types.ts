@@ -20,6 +20,7 @@ export interface LevelData {
   boss: string | BossData | null;
   build_nodes?: number[][];
   theme?: string;
+  defense_target?: string;
 }
 
 export interface WaveData {

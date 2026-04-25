@@ -21,8 +21,6 @@ interface InputCallbacks {
   onDeselect: () => void;
 }
 
-const HUD_SKIP_ZONE_PX = 100; // bottom HUD zone to skip for tap-to-move
-
 export class InputManager {
   // ─── State ─────────────────────────────────────────────
   private _kbLayout: KBLayout = 'qwerty';
@@ -282,9 +280,6 @@ export class InputManager {
     // Right click — hero move
     this._renderer.domElement.addEventListener('contextmenu', this._onContextMenu);
 
-    // Touch — tap to move hero
-    this._renderer.domElement.addEventListener('touchend', this._onTouchEnd, { passive: false });
-
     // Pointer lock — prevent it
     document.addEventListener('pointerlockchange', () => {
       if (document.pointerLockElement) document.exitPointerLock();
@@ -328,6 +323,7 @@ export class InputManager {
   private _onPointerDown = (e: PointerEvent): void => {
     // Only handle Left Click (button 0)
     if (e.button !== 0) return;
+    if (this._isBlockedByUi(e.clientY)) return;
 
     // Stop propagation so we don't trigger multiple handlers
     e.stopPropagation();
@@ -395,20 +391,21 @@ export class InputManager {
 
   private _onContextMenu = (e: MouseEvent): void => {
     e.preventDefault();
+    if (this._isBlockedByUi(e.clientY)) return;
     const pos = this.getMouseGround();
     if (pos) this._cb.onHeroMove(pos.x, pos.z);
   };
 
-  private _onTouchEnd = (e: TouchEvent): void => {
-    e.preventDefault();
-    const t = e.changedTouches[0];
-    if (!t) return;
-    if (t.clientY > window.innerHeight - HUD_SKIP_ZONE_PX) return;
-    this._mouseX = t.clientX;
-    this._mouseY = t.clientY;
-    const pos = this.getMouseGround();
-    if (pos) this._cb.onHeroMove(pos.x, pos.z);
-  };
+  private _isBlockedByUi(clientY: number): boolean {
+    const bottomBar = document.getElementById('bottom-bar');
+    const heroBar = document.getElementById('hero-bar');
+    const towerPanel = document.getElementById('tower-panel');
+    const rects = [bottomBar, heroBar, towerPanel]
+      .filter((el): el is HTMLElement => Boolean(el) && getComputedStyle(el!).display !== 'none')
+      .map(el => el.getBoundingClientRect());
+    const topMost = rects.reduce((top, rect) => Math.min(top, rect.top), window.innerHeight);
+    return clientY >= topMost - 8;
+  }
 
   private _onResize = (): void => {
     (this._camera as THREE.PerspectiveCamera).aspect = innerWidth / innerHeight;

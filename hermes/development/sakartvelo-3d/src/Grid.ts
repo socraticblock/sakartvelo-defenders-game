@@ -9,6 +9,7 @@ export class Grid {
   private occupiedCells = new Map<string, boolean>();
   private _curve: THREE.CatmullRomCurve3 | null = null;
   private theme = 'colchis';
+  private defenseTarget = 'village_gate';
   worldPath: THREE.Vector3[] = [];
 
   readonly width: number;
@@ -18,6 +19,7 @@ export class Grid {
     this.width = level.grid_width;
     this.height = level.grid_height;
     this.theme = level.theme || 'colchis';
+    this.defenseTarget = level.defense_target || 'village_gate';
 
     this.computePathCells(level.path_waypoints);
     this.computeWorldPath(level.path_waypoints);
@@ -27,6 +29,7 @@ export class Grid {
     this.createHitTestTiles();
     this.createEnvironmentDecorations();
     this.createThemeDecorations();
+    this.createDefenseObjective();
     this.addDecorations();
   }
 
@@ -390,6 +393,42 @@ export class Grid {
     top.position.y = 0.58;
     g.add(a, b, top);
     return g;
+  }
+
+  private makeGate(color = 0xd4a017): THREE.Group {
+    const g = new THREE.Group();
+    const wood = new THREE.MeshLambertMaterial({ color: 0x735938 });
+    const trim = new THREE.MeshLambertMaterial({ color });
+    const left = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.8, 0.14), wood);
+    const right = left.clone();
+    left.position.set(-0.42, 0.4, 0);
+    right.position.set(0.42, 0.4, 0);
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.14, 0.16), trim);
+    beam.position.y = 0.82;
+    g.add(left, right, beam);
+    return g;
+  }
+
+  private createDefenseObjective(): void {
+    const end = this.worldPath[this.worldPath.length - 1];
+    if (!end) return;
+    const x = Math.max(1.2, Math.min(this.width - 1.2, end.x));
+    const z = Math.max(1.0, Math.min(this.height - 0.45, end.z + 0.55));
+    let prop: THREE.Group;
+
+    if (this.defenseTarget.includes('shrine') || this.defenseTarget.includes('grove') || this.defenseTarget.includes('fleece')) {
+      prop = this.makeShrine(this.defenseTarget.includes('devi') ? 0xaa3333 : 0xd4a017);
+    } else if (this.defenseTarget.includes('crossing') || this.defenseTarget.includes('landing')) {
+      prop = this.makeGate(0x245f73);
+    } else if (this.defenseTarget.includes('gate') || this.defenseTarget.includes('palisade')) {
+      prop = this.makeGate(0xd4a017);
+    } else {
+      prop = this.makeHut();
+    }
+
+    prop.position.set(x, 0.02, z);
+    prop.scale.setScalar(1.25);
+    this.group.add(prop);
   }
 
   private createThemeDecorations(): void {
