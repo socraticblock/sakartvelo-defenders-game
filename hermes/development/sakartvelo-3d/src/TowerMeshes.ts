@@ -7,6 +7,60 @@ import * as THREE from 'three';
 import { toon, outlineGroup } from './CelShader';
 import { mythic, mythicToon } from './MythicMaterials';
 
+function createSwayFlag(width: number, height: number, color: number): THREE.Mesh {
+  const geometry = new THREE.PlaneGeometry(width, height, 10, 6);
+
+  // Move the geometry so the left edge is anchored at the pole.
+  geometry.translate(width * 0.5, 0, 0);
+
+  const material = new THREE.ShaderMaterial({
+    uniforms: {
+      uTime: { value: 0 },
+      uColor: { value: new THREE.Color(color) },
+    },
+    vertexShader: `
+      uniform float uTime;
+      varying vec2 vUv;
+
+      void main() {
+        vUv = uv;
+        vec3 transformed = position;
+
+        // Pole is on uv.x = 0. Free end is uv.x = 1.
+        float anchor = pow(uv.x, 1.7);
+
+        float primaryWave = sin((uTime * 2.4) + (uv.y * 4.5)) * 0.09;
+        float secondaryWave = sin((uTime * 3.6) + (uv.x * 7.0) - (uv.y * 2.0)) * 0.04;
+
+        transformed.z += (primaryWave + secondaryWave) * anchor;
+        transformed.y += sin((uTime * 2.0) + (uv.x * 5.0)) * 0.02 * anchor;
+
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(transformed, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 uColor;
+      varying vec2 vUv;
+
+      void main() {
+        float shade = 0.80 + ((1.0 - vUv.y) * 0.20);
+        gl_FragColor = vec4(uColor * shade, 0.95);
+      }
+    `,
+    side: THREE.DoubleSide,
+    transparent: true,
+  });
+
+  const flag = new THREE.Mesh(geometry, material);
+  flag.castShadow = true;
+
+  flag.onBeforeRender = () => {
+    material.uniforms.uTime.value = performance.now() * 0.001;
+  };
+
+  return flag;
+}
+
 export function buildArcherMesh(
   group: THREE.Group, lv: number, scaleMult: number, color: number,
 ): void {
@@ -60,11 +114,15 @@ export function buildArcherMesh(
 
   if (isL3) {
     // Legendary Flag
-    const flagPole = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.4), mythic(0x333333, 0.1, 0.9));
+    const flagPole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.01, 0.01, 0.4),
+      mythic(0x333333, 0.1, 0.9)
+    );
     flagPole.position.y = roof.position.y + roofHeight / 2 + 0.15;
     group.add(flagPole);
-    const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.15), toon(0xd63031));
-    flag.position.set(0.12, flagPole.position.y + 0.1, 0);
+
+    const flag = createSwayFlag(0.25, 0.15, 0xd63031);
+    flag.position.set(0, flagPole.position.y + 0.1, 0);
     flag.rotation.y = Math.PI / 2;
     group.add(flag);
   }
@@ -136,11 +194,16 @@ export function buildCatapultMesh(
 
   if (isL3) {
     // War Banner for Catapult
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.6), mythic(0x333333, 0.1, 0.9));
+    const pole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.01, 0.01, 0.6),
+      mythic(0x333333, 0.1, 0.9)
+    );
     pole.position.set(0.2, 0.5, 0.2);
     group.add(pole);
-    const banner = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 0.3), toon(0xd63031));
-    banner.position.set(0.2, 0.65, 0.27);
+
+    const banner = createSwayFlag(0.15, 0.3, 0xd63031);
+    banner.position.set(0.2, 0.65, 0.2);
+    banner.rotation.y = Math.PI / 2;
     group.add(banner);
   }
 }

@@ -126,7 +126,7 @@
         }
       ],
       "historical_fact": "TUTORIAL: Place an Archer Tower next to the path to defend against incoming enemies. Click 'Archer' below, then click the map.",
-      "boss": null,
+      "boss": "devi",
       "sub_era": "bronze_age_colchis",
       "build_nodes": [
         [

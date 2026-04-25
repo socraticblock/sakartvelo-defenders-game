@@ -9,7 +9,7 @@ import { UIManager } from './UIManager';
 import { InputManager } from './InputManager';
 import { AudioManager } from './AudioManager';
 import { visuals } from './VisualsManager';
-import { showPopup } from './HistoricalPopup';
+import { showPopup, showVictoryPopup } from './HistoricalPopup';
 import {
   spawnFloatingGold,
   spawnHitFlash,
@@ -18,6 +18,7 @@ import {
 } from './Effects';
 import { updateEnemySlow, updateEnemyWallAttacks, updateEnemyDeaths } from './EnemyAI';
 import { magicParticles } from './MagicalParticles';
+import { ambientDust } from './AmbientDust';
 
 export class GameLoop {
   private readonly _UPGRADE_RANGE = 1.6;
@@ -65,6 +66,7 @@ export class GameLoop {
   private _animate = (): void => {
     requestAnimationFrame(this._animate);
     const dt = Math.min(this._clock.getDelta(), 0.05);
+    const now = performance.now() * 0.001;
 
     if (!gs.gameOver && !gs.paused && gs.waveMgr && gs.grid) {
       this._updateBuildPhase(dt);
@@ -83,11 +85,12 @@ export class GameLoop {
       magicParticles?.update(dt);
       this._updateWallHpBillboards();
       this._checkWaveComplete();
-      gs.grid.update(performance.now() * 0.001, gs.selectedType !== null);
+      gs.grid.update(now, gs.selectedType !== null);
     }
 
     this._updateHover();
-    this._updateCameraSway();
+    this._updateCameraSway(now);
+    ambientDust?.update(this._camera, now);
 
     // Use the visuals manager for high-end rendering
     visuals.render(this._renderer, this._scene, this._camera);
@@ -275,6 +278,38 @@ export class GameLoop {
     }
   }
 
+  private _currentWaveHasBoss(): boolean {
+    const level = gs.currentLevel;
+    const waveNum = gs.waveMgr?.waveNum;
+
+    if (!level || !waveNum) return false;
+
+    const currentWave = level.waves.find(w => w.wave_num === waveNum);
+    const waveHasBoss = currentWave?.enemies?.some(enemy => enemy.type === 'boss') ?? false;
+    const metadataHasBoss = Boolean(level.boss);
+
+    return metadataHasBoss || waveHasBoss;
+  }
+
+  private _getBossVictoryText(): string {
+    const rawBoss = gs.currentLevel?.boss;
+
+    if (typeof rawBoss === 'string' && rawBoss.trim().length > 0) {
+      const formatted = rawBoss
+        .split('_')
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+
+      return `You defeated ${formatted} and held the line. Colchis stands victorious.`;
+    }
+
+    if (gs.currentLevel?.level === 1) {
+      return `You defeated the Devi and held the line. Colchis stands victorious.`;
+    }
+
+    return `You defeated the enemy champion and held the line. Sakartvelo endures.`;
+  }
+
   private _checkWaveComplete(): void {
     if (!gs.waveMgr?.active || !gs.waveMgr.isWaveDone()) {
       this._waveCompleteProcessed = false;
@@ -288,12 +323,29 @@ export class GameLoop {
 
     if (gs.waveMgr.waveNum >= gs.waveMgr.totalWaves) {
       gs.waveMgr.clear();
-      // Victory! Show popup only at the very end of the level
-      showPopup(gs.currentLevel?.era ?? 0, gs.currentLevel?.level ?? 1, () => {
-        gs.gameOver = true;
-        this._ui.screens.showGameOver(true, "Victory!", gs.getStars());
-        this._ui.screens.showLevelComplete("Level Complete", gs.getStars());
-      });
+
+      // Freeze gameplay first.
+      gs.gameOver = true;
+
+      // Persist stars before any UI transition.
+      gs.saveLevelComplete(true);
+
+      // Refresh the map immediately so background / next navigation is up to date.
+      this._ui.screens.refreshLevelSelect();
+
+      const era = Number(gs.currentLevel?.era ?? 0);
+      const level = Number(gs.currentLevel?.level ?? 1);
+      const stars = gs.getStars();
+
+      const finishVictoryFlow = () => {
+        this._ui.screens.showLevelComplete('Level Complete', stars);
+      };
+
+      if (this._currentWaveHasBoss()) {
+        showVictoryPopup('Boss Defeated!', this._getBossVictoryText(), finishVictoryFlow);
+      } else {
+        showPopup(era, level, finishVictoryFlow);
+      }
     } else {
       gs.waveMgr.clear();
       // No more popups between waves! Just start the build phase.
@@ -303,9 +355,9 @@ export class GameLoop {
     }
   }
 
-  private _updateCameraSway(): void {
+  private _updateCameraSway(time: number): void {
     if (!gs.currentLevel) return;
-    const t = performance.now() * 0.0001;
+    const t = time * 0.1;
     this._camera.position.x = gs.cameraBaseX + Math.sin(t) * 0.15;
   }
 }

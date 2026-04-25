@@ -203,7 +203,11 @@ export class GameState {
 
   saveLevelComplete(won: boolean): void {
     if (!won || !this.currentLevel) return;
-    const levelId = SaveManager.levelId(this.currentLevel.era, this.currentLevel.level);
+
+    const era = Number(this.currentLevel.era);
+    const level = Number(this.currentLevel.level);
+    const levelId = SaveManager.levelId(era, level);
+
     SaveManager.completeLevel(levelId, this.getStars());
   }
 

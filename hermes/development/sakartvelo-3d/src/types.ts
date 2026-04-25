@@ -1,7 +1,8 @@
 export interface BossData {
-  type: string;
-  hp_mult: number;
-  speed_mult: number;
+  id?: string;
+  type?: string;
+  hp_mult?: number;
+  speed_mult?: number;
 }
 
 export interface LevelData {
@@ -16,7 +17,7 @@ export interface LevelData {
   path_waypoints: number[][];
   waves: WaveData[];
   historical_fact: string;
-  boss: BossData | null;
+  boss: string | BossData | null;
   build_nodes?: number[][];
 }
 

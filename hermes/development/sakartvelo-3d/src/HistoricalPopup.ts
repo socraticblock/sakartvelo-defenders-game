@@ -31,6 +31,13 @@ const POPUP_CSS = `
   color: #c8941a;
   margin-bottom: 14px;
 }
+.hp-title {
+  font-size: 28px;
+  line-height: 1.2;
+  color: #ffd36b;
+  margin: 0 0 14px;
+  text-shadow: 0 0 18px rgba(255,211,107,0.25);
+}
 .hp-fact {
   font-size: 17px;
   line-height: 1.7;
@@ -129,5 +136,35 @@ export function showPopup(era: number, level: number, callback: () => void): voi
       onDismiss = null;
       callback();
     });
+  });
+}
+
+export function showVictoryPopup(title: string, message: string, callback: () => void): void {
+  if (active) return;
+  active = true;
+  onDismiss = callback;
+  inject();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'hp-overlay';
+  overlay.innerHTML = `
+    <div class="hp-card">
+      <div class="hp-badge">⚔ Boss Defeated</div>
+      <h2 class="hp-title">${title}</h2>
+      <p class="hp-fact">${message}</p>
+      <div class="hp-footer">
+        <span class="hp-era-tag">The path is clear</span>
+        <button class="hp-btn" id="hp-dismiss">Claim Victory →</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#hp-dismiss')?.addEventListener('click', () => {
+    document.body.removeChild(overlay);
+    active = false;
+    onDismiss = null;
+    callback();
   });
 }

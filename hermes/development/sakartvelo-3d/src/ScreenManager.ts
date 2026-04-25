@@ -96,6 +96,10 @@ export class ScreenManager {
     this._showScreen('screen-level-select');
   }
 
+  refreshLevelSelect(): void {
+    LevelSelect.refresh();
+  }
+
   hideGameOver(): void {
     document.getElementById('screen-game-over')?.classList.remove('visible');
   }
@@ -182,14 +186,18 @@ export class ScreenManager {
   }
 
   private _bindGameOverButtons(): void {
-    document.getElementById('go-menu')?.addEventListener('click', () => this.showLevelSelect());
+    document.getElementById('go-menu')?.addEventListener('click', () => {
+      this.showLevelSelect(gs.currentLevel?.era ?? 0);
+    });
     document.getElementById('btn-go-retry')?.addEventListener('click', () => {
       if (gs.currentLevel) this._onLevelSelect?.(gs.currentLevel.era, gs.currentLevel.level);
     });
   }
 
   private _bindLevelCompleteButtons(): void {
-    document.getElementById('lc-menu')?.addEventListener('click', () => this.showLevelSelect());
+    document.getElementById('lc-menu')?.addEventListener('click', () => {
+      this.showLevelSelect(gs.currentLevel?.era ?? 0);
+    });
     document.getElementById('lc-next')?.addEventListener('click', () => {
       // Logic for next level...
     });
