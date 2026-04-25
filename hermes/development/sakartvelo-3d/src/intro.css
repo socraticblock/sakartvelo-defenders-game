@@ -140,7 +140,7 @@
   margin-bottom: 8px;
 }
 
-#volume-panel {
+.volume-panel {
   position: absolute; top: 20px; right: 24px;
   display: flex; flex-direction: column; gap: 10px;
   background: rgba(0, 0, 0, 0.5);
@@ -159,7 +159,23 @@
   border-radius: 2px; outline: none; cursor: pointer;
 }
 
+#vol-music-title,
+#vol-music-era {
+  -webkit-appearance: none; appearance: none;
+  width: 90px; height: 4px;
+  background: linear-gradient(90deg, #8b6914 var(--pct, 70%), #3a3020 var(--pct, 70%));
+  border-radius: 2px; outline: none; cursor: pointer;
+}
+
 #vol-narration::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #d4a017; cursor: pointer;
+  box-shadow: 0 0 6px rgba(212, 160, 23, 0.5);
+}
+
+#vol-music-title::-webkit-slider-thumb,
+#vol-music-era::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none;
   width: 14px; height: 14px; border-radius: 50%;
   background: #d4a017; cursor: pointer;
@@ -190,7 +206,6 @@
 #era-tp-progress { font-size: 14px; letter-spacing: 2px; color: #8a7a5a; margin-bottom: 16px; }
 
 #era-controls { display: flex; gap: 14px; align-items: center; margin-bottom: 24px; }
-#btn-era-lower-music { margin-bottom: 18px; }
 
 .era-play-btn, .era-nav-btn {
   border-radius: 8px; cursor: pointer; font-family: 'Georgia', serif; transition: all 0.25s;

@@ -165,14 +165,6 @@ export class ScreenManager {
   }
 
   private _bindEraButtons(): void {
-    document.getElementById('btn-era-lower-music')?.addEventListener('click', () => {
-      const pct = audio.lowerMusicVolume();
-      const btn = document.getElementById('btn-era-lower-music') as HTMLButtonElement | null;
-      if (btn) {
-        btn.textContent = pct > 0 ? `🔉 Lower Music (${pct}%)` : '🔇 Music Min';
-      }
-    });
-
     document.getElementById('btn-era-play')?.addEventListener('click', () => {
       if (audio._eraPlaying) audio.stopEraNarration();
       else audio.startEraNarration();

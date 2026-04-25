@@ -114,6 +114,13 @@
 
   <!-- ─── SCREEN 0: TITLE CARD ─── -->
   <div id="screen-title" class="intro-overlay screen visible">
+    <div id="title-volume-panel" class="volume-panel">
+      <div class="vol-row">
+        <span class="vol-icon">🎵</span>
+        <input type="range" id="vol-music-title" min="0" max="100" value="100">
+        <span class="vol-val" id="vol-music-title-val">100</span>
+      </div>
+    </div>
     <div class="intro-flag">🇬🇪</div>
     <div class="intro-title">Sakartvelo</div>
     <div class="intro-title intro-title-alt">Defenders</div>
@@ -125,11 +132,16 @@
 
   <!-- ─── SCREEN 1: ERA INTRO ─── -->
   <div id="screen-era" class="intro-overlay screen">
-    <div id="volume-panel">
+    <div id="era-volume-panel" class="volume-panel">
       <div class="vol-row">
         <span class="vol-icon">🎙</span>
         <input type="range" id="vol-narration" min="0" max="100" value="100">
         <span class="vol-val" id="vol-narration-val">100</span>
+      </div>
+      <div class="vol-row">
+        <span class="vol-icon">🎵</span>
+        <input type="range" id="vol-music-era" min="0" max="100" value="100">
+        <span class="vol-val" id="vol-music-era-val">100</span>
       </div>
     </div>
 
@@ -153,7 +165,6 @@
       <button id="btn-era-play" class="era-play-btn">▶ Play Narration</button>
       <button id="btn-era-next" class="era-nav-btn">Next →</button>
     </div>
-    <button id="btn-era-lower-music" class="era-nav-btn">🔉 Lower Music</button>
 
     <button class="intro-btn" id="btn-era-continue" onclick="window.__navigateToLevelSelect()">Continue</button>
   </div>

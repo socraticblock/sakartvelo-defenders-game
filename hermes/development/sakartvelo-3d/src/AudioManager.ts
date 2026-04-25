@@ -17,27 +17,62 @@ export class AudioManager {
   _eraPlaying = false;
 
   init(): void {
-    const slider = document.getElementById('vol-narration') as HTMLInputElement;
-    const val = document.getElementById('vol-narration-val')!;
-    if (!slider) return;
+    const slider = document.getElementById('vol-narration') as HTMLInputElement | null;
+    const val = document.getElementById('vol-narration-val');
+    const musicTitleSlider = document.getElementById('vol-music-title') as HTMLInputElement | null;
+    const musicTitleVal = document.getElementById('vol-music-title-val');
+    const musicEraSlider = document.getElementById('vol-music-era') as HTMLInputElement | null;
+    const musicEraVal = document.getElementById('vol-music-era-val');
 
     const updateBg = (el: HTMLInputElement) => {
       el.style.background = `linear-gradient(90deg, #8b6914 ${el.value}%, #3a3020 ${el.value}%)`;
     };
 
-    slider.addEventListener('input', () => {
-      val.textContent = slider.value;
-      updateBg(slider);
-      const vol = parseInt(slider.value) / 100;
-      if (this._narrationAudio) this._narrationAudio.volume = vol;
-      if (this._eraAudioEl) this._eraAudioEl.volume = vol;
-      this._bgmVolume = vol * 0.4; // Music slightly quieter than narration
-      if (this._bgm) this._bgm.volume = this._bgmVolume;
-      if (this._masterGain && this._ctx) {
-        this._masterGain.gain.setTargetAtTime(vol, this._ctx.currentTime, 0.1);
+    const syncMusicUI = (pct: number) => {
+      const safePct = Math.round(Math.max(0, Math.min(100, pct)));
+      if (musicTitleSlider) {
+        musicTitleSlider.value = String(safePct);
+        updateBg(musicTitleSlider);
       }
+      if (musicEraSlider) {
+        musicEraSlider.value = String(safePct);
+        updateBg(musicEraSlider);
+      }
+      if (musicTitleVal) musicTitleVal.textContent = String(safePct);
+      if (musicEraVal) musicEraVal.textContent = String(safePct);
+    };
+
+    const setMusicVolumePercent = (pct: number) => {
+      const safePct = Math.max(0, Math.min(100, pct));
+      this._bgmVolume = (safePct / 100) * 0.4;
+      if (this._bgm) this._bgm.volume = this._bgmVolume;
+      syncMusicUI(safePct);
+    };
+
+    if (slider) {
+      slider.addEventListener('input', () => {
+        if (val) val.textContent = slider.value;
+        updateBg(slider);
+        const vol = parseInt(slider.value) / 100;
+        if (this._narrationAudio) this._narrationAudio.volume = vol;
+        if (this._eraAudioEl) this._eraAudioEl.volume = vol;
+        setMusicVolumePercent(parseInt(slider.value));
+        if (this._masterGain && this._ctx) {
+          this._masterGain.gain.setTargetAtTime(vol, this._ctx.currentTime, 0.1);
+        }
+      });
+      updateBg(slider);
+    }
+
+    [musicTitleSlider, musicEraSlider].forEach(musicSlider => {
+      if (!musicSlider) return;
+      musicSlider.addEventListener('input', () => {
+        setMusicVolumePercent(parseInt(musicSlider.value));
+      });
+      updateBg(musicSlider);
     });
-    updateBg(slider);
+
+    syncMusicUI(Math.round((this._bgmVolume / 0.4) * 100));
     
     teleprompter.init();
 
@@ -87,7 +122,7 @@ export class AudioManager {
   lowerMusicVolume(step = 0.08): number {
     this._bgmVolume = Math.max(0, this._bgmVolume - step);
     if (this._bgm) this._bgm.volume = this._bgmVolume;
-    return Math.round(this._bgmVolume * 100);
+    return Math.round((this._bgmVolume / 0.4) * 100);
   }
 
   // ─── Synthesized SFX (Zero Latency) ──────────────────
