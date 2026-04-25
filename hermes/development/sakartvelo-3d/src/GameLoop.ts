@@ -8,6 +8,7 @@ import { gs } from './GameState';
 import { UIManager } from './UIManager';
 import { InputManager } from './InputManager';
 import { audio } from './AudioManager';
+import type { AudioManager } from './AudioManager';
 import { visuals } from './VisualsManager';
 import { showPopup, showVictoryPopup } from './HistoricalPopup';
 import {
