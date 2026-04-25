@@ -110,6 +110,12 @@ export class UIManager {
     });
   }
 
+  reset(): void {
+    this.$waveBtn.disabled = false;
+    this.$waveBtn.textContent = '⚔ Start Wave';
+    this.$buildOverlay?.classList.remove('visible');
+  }
+
   // ─── Escape ──────────────────────────────────────────────────────────────
 
   private _bindEscape(): void {

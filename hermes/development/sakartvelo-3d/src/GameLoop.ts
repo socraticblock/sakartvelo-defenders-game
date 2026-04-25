@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { gs } from './GameState';
 import { UIManager } from './UIManager';
 import { InputManager } from './InputManager';
-import { AudioManager } from './AudioManager';
+import { audio } from './AudioManager';
 import { visuals } from './VisualsManager';
 import { showPopup, showVictoryPopup } from './HistoricalPopup';
 import {
@@ -224,6 +224,7 @@ export class GameLoop {
       const b = gs.hero.pendingBuild;
       const placed = gs.placeTower(b.type, b.gx, b.gy, b.isPath, this._scene);
       if (placed) {
+        this._audio.playBuild();
         // Only clear pending build if placement was successful
         gs.hero.pendingBuild = null;
         gs.hero.buildTimer = 0;
@@ -338,6 +339,7 @@ export class GameLoop {
       const stars = gs.getStars();
 
       const finishVictoryFlow = () => {
+        this._audio.playVictory();
         this._ui.screens.showLevelComplete('Level Complete', stars);
       };
 

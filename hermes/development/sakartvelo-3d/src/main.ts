@@ -16,7 +16,7 @@ import { initMagicParticles } from './MagicalParticles';
 import { initAmbientDust } from './AmbientDust';
 
 // Use the generated magical sprite
-const MAGIC_SPRITE = './magic_particle_sprite_1777051199311.png';
+const MAGIC_SPRITE = '/magic_particle_sprite.png';
 
 // ─── Scene ────────────────────────────────────────────────────────────────
 
@@ -107,6 +107,7 @@ function startLevel(era: number, level: number): void {
 
   audio.stopNarration();
   gs.initLevel(lvl, scene);
+  ui.reset();
   setupCamera(lvl.grid_width, lvl.grid_height);
 
   (window as any).__grid = gs.grid;
@@ -175,6 +176,7 @@ addEventListener('resize', () => {
 
 async function init(): Promise<void> {
   audio.init();
+  audio.playBGM('./audio/music-ancient-caucasus.mp3');
   // Calibrate word times if needed
   if ((audio as any).calibrateWordTimes) {
     (audio as any).calibrateWordTimes().then((times: any) => {

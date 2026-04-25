@@ -6,6 +6,10 @@ import { ERA_PARAGRAPHS } from './EraData';
 import { teleprompter } from './Teleprompter';
 
 export class AudioManager {
+  private _bgm: HTMLAudioElement | null = null;
+  private _ctx: AudioContext | null = null;
+  private _masterGain: GainNode | null = null;
+
   private _narrationAudio: HTMLAudioElement | null = null;
   private _eraAudioEl: HTMLAudioElement | null = null;
   private _eraAudioDuration = 0;
@@ -26,10 +30,118 @@ export class AudioManager {
       const vol = parseInt(slider.value) / 100;
       if (this._narrationAudio) this._narrationAudio.volume = vol;
       if (this._eraAudioEl) this._eraAudioEl.volume = vol;
+      if (this._bgm) this._bgm.volume = vol * 0.4; // Music slightly quieter
+      if (this._masterGain && this._ctx) {
+        this._masterGain.gain.setTargetAtTime(vol, this._ctx.currentTime, 0.1);
+      }
     });
     updateBg(slider);
     
     teleprompter.init();
+
+    // Unlock audio context on first click
+    document.addEventListener('click', (e) => {
+      if (this._ctx && this._ctx.state === 'suspended') {
+        this._ctx.resume();
+      }
+      
+      const target = e.target as HTMLElement;
+      if (target.closest('button')) {
+        this.playClick();
+      }
+    });
+  }
+
+  private _getCtx(): AudioContext {
+    if (!this._ctx) {
+      this._ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      this._masterGain = this._ctx.createGain();
+      this._masterGain.connect(this._ctx.destination);
+      
+      // Set initial volume from slider
+      const slider = document.getElementById('vol-narration') as HTMLInputElement;
+      const vol = slider ? parseInt(slider.value) / 100 : 1.0;
+      this._masterGain.gain.setValueAtTime(vol, this._ctx.currentTime);
+    }
+    return this._ctx;
+  }
+
+  // ─── Background Music ────────────────────────────────
+  
+  playBGM(src: string): void {
+    if (this._bgm) {
+      if (this._bgm.src.includes(src.replace('./', ''))) return;
+      this._bgm.pause();
+    }
+    this._bgm = new Audio(src);
+    this._bgm.loop = true;
+    this._bgm.volume = 0.4; // Default mix
+    this._bgm.play().catch(() => {
+      // Auto-play might be blocked until first interaction
+      document.addEventListener('click', () => this._bgm?.play(), { once: true });
+    });
+  }
+
+  // ─── Synthesized SFX (Zero Latency) ──────────────────
+
+  playClick(): void {
+    const ctx = this._getCtx();
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1);
+    
+    g.gain.setValueAtTime(0.1, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+    
+    osc.connect(g);
+    g.connect(this._masterGain!);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + 0.1);
+  }
+
+  playBuild(): void {
+    const ctx = this._getCtx();
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(150, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.3);
+    
+    g.gain.setValueAtTime(0.4, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+    
+    osc.connect(g);
+    g.connect(this._masterGain!);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + 0.3);
+  }
+
+  playVictory(): void {
+    const ctx = this._getCtx();
+    const notes = [440, 554.37, 659.25, 880, 1108.73]; // A Major 9
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      const t = ctx.currentTime + i * 0.15;
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.2, t + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.01, t + 0.8);
+      
+      osc.connect(g);
+      g.connect(this._masterGain!);
+      osc.start(t);
+      osc.stop(t + 1.0);
+    });
   }
 
   // ─── Narration ────────────────────────────────────────

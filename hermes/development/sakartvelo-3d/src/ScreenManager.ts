@@ -199,7 +199,18 @@ export class ScreenManager {
       this.showLevelSelect(gs.currentLevel?.era ?? 0);
     });
     document.getElementById('lc-next')?.addEventListener('click', () => {
-      // Logic for next level...
+      const cur = gs.currentLevel;
+      if (!cur) return;
+      
+      const nextLevelNum = cur.level + 1;
+      const nextLevel = gs.allLevels.find(l => l.era === cur.era && l.level === nextLevelNum);
+      
+      if (nextLevel) {
+        this._onLevelSelect?.(nextLevel.era, nextLevel.level);
+      } else {
+        // No next level in this era? Back to map.
+        this.showLevelSelect(cur.era);
+      }
     });
   }
 

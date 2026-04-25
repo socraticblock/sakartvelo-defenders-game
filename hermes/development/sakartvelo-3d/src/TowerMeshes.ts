@@ -123,7 +123,7 @@ export function buildArcherMesh(
 
     const flag = createSwayFlag(0.25, 0.15, 0xd63031);
     flag.position.set(0, flagPole.position.y + 0.1, 0);
-    flag.rotation.y = Math.PI / 2;
+    flag.rotation.y = Math.PI / 4;
     group.add(flag);
   }
 
@@ -203,7 +203,7 @@ export function buildCatapultMesh(
 
     const banner = createSwayFlag(0.15, 0.3, 0xd63031);
     banner.position.set(0.2, 0.65, 0.2);
-    banner.rotation.y = Math.PI / 2;
+    banner.rotation.y = Math.PI / 4;
     group.add(banner);
   }
 }
