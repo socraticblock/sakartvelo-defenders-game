@@ -140,6 +140,7 @@ export class UIManager {
   private _bindInfoModal(): void {
     const openBtn = document.getElementById('btn-game-info');
     const closeBtn = document.getElementById('btn-game-info-close');
+    const levelSelectBtn = document.getElementById('btn-game-level-select');
     if (!openBtn || !this.$gameInfoModal || !closeBtn) return;
 
     openBtn.addEventListener('click', () => {
@@ -156,6 +157,11 @@ export class UIManager {
         this.$gameInfoModal?.classList.remove('visible');
         if (!document.hidden) gs.paused = false;
       }
+    });
+
+    levelSelectBtn?.addEventListener('click', () => {
+      this.$gameInfoModal?.classList.remove('visible');
+      this.screens.showLevelSelect(gs.currentLevel?.era ?? 0);
     });
   }
 

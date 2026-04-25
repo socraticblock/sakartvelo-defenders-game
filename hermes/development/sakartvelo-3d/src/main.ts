@@ -106,6 +106,12 @@ function startLevel(era: number, level: number): void {
   if (!lvl) return;
 
   audio.stopNarration();
+  audio.stopEraNarration();
+  if (era === 0 && level === 1) {
+    audio.playBGM('/audio/music-era0-lvl1.mp3');
+  } else {
+    audio.stopBGM();
+  }
   gs.initLevel(lvl, scene);
   ui.reset();
   setupCamera(lvl.grid_width, lvl.grid_height);

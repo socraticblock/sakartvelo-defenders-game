@@ -186,6 +186,13 @@ export class AudioManager {
     });
   }
 
+  stopBGM(): void {
+    if (!this._bgm) return;
+    this._bgm.pause();
+    this._bgm.currentTime = 0;
+    this._bgm = null;
+  }
+
   lowerMusicVolume(step = 0.08): number {
     this._bgmVolume = Math.max(0, this._bgmVolume - step);
     if (this._bgm) this._bgm.volume = this._bgmVolume;

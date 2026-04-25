@@ -35,6 +35,9 @@ export class ScreenManager {
   private _showScreen(id: string): void {
     try {
       console.log(`Showing screen: ${id}`);
+      if (id !== 'screen-era') {
+        audio.stopEraNarration();
+      }
 
       // Update Debug Overlay
       const debugState = document.getElementById('debug-state');
