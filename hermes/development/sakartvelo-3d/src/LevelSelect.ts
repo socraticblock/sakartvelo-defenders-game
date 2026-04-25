@@ -7,6 +7,7 @@
 import { SaveManager } from './SaveManager';
 import { LevelData } from './types';
 import { LEVEL_SELECT_CSS } from './LevelSelectStyles';
+import { audio } from './AudioManager';
 
 let onSelect: ((era: number, level: number) => void) | null = null;
 let onBack: (() => void) | null = null;
@@ -68,6 +69,13 @@ function render(era: number) {
 
   let html = `
     <div class="ls-container">
+      <div class="ls-volume-panel">
+        <div class="vol-row">
+          <span class="vol-icon">🎵</span>
+          <input type="range" id="vol-music-level" min="0" max="100" value="10">
+          <span class="vol-val" id="vol-music-level-val">10</span>
+        </div>
+      </div>
       <div class="ls-header">
         <h2 class="ls-era-title">
           Era ${era}: ${ERA_NAMES[era] || `Era ${era}`}
@@ -149,6 +157,7 @@ function render(era: number) {
     </div>`;
 
   container.innerHTML = html;
+  audio.bindVolumeControls();
 
   // Debug: Log all levels status
   console.log(`--- Era ${era} Level Status ---`);

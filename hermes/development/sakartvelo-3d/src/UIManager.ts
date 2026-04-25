@@ -7,6 +7,7 @@
 import { gs } from './GameState';
 import { TowerPanel } from './TowerPanel';
 import { screenMgr } from './ScreenManager';
+import { audio } from './AudioManager';
 
 type OnLevelSelect = (era: number, level: number) => void;
 type OnEscape = () => void;
@@ -26,6 +27,7 @@ export class UIManager {
   private $levelName = document.getElementById('level-name');
   private $heroHp = document.getElementById('hero-hp');
   private $heroStatus = document.getElementById('hero-status');
+  private $gameInfoModal = document.getElementById('game-info-modal');
 
   // Sub-managers
   panel: TowerPanel;
@@ -39,6 +41,8 @@ export class UIManager {
     this.screens.init(onLevelSelect, onEscape);
     this._bindWaveButtons();
     this._bindBuildStart();
+    this._bindAbilityButtons();
+    this._bindInfoModal();
     this._bindEscape();
     setInterval(() => this.update(), 100);
   }
@@ -121,11 +125,54 @@ export class UIManager {
   private _bindEscape(): void {
     addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
+        if (this.$gameInfoModal?.classList.contains('visible')) {
+          this.$gameInfoModal.classList.remove('visible');
+          if (!document.hidden) gs.paused = false;
+          return;
+        }
         gs.selectedType = null;
         gs.selectedTower = null;
         this.panel.towerButtons.forEach(b => b.classList.remove('selected'));
       }
     });
+  }
+
+  private _bindInfoModal(): void {
+    const openBtn = document.getElementById('btn-game-info');
+    const closeBtn = document.getElementById('btn-game-info-close');
+    if (!openBtn || !this.$gameInfoModal || !closeBtn) return;
+
+    openBtn.addEventListener('click', () => {
+      this.$gameInfoModal?.classList.add('visible');
+      gs.paused = true;
+      audio.bindVolumeControls();
+    });
+    closeBtn.addEventListener('click', () => {
+      this.$gameInfoModal?.classList.remove('visible');
+      if (!document.hidden) gs.paused = false;
+    });
+    this.$gameInfoModal.addEventListener('click', (e) => {
+      if (e.target === this.$gameInfoModal) {
+        this.$gameInfoModal?.classList.remove('visible');
+        if (!document.hidden) gs.paused = false;
+      }
+    });
+  }
+
+  private _bindAbilityButtons(): void {
+    const bind = (id: string, idx: number) => {
+      const btn = document.getElementById(id) as HTMLButtonElement | null;
+      if (!btn) return;
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (gs.paused || gs.gameOver || !gs.hero) return;
+        gs.hero.activateAbility(idx, gs.enemies, gs.towers);
+      });
+    };
+
+    bind('ability-q', 0);
+    bind('ability-w', 1);
+    bind('ability-e', 2);
   }
 
   // ─── Build phase overlay ─────────────────────────────────────────────────

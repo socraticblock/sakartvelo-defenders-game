@@ -66,6 +66,43 @@
       <span class="hotkey">E</span>
       <div class="cd-overlay"></div>
     </button>
+    <button id="btn-game-info" class="hero-info-btn" aria-label="Open game info and settings">(i)</button>
+  </div>
+
+  <div id="game-info-modal" class="game-ui">
+    <div class="game-info-card">
+      <div class="game-info-header">
+        <div class="game-info-title">Battle Guide</div>
+        <button id="btn-game-info-close" class="game-info-close" aria-label="Close">✕</button>
+      </div>
+
+      <div class="game-info-section">
+        <div class="game-info-section-title">Skills</div>
+        <div class="game-info-line"><b>Q Colchian Poison:</b> deals 8 DPS for 5s to enemies within 4.2m. Best for large waves at choke points.</div>
+        <div class="game-info-line"><b>W War Chant:</b> buffs nearby towers for 8s with +50% damage and +30% attack speed. Use before wave spikes.</div>
+        <div class="game-info-line"><b>E Colchian Fire:</b> empowers towers for 10s with +100% damage, +50% attack speed, and +30% range. Save for bosses.</div>
+      </div>
+
+      <div class="game-info-section">
+        <div class="game-info-section-title">Audio</div>
+        <div class="game-info-row">
+          <span class="vol-icon">🎵</span>
+          <input type="range" id="vol-music-game" min="0" max="100" value="10">
+          <span class="vol-val" id="vol-music-game-val">10</span>
+        </div>
+        <div class="game-info-row">
+          <span class="vol-icon">🔊</span>
+          <input type="range" id="vol-sfx-game" min="0" max="100" value="100">
+          <span class="vol-val" id="vol-sfx-game-val">100</span>
+        </div>
+      </div>
+
+      <div class="game-info-section">
+        <div class="game-info-section-title">Controls</div>
+        <div class="game-info-line">Tap/click ground to move Medea. Tap tower to inspect and upgrade.</div>
+        <div class="game-info-line">Desktop: Q/W/E abilities, Esc to clear selection.</div>
+      </div>
+    </div>
   </div>
 
   <div id="bottom-bar" class="game-ui">
@@ -117,8 +154,8 @@
     <div id="title-volume-panel" class="volume-panel">
       <div class="vol-row">
         <span class="vol-icon">🎵</span>
-        <input type="range" id="vol-music-title" min="0" max="100" value="100">
-        <span class="vol-val" id="vol-music-title-val">100</span>
+        <input type="range" id="vol-music-title" min="0" max="100" value="10">
+        <span class="vol-val" id="vol-music-title-val">10</span>
       </div>
     </div>
     <div class="intro-flag">🇬🇪</div>
@@ -140,8 +177,8 @@
       </div>
       <div class="vol-row">
         <span class="vol-icon">🎵</span>
-        <input type="range" id="vol-music-era" min="0" max="100" value="100">
-        <span class="vol-val" id="vol-music-era-val">100</span>
+        <input type="range" id="vol-music-era" min="0" max="100" value="10">
+        <span class="vol-val" id="vol-music-era-val">10</span>
       </div>
     </div>
 

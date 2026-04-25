@@ -56,9 +56,18 @@ export class GameLoop {
   }
 
   start(): void {
+    const isModalOpen = () => document.getElementById('game-info-modal')?.classList.contains('visible') ?? false;
+
     document.addEventListener('visibilitychange', () => {
-      gs.paused = document.hidden;
+      gs.paused = document.hidden || isModalOpen();
       if (!gs.paused) this._clock.getDelta();
+    });
+    window.addEventListener('blur', () => { gs.paused = true; });
+    window.addEventListener('focus', () => {
+      if (!document.hidden && !isModalOpen() && gs.currentLevel && !gs.gameOver) {
+        gs.paused = false;
+        this._clock.getDelta();
+      }
     });
     this._clock.start();
     this._animate();

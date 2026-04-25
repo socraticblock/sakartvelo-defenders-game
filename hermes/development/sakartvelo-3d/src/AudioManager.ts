@@ -7,7 +7,8 @@ import { teleprompter } from './Teleprompter';
 
 export class AudioManager {
   private _bgm: HTMLAudioElement | null = null;
-  private _bgmVolume = 0.4;
+  private _bgmVolume = 0.04;
+  private _sfxVolume = 1.0;
   private _ctx: AudioContext | null = null;
   private _masterGain: GainNode | null = null;
 
@@ -17,62 +18,7 @@ export class AudioManager {
   _eraPlaying = false;
 
   init(): void {
-    const slider = document.getElementById('vol-narration') as HTMLInputElement | null;
-    const val = document.getElementById('vol-narration-val');
-    const musicTitleSlider = document.getElementById('vol-music-title') as HTMLInputElement | null;
-    const musicTitleVal = document.getElementById('vol-music-title-val');
-    const musicEraSlider = document.getElementById('vol-music-era') as HTMLInputElement | null;
-    const musicEraVal = document.getElementById('vol-music-era-val');
-
-    const updateBg = (el: HTMLInputElement) => {
-      el.style.background = `linear-gradient(90deg, #8b6914 ${el.value}%, #3a3020 ${el.value}%)`;
-    };
-
-    const syncMusicUI = (pct: number) => {
-      const safePct = Math.round(Math.max(0, Math.min(100, pct)));
-      if (musicTitleSlider) {
-        musicTitleSlider.value = String(safePct);
-        updateBg(musicTitleSlider);
-      }
-      if (musicEraSlider) {
-        musicEraSlider.value = String(safePct);
-        updateBg(musicEraSlider);
-      }
-      if (musicTitleVal) musicTitleVal.textContent = String(safePct);
-      if (musicEraVal) musicEraVal.textContent = String(safePct);
-    };
-
-    const setMusicVolumePercent = (pct: number) => {
-      const safePct = Math.max(0, Math.min(100, pct));
-      this._bgmVolume = (safePct / 100) * 0.4;
-      if (this._bgm) this._bgm.volume = this._bgmVolume;
-      syncMusicUI(safePct);
-    };
-
-    if (slider) {
-      slider.addEventListener('input', () => {
-        if (val) val.textContent = slider.value;
-        updateBg(slider);
-        const vol = parseInt(slider.value) / 100;
-        if (this._narrationAudio) this._narrationAudio.volume = vol;
-        if (this._eraAudioEl) this._eraAudioEl.volume = vol;
-        setMusicVolumePercent(parseInt(slider.value));
-        if (this._masterGain && this._ctx) {
-          this._masterGain.gain.setTargetAtTime(vol, this._ctx.currentTime, 0.1);
-        }
-      });
-      updateBg(slider);
-    }
-
-    [musicTitleSlider, musicEraSlider].forEach(musicSlider => {
-      if (!musicSlider) return;
-      musicSlider.addEventListener('input', () => {
-        setMusicVolumePercent(parseInt(musicSlider.value));
-      });
-      updateBg(musicSlider);
-    });
-
-    syncMusicUI(Math.round((this._bgmVolume / 0.4) * 100));
+    this.bindVolumeControls();
     
     teleprompter.init();
 
@@ -89,6 +35,127 @@ export class AudioManager {
     });
   }
 
+  bindVolumeControls(): void {
+    const slider = document.getElementById('vol-narration') as HTMLInputElement | null;
+    const val = document.getElementById('vol-narration-val');
+    const musicTitleSlider = document.getElementById('vol-music-title') as HTMLInputElement | null;
+    const musicTitleVal = document.getElementById('vol-music-title-val');
+    const musicEraSlider = document.getElementById('vol-music-era') as HTMLInputElement | null;
+    const musicEraVal = document.getElementById('vol-music-era-val');
+    const musicLevelSlider = document.getElementById('vol-music-level') as HTMLInputElement | null;
+    const musicLevelVal = document.getElementById('vol-music-level-val');
+    const musicGameSlider = document.getElementById('vol-music-game') as HTMLInputElement | null;
+    const musicGameVal = document.getElementById('vol-music-game-val');
+    const sfxGameSlider = document.getElementById('vol-sfx-game') as HTMLInputElement | null;
+    const sfxGameVal = document.getElementById('vol-sfx-game-val');
+
+    if (slider) {
+      if (!slider.dataset.bound) {
+        slider.addEventListener('input', () => {
+          if (val) val.textContent = slider.value;
+          this._updateSliderBg(slider);
+          const vol = parseInt(slider.value) / 100;
+          if (this._narrationAudio) this._narrationAudio.volume = vol;
+          if (this._eraAudioEl) this._eraAudioEl.volume = vol;
+          this._setMusicVolumePercent(parseInt(slider.value));
+          if (this._masterGain && this._ctx) {
+            this._masterGain.gain.setTargetAtTime(this._sfxVolume * vol, this._ctx.currentTime, 0.1);
+          }
+        });
+        slider.dataset.bound = '1';
+      }
+      this._updateSliderBg(slider);
+    }
+
+    [musicTitleSlider, musicEraSlider, musicLevelSlider, musicGameSlider].forEach(musicSlider => {
+      if (!musicSlider) return;
+      if (!musicSlider.dataset.bound) {
+        musicSlider.addEventListener('input', () => {
+          this._setMusicVolumePercent(parseInt(musicSlider.value));
+        });
+        musicSlider.dataset.bound = '1';
+      }
+      this._updateSliderBg(musicSlider);
+    });
+
+    if (sfxGameSlider) {
+      if (!sfxGameSlider.dataset.bound) {
+        sfxGameSlider.addEventListener('input', () => {
+          const safePct = Math.max(0, Math.min(100, parseInt(sfxGameSlider.value)));
+          this._sfxVolume = safePct / 100;
+          if (sfxGameVal) sfxGameVal.textContent = String(safePct);
+          this._updateSliderBg(sfxGameSlider);
+          if (this._masterGain && this._ctx) {
+            const narration = slider ? parseInt(slider.value) / 100 : 1;
+            this._masterGain.gain.setTargetAtTime(this._sfxVolume * narration, this._ctx.currentTime, 0.05);
+          }
+        });
+        sfxGameSlider.dataset.bound = '1';
+      }
+      const sfxPct = Math.round(this._sfxVolume * 100);
+      sfxGameSlider.value = String(sfxPct);
+      if (sfxGameVal) sfxGameVal.textContent = String(sfxPct);
+      this._updateSliderBg(sfxGameSlider);
+    }
+
+    this._syncMusicUI(
+      Math.round((this._bgmVolume / 0.4) * 100),
+      musicTitleSlider,
+      musicTitleVal,
+      musicEraSlider,
+      musicEraVal,
+      musicLevelSlider,
+      musicLevelVal,
+      musicGameSlider,
+      musicGameVal,
+    );
+  }
+
+  private _updateSliderBg(el: HTMLInputElement): void {
+    el.style.background = `linear-gradient(90deg, #8b6914 ${el.value}%, #3a3020 ${el.value}%)`;
+  }
+
+  private _syncMusicUI(
+    pct: number,
+    musicTitleSlider: HTMLInputElement | null,
+    musicTitleVal: HTMLElement | null,
+    musicEraSlider: HTMLInputElement | null,
+    musicEraVal: HTMLElement | null,
+    musicLevelSlider: HTMLInputElement | null,
+    musicLevelVal: HTMLElement | null,
+    musicGameSlider: HTMLInputElement | null,
+    musicGameVal: HTMLElement | null,
+  ): void {
+    const safePct = Math.round(Math.max(0, Math.min(100, pct)));
+    if (musicTitleSlider) {
+      musicTitleSlider.value = String(safePct);
+      this._updateSliderBg(musicTitleSlider);
+    }
+    if (musicEraSlider) {
+      musicEraSlider.value = String(safePct);
+      this._updateSliderBg(musicEraSlider);
+    }
+    if (musicLevelSlider) {
+      musicLevelSlider.value = String(safePct);
+      this._updateSliderBg(musicLevelSlider);
+    }
+    if (musicGameSlider) {
+      musicGameSlider.value = String(safePct);
+      this._updateSliderBg(musicGameSlider);
+    }
+    if (musicTitleVal) musicTitleVal.textContent = String(safePct);
+    if (musicEraVal) musicEraVal.textContent = String(safePct);
+    if (musicLevelVal) musicLevelVal.textContent = String(safePct);
+    if (musicGameVal) musicGameVal.textContent = String(safePct);
+  }
+
+  private _setMusicVolumePercent(pct: number): void {
+    const safePct = Math.max(0, Math.min(100, pct));
+    this._bgmVolume = (safePct / 100) * 0.4;
+    if (this._bgm) this._bgm.volume = this._bgmVolume;
+    this.bindVolumeControls();
+  }
+
   private _getCtx(): AudioContext {
     if (!this._ctx) {
       this._ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -98,7 +165,7 @@ export class AudioManager {
       // Set initial volume from slider
       const slider = document.getElementById('vol-narration') as HTMLInputElement;
       const vol = slider ? parseInt(slider.value) / 100 : 1.0;
-      this._masterGain.gain.setValueAtTime(vol, this._ctx.currentTime);
+      this._masterGain.gain.setValueAtTime(this._sfxVolume * vol, this._ctx.currentTime);
     }
     return this._ctx;
   }

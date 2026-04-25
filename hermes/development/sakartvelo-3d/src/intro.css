@@ -160,7 +160,8 @@
 }
 
 #vol-music-title,
-#vol-music-era {
+#vol-music-era,
+#vol-music-level {
   -webkit-appearance: none; appearance: none;
   width: 90px; height: 4px;
   background: linear-gradient(90deg, #8b6914 var(--pct, 70%), #3a3020 var(--pct, 70%));
@@ -175,7 +176,8 @@
 }
 
 #vol-music-title::-webkit-slider-thumb,
-#vol-music-era::-webkit-slider-thumb {
+#vol-music-era::-webkit-slider-thumb,
+#vol-music-level::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none;
   width: 14px; height: 14px; border-radius: 50%;
   background: #d4a017; cursor: pointer;

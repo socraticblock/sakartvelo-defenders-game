@@ -176,7 +176,7 @@ addEventListener('resize', () => {
 
 async function init(): Promise<void> {
   audio.init();
-  audio.playBGM('./audio/music-ancient-caucasus.mp3');
+  audio.playBGM('/audio/intro.mp3');
   // Calibrate word times if needed
   if ((audio as any).calibrateWordTimes) {
     (audio as any).calibrateWordTimes().then((times: any) => {

@@ -5,6 +5,13 @@
  */
 export const LEVEL_SELECT_CSS = `
   .ls-container { max-width: 560px; margin: 0 auto; }
+  .ls-volume-panel {
+    position: fixed; top: 20px; right: 24px; z-index: 160;
+    display: flex; flex-direction: column; gap: 10px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(139, 105, 20, 0.3);
+    border-radius: 10px; padding: 14px 16px;
+  }
   .ls-header { text-align: center; margin-bottom: 28px; }
   .ls-era-title { color: #d4a017; font-size: 24px; margin-bottom: 6px; }
   .ls-era-years { color: #7a8a6a; font-size: 12px; }

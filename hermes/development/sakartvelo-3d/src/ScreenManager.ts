@@ -46,6 +46,7 @@ export class ScreenManager {
 
       // Toggle Game HUD visibility
       const isGameScreen = (id === 'none'); // Expand this if you have a dedicated 'game' screen ID
+      gs.paused = !isGameScreen;
       document.querySelectorAll<HTMLElement>('.game-ui').forEach(el => {
         el.style.display = isGameScreen ? '' : 'none';
       });
@@ -60,11 +61,15 @@ export class ScreenManager {
     }
   }
 
-  showIntro(): void { this._showScreen('screen-title'); }
+  showIntro(): void {
+    this._showScreen('screen-title');
+    audio.playBGM('/audio/intro.mp3');
+  }
   showTitleScreen(): void { this.showIntro(); }
 
   showEraScreen(): void {
     this._showScreen('screen-era');
+    audio.playBGM('/audio/intro.mp3');
     audio.startEraNarration();
   }
 
@@ -75,6 +80,7 @@ export class ScreenManager {
 
   showGameUI(): void {
     this.hideAllScreens();
+    gs.paused = false;
     document.querySelectorAll<HTMLElement>('.game-ui').forEach(el => {
       el.style.display = '';
     });
@@ -94,6 +100,7 @@ export class ScreenManager {
       );
     }
     this._showScreen('screen-level-select');
+    audio.playBGM('/audio/intro.mp3');
   }
 
   refreshLevelSelect(): void {
