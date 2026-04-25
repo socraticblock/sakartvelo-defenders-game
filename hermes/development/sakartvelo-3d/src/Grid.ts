@@ -39,10 +39,10 @@ export class Grid {
       const aura = p.userData.aura as THREE.Mesh;
       if (isSelecting && !p.userData.occupied) {
         aura.visible = true;
-        // Breathtaking pulse animation
+        // Stronger pulse in placement mode for mobile readability.
         const mat = aura.material as THREE.MeshBasicMaterial;
-        mat.opacity = 0.3 + Math.sin(time * 5) * 0.2;
-        aura.scale.setScalar(1 + Math.sin(time * 5) * 0.05);
+        mat.opacity = 0.45 + Math.sin(time * 5) * 0.22;
+        aura.scale.setScalar(1.02 + Math.sin(time * 5) * 0.08);
       } else {
         aura.visible = false;
       }
@@ -196,7 +196,9 @@ export class Grid {
     const stoneMat = new THREE.MeshStandardMaterial({ 
       color: 0x6a6a5a, 
       roughness: 0.9, 
-      metalness: 0.1 
+      metalness: 0.1,
+      emissive: mobile ? 0x2a210a : 0x1a1508,
+      emissiveIntensity: mobile ? 0.28 : 0.15,
     });
 
     // Golden glow ring for building "intent"
@@ -204,9 +206,9 @@ export class Grid {
     auraGeo.rotateX(-Math.PI / 2);
 
     const auraMat = new THREE.MeshBasicMaterial({ 
-      color: 0xffcc44, 
+      color: 0xffd972, 
       transparent: true, 
-      opacity: 0.8, 
+      opacity: mobile ? 0.6 : 0.5, 
       visible: true,
       side: THREE.DoubleSide,
       depthWrite: false
@@ -409,14 +411,60 @@ export class Grid {
     return g;
   }
 
+  private makeWatchfire(): THREE.Group {
+    const g = new THREE.Group();
+    const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.26, 0.42, 6), new THREE.MeshLambertMaterial({ color: 0x5a3a22 }));
+    tower.position.y = 0.21;
+    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.3, 5), new THREE.MeshBasicMaterial({ color: 0xffa726 }));
+    flame.position.y = 0.56;
+    g.add(tower, flame);
+    return g;
+  }
+
+  private makeLandingMarker(): THREE.Group {
+    const g = new THREE.Group();
+    const stone = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.36, 0.1, 8), new THREE.MeshLambertMaterial({ color: 0x7b7a70 }));
+    stone.position.y = 0.05;
+    const banner = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.52, 0.08), new THREE.MeshLambertMaterial({ color: 0x245f73 }));
+    banner.position.set(0, 0.3, 0);
+    const cloth = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.18, 0.04), new THREE.MeshLambertMaterial({ color: 0x3f89a3 }));
+    cloth.position.set(0.2, 0.44, 0);
+    g.add(stone, banner, cloth);
+    return g;
+  }
+
+  private makeForge(): THREE.Group {
+    const g = this.makeHut();
+    const anvil = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.26), new THREE.MeshLambertMaterial({ color: 0x595959 }));
+    anvil.position.set(0.34, 0.08, 0.1);
+    const ember = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.2, 5), new THREE.MeshBasicMaterial({ color: 0xff9800 }));
+    ember.position.set(-0.26, 0.2, 0.1);
+    g.add(anvil, ember);
+    return g;
+  }
+
   private createDefenseObjective(): void {
     const end = this.worldPath[this.worldPath.length - 1];
     if (!end) return;
-    const x = Math.max(1.2, Math.min(this.width - 1.2, end.x));
-    const z = Math.max(1.0, Math.min(this.height - 0.45, end.z + 0.55));
+    const candidates: Array<[number, number]> = [
+      [end.x, Math.min(this.height - 1.1, end.z + 0.55)],
+      [end.x - 1.1, Math.min(this.height - 1.1, end.z + 0.45)],
+      [end.x + 1.1, Math.min(this.height - 1.1, end.z + 0.45)],
+      [end.x - 1.7, Math.min(this.height - 1.35, end.z + 0.35)],
+      [end.x + 1.7, Math.min(this.height - 1.35, end.z + 0.35)],
+    ];
+    const chosen = candidates.find(([x, z]) => this.isDecorSafe(x, z)) || candidates[0];
+    const x = Math.max(1.0, Math.min(this.width - 1.0, chosen[0]));
+    const z = Math.max(0.9, Math.min(this.height - 1.0, chosen[1]));
     let prop: THREE.Group;
 
-    if (this.defenseTarget.includes('shrine') || this.defenseTarget.includes('grove') || this.defenseTarget.includes('fleece')) {
+    if (this.defenseTarget.includes('watchfire') || this.defenseTarget.includes('ridge')) {
+      prop = this.makeWatchfire();
+    } else if (this.defenseTarget.includes('forge') || this.defenseTarget.includes('smith')) {
+      prop = this.makeForge();
+    } else if (this.defenseTarget.includes('landing') || this.defenseTarget.includes('coast')) {
+      prop = this.makeLandingMarker();
+    } else if (this.defenseTarget.includes('shrine') || this.defenseTarget.includes('grove') || this.defenseTarget.includes('fleece') || this.defenseTarget.includes('heart')) {
       prop = this.makeShrine(this.defenseTarget.includes('devi') ? 0xaa3333 : 0xd4a017);
     } else if (this.defenseTarget.includes('crossing') || this.defenseTarget.includes('landing')) {
       prop = this.makeGate(0x245f73);
@@ -427,7 +475,7 @@ export class Grid {
     }
 
     prop.position.set(x, 0.02, z);
-    prop.scale.setScalar(1.25);
+    prop.scale.setScalar(this.defenseTarget.includes('heart') ? 1.35 : 1.22);
     this.group.add(prop);
   }
 

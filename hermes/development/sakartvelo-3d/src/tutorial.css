@@ -143,3 +143,9 @@
   z-index: 50;
   font-style: italic;
 }
+
+@media (max-width: 768px) and (orientation: portrait) {
+  #cultural-footer {
+    display: none;
+  }
+}

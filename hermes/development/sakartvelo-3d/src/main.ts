@@ -25,6 +25,8 @@ scene.background = new THREE.Color(0x151d15);
 scene.fog = new THREE.FogExp2(0x151d15, 0.02);
 
 const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 120);
+const CAMERA_ZOOM_KEY = 'sakartvelo_camera_zoom_pct';
+let cameraZoomPct = 100;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(innerWidth, innerHeight);
@@ -79,6 +81,13 @@ scene.add(moveRing);
 (window as any).__scene = scene;
 (window as any).__audioMgr = audio;
 (window as any).__gs = gs;
+(window as any).__setCameraZoom = (v: number) => {
+  const clamped = Math.max(80, Math.min(120, Number(v) || 100));
+  cameraZoomPct = clamped;
+  localStorage.setItem(CAMERA_ZOOM_KEY, String(clamped));
+  if (gs.currentLevel) setupCamera(gs.currentLevel.grid_width, gs.currentLevel.grid_height);
+};
+(window as any).__getCameraZoom = () => cameraZoomPct;
 
 (window as any).__showEraScreen = () => {
   console.log('--- GLOBAL BEGIN TRIGGERED ---');
@@ -96,14 +105,21 @@ scene.add(moveRing);
 function setupCamera(gw: number, gh: number): void {
   const cx = gw / 2, cz = gh / 2;
   const portrait = innerHeight > innerWidth;
-  const dist = Math.max(gh * 0.72, gw * 1.08);
+  const heroBar = document.getElementById('hero-bar');
+  const bottomBar = document.getElementById('bottom-bar');
+  const heroTop = heroBar && getComputedStyle(heroBar).display !== 'none' ? heroBar.getBoundingClientRect().top : innerHeight;
+  const bottomTop = bottomBar && getComputedStyle(bottomBar).display !== 'none' ? bottomBar.getBoundingClientRect().top : innerHeight;
+  const bottomUiRatio = Math.max(0, Math.min(0.42, (innerHeight - Math.min(heroTop, bottomTop)) / innerHeight));
+  const zoomScale = 100 / cameraZoomPct;
+  const dist = Math.max(gh * 0.74, gw * 1.08) * zoomScale;
+  const upwardBiasCells = gh * (0.08 + bottomUiRatio * 0.42);
   camera.fov = portrait ? 50 : 44;
   camera.position.set(
     cx,
-    dist * (portrait ? 1.18 : 1.02),
-    cz + dist * (portrait ? 0.66 : 0.78),
+    dist * (portrait ? 1.24 + bottomUiRatio * 0.16 : 1.04),
+    cz + dist * (portrait ? 0.6 + bottomUiRatio * 0.22 : 0.8),
   );
-  camera.lookAt(cx, 0, cz + (portrait ? -0.35 : 0));
+  camera.lookAt(cx, 0, cz - (portrait ? upwardBiasCells : 0));
   camera.updateProjectionMatrix();
   gs.cameraBaseX = cx;
 }
@@ -140,8 +156,17 @@ ui.init(
   () => { gs.selectedType = null; gs.selectedTower = null; ui.screens.showLevelSelect(); },
 );
 
+function issueHeroMoveCommand(x: number, z: number): void {
+  if (!gs.hero) return;
+  // User movement input always overrides queued build/upgrade intents.
+  gs.hero.pendingBuild = null;
+  gs.hero.buildTimer = 0;
+  gs.pendingUpgradeTower = null;
+  gs.hero.moveTo(x, z);
+}
+
 input.init(renderer, camera, scene, {
-  onHeroMove: (x, z) => { gs.hero?.moveTo(x, z); },
+  onHeroMove: (x, z) => issueHeroMoveCommand(x, z),
   onGridClick: (gx, gy, isPath) => {
     if (gs.gameOver || !gs.selectedType || !gs.hero || !gs.grid) return;
     
@@ -178,7 +203,7 @@ input.init(renderer, camera, scene, {
 renderer.domElement.addEventListener('contextmenu', (e) => {
   e.preventDefault();
   const pos = input.getMouseGround();
-  if (pos) gs.hero?.moveTo(pos.x, pos.z);
+  if (pos) issueHeroMoveCommand(pos.x, pos.z);
 });
 
 addEventListener('resize', () => {
@@ -189,6 +214,8 @@ addEventListener('resize', () => {
 });
 
 async function init(): Promise<void> {
+  const savedZoom = Number(localStorage.getItem(CAMERA_ZOOM_KEY) ?? 100);
+  cameraZoomPct = Number.isFinite(savedZoom) ? Math.max(80, Math.min(120, savedZoom)) : 100;
   audio.init();
   audio.playBGM('/audio/intro.mp3');
   // Calibrate word times if needed

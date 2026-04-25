@@ -265,7 +265,8 @@
 }
 
 #vol-music-game,
-#vol-sfx-game {
+#vol-sfx-game,
+#cam-zoom-game {
   -webkit-appearance: none;
   appearance: none;
   width: 110px;
@@ -276,7 +277,8 @@
 }
 
 #vol-music-game::-webkit-slider-thumb,
-#vol-sfx-game::-webkit-slider-thumb {
+#vol-sfx-game::-webkit-slider-thumb,
+#cam-zoom-game::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 14px;
@@ -505,10 +507,10 @@
 
 @media (max-width: 768px) and (orientation: portrait) {
   #hud {
-    padding: 8px 10px;
-    font-size: 13px;
+    padding: 7px 10px;
+    font-size: 12px;
     align-items: flex-start;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.25) 70%, transparent 100%);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.2) 62%, transparent 100%);
   }
 
   .hud-item {
@@ -521,9 +523,10 @@
   }
 
   #level-info {
-    top: 42px;
+    top: 38px;
     width: calc(100% - 20px);
-    font-size: 12px;
+    font-size: 11px;
+    opacity: 0.9;
   }
 
   #controls-hint {
@@ -532,35 +535,38 @@
 
   #bottom-bar {
     bottom: 0;
-    padding: 8px 8px max(8px, env(safe-area-inset-bottom));
-    gap: 6px;
+    padding: 6px 8px max(8px, env(safe-area-inset-bottom));
+    gap: 4px;
     justify-content: space-between;
-    background: rgba(0, 0, 0, 0.82);
+    background: rgba(0, 0, 0, 0.9);
     border-top: 1px solid rgba(139, 105, 20, 0.35);
+    backdrop-filter: blur(3px);
   }
 
   .tower-btn,
   .wave-btn {
-    min-height: 50px;
+    min-height: 42px;
     flex: 1 1 0;
-    padding: 8px 6px;
-    font-size: 11px;
-    border-radius: 12px;
+    padding: 5px 4px;
+    font-size: 10px;
+    border-radius: 10px;
     letter-spacing: 0;
+    line-height: 1.1;
   }
 
   #hero-bar {
-    bottom: calc(66px + env(safe-area-inset-bottom));
+    bottom: calc(50px + env(safe-area-inset-bottom));
     left: 8px;
     right: 8px;
     width: auto;
     max-width: none;
     transform: none;
     justify-content: center;
-    padding: 7px 8px;
-    gap: 6px;
-    background: rgba(0, 0, 0, 0.78);
+    padding: 6px 8px;
+    gap: 5px;
+    background: rgba(0, 0, 0, 0.84);
     border-radius: 14px;
+    border: 1px solid rgba(139, 105, 20, 0.25);
   }
 
   .hero-name,
@@ -569,27 +575,28 @@
   }
 
   #hero-hp {
-    font-size: 11px;
-    min-width: 56px;
+    font-size: 10px;
+    min-width: 52px;
   }
 
   .ability-btn {
-    width: 52px;
-    height: 52px;
-    border-radius: 12px;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
   }
 
   .hero-info-btn {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    font-size: 16px;
   }
 
   #tower-panel {
     position: absolute;
     left: 8px;
     right: 8px;
-    bottom: calc(130px + env(safe-area-inset-bottom));
+    bottom: calc(106px + env(safe-area-inset-bottom));
     top: auto;
     transform: none;
     z-index: 12;
@@ -604,8 +611,8 @@
   }
 
   .panel-btn {
-    min-height: 46px;
-    font-size: 13px;
+    min-height: 40px;
+    font-size: 12px;
     border-radius: 10px;
   }
 

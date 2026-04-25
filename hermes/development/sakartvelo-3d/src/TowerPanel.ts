@@ -20,6 +20,7 @@ export class TowerPanel {
       document.querySelectorAll('.tower-btn')
     ) as HTMLButtonElement[];
     this._syncTowerShopLabels();
+    addEventListener('resize', () => this._syncTowerShopLabels());
     this._bindTowerButtons();
     this._bindUpgradeSell();
   }
@@ -31,11 +32,19 @@ export class TowerPanel {
       catapult: '💥',
       wall: '🧱',
     };
+    const shortNames: Record<string, string> = {
+      archer: 'Arc',
+      catapult: 'Cat',
+      wall: 'Wall',
+    };
+    const compact = window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
     for (const btn of this.towerButtons) {
       const type = btn.dataset.type!;
       const c = TOWER_CONFIGS[type];
       if (!c) continue;
-      btn.textContent = `${icons[type] ?? ''} ${c.name} (${c.cost}g)`;
+      btn.textContent = compact
+        ? `${icons[type] ?? ''} ${shortNames[type] ?? c.name} ${c.cost}g`
+        : `${icons[type] ?? ''} ${c.name} (${c.cost}g)`;
     }
   }
 

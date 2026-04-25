@@ -144,11 +144,13 @@ export class UIManager {
     const closeBtn = document.getElementById('btn-game-info-close');
     const levelSelectBtn = document.getElementById('btn-game-level-select');
     if (!openBtn || !this.$gameInfoModal || !closeBtn) return;
+    this._bindCameraZoomControl();
 
     openBtn.addEventListener('click', () => {
       this.$gameInfoModal?.classList.add('visible');
       gs.paused = true;
       audio.bindVolumeControls();
+      this._syncCameraZoomUi();
     });
     closeBtn.addEventListener('click', () => {
       this.$gameInfoModal?.classList.remove('visible');
@@ -164,6 +166,32 @@ export class UIManager {
     levelSelectBtn?.addEventListener('click', () => {
       this.$gameInfoModal?.classList.remove('visible');
       this.screens.showLevelSelect(gs.currentLevel?.era ?? 0);
+    });
+  }
+
+  private _syncCameraZoomUi(): void {
+    const slider = document.getElementById('cam-zoom-game') as HTMLInputElement | null;
+    const value = document.getElementById('cam-zoom-game-val');
+    const getZoom = (window as any).__getCameraZoom as (() => number) | undefined;
+    const zoom = getZoom ? Math.round(getZoom()) : 100;
+    if (!slider || !value) return;
+    slider.value = String(zoom);
+    value.textContent = String(zoom);
+    slider.style.setProperty('--pct', `${((zoom - 80) / 40) * 100}%`);
+  }
+
+  private _bindCameraZoomControl(): void {
+    const slider = document.getElementById('cam-zoom-game') as HTMLInputElement | null;
+    const value = document.getElementById('cam-zoom-game-val');
+    if (!slider || !value || slider.dataset.bound === '1') return;
+    slider.dataset.bound = '1';
+    this._syncCameraZoomUi();
+    slider.addEventListener('input', () => {
+      const zoom = Math.max(80, Math.min(120, Number(slider.value) || 100));
+      value.textContent = String(zoom);
+      slider.style.setProperty('--pct', `${((zoom - 80) / 40) * 100}%`);
+      const setZoom = (window as any).__setCameraZoom as ((v: number) => void) | undefined;
+      setZoom?.(zoom);
     });
   }
 

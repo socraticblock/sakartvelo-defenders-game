@@ -36,3 +36,9 @@ canvas {
   pointer-events: none;
   display: block;
 }
+
+@media (max-width: 768px) and (orientation: portrait) {
+  #debug-overlay {
+    display: none;
+  }
+}

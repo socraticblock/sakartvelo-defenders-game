@@ -192,6 +192,8 @@ export class Tower {
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.01;
     ring.visible = false;
+    // Avoid selecting towers through their large range-circle overlay.
+    ring.userData.ignoreTowerPick = true;
     return ring;
   }
 

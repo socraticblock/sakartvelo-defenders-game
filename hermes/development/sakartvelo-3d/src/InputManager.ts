@@ -120,21 +120,8 @@ export class InputManager {
 
     // --- VISUAL SNAP LOGIC ---
     let cell = { ...rawCell };
-    const groundPos = this.getMouseGround(); 
-    let closestPlinth = null;
-    let minDist = 2.0; // Snap radius in world units
-
-    const plinths = (grid as any).plinths as THREE.Group[];
-    if (plinths && selectedType !== 'wall' && groundPos) {
-      for (const p of plinths) {
-        if (p.userData.occupied) continue;
-        const dist = p.position.distanceTo(groundPos);
-        if (dist < minDist) {
-          minDist = dist;
-          closestPlinth = p;
-        }
-      }
-    }
+    const groundPos = this.getMouseGround();
+    const closestPlinth = this._getClosestPlinth(grid, selectedType, groundPos);
 
     if (closestPlinth) {
       cell.gx = closestPlinth.userData.gx;
@@ -198,6 +185,28 @@ export class InputManager {
     });
   }
 
+  private _getClosestPlinth(
+    grid: Grid,
+    selectedType: string | null,
+    groundPos: THREE.Vector3 | null,
+  ): THREE.Group | null {
+    if (!groundPos || !selectedType || selectedType === 'wall') return null;
+    const plinths = (grid as any).plinths as THREE.Group[] | undefined;
+    if (!plinths?.length) return null;
+    const SNAP_RADIUS = 2.0; // world units, shared by ghost + placement
+    let closest: THREE.Group | null = null;
+    let minDist = SNAP_RADIUS;
+    for (const p of plinths) {
+      if (p.userData.occupied) continue;
+      const dist = p.position.distanceTo(groundPos);
+      if (dist < minDist) {
+        minDist = dist;
+        closest = p;
+      }
+    }
+    return closest;
+  }
+
   // ─── Public: layout ─────────────────────────────────────
 
   get layout(): KBLayout { return this._kbLayout; }
@@ -256,10 +265,13 @@ export class InputManager {
     const hits = this._ray.intersectObjects(meshes);
     if (hits.length === 0) return null;
 
-    let obj: THREE.Object3D | null = hits[0].object;
-    while (obj) {
-      if (obj.userData?.isTower) return obj.userData.tower as Tower;
-      obj = obj.parent;
+    for (const hit of hits) {
+      if ((hit.object as any).userData?.ignoreTowerPick) continue;
+      let obj: THREE.Object3D | null = hit.object;
+      while (obj) {
+        if ((obj as any).userData?.isTower) return (obj as any).userData.tower as Tower;
+        obj = obj.parent;
+      }
     }
     return null;
   }
@@ -341,26 +353,11 @@ export class InputManager {
         let gx = rawCell.gx;
         let gy = rawCell.gy;
 
-        // APPLY MAGNET
-        const MAGNET_RANGE = 2.5;
-        const plinths = (grid as any).plinths as THREE.Group[];
-        if (plinths && gs.selectedType !== 'wall') {
-          let minDist = Infinity;
-          let snapP = null;
-          for (const p of plinths) {
-            if (p.userData.occupied) continue;
-            const dx = gx - p.userData.gx;
-            const dy = gy - p.userData.gy;
-            const d = Math.sqrt(dx * dx + dy * dy);
-            if (d < MAGNET_RANGE && d < minDist) {
-              minDist = d;
-              snapP = p;
-            }
-          }
-          if (snapP) {
-            gx = snapP.userData.gx;
-            gy = snapP.userData.gy;
-          }
+        const groundPos = this.getMouseGround();
+        const snapP = this._getClosestPlinth(grid, gs.selectedType, groundPos);
+        if (snapP) {
+          gx = snapP.userData.gx;
+          gy = snapP.userData.gy;
         }
 
         this._cb.onGridClick(gx, gy, rawCell.isPath);
@@ -397,6 +394,11 @@ export class InputManager {
   };
 
   private _isBlockedByUi(clientY: number): boolean {
+    if (document.getElementById('game-info-modal')?.classList.contains('visible')) return true;
+    if (document.getElementById('enemy-intro-modal')?.classList.contains('visible')) return true;
+    const centerX = window.innerWidth * 0.5;
+    const topElement = document.elementFromPoint(centerX, Math.max(0, clientY));
+    if (topElement?.closest('.game-ui') && !topElement.closest('canvas')) return true;
     const bottomBar = document.getElementById('bottom-bar');
     const heroBar = document.getElementById('hero-bar');
     const towerPanel = document.getElementById('tower-panel');
@@ -404,7 +406,7 @@ export class InputManager {
       .filter((el): el is HTMLElement => Boolean(el) && getComputedStyle(el!).display !== 'none')
       .map(el => el.getBoundingClientRect());
     const topMost = rects.reduce((top, rect) => Math.min(top, rect.top), window.innerHeight);
-    return clientY >= topMost - 8;
+    return clientY >= topMost - 6;
   }
 
   private _onResize = (): void => {
