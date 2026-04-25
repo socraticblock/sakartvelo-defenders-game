@@ -107,19 +107,24 @@ function setupCamera(gw: number, gh: number): void {
   const portrait = innerHeight > innerWidth;
   const heroBar = document.getElementById('hero-bar');
   const bottomBar = document.getElementById('bottom-bar');
-  const heroTop = heroBar && getComputedStyle(heroBar).display !== 'none' ? heroBar.getBoundingClientRect().top : innerHeight;
-  const bottomTop = bottomBar && getComputedStyle(bottomBar).display !== 'none' ? bottomBar.getBoundingClientRect().top : innerHeight;
-  const bottomUiRatio = Math.max(0, Math.min(0.42, (innerHeight - Math.min(heroTop, bottomTop)) / innerHeight));
+  const uiRects = [heroBar, bottomBar]
+    .filter((el): el is HTMLElement => Boolean(el) && getComputedStyle(el!).display !== 'none')
+    .map(el => el.getBoundingClientRect())
+    .filter(r => r.top > innerHeight * 0.5);
+  const bottomTop = uiRects.length ? Math.min(...uiRects.map(r => r.top)) : innerHeight;
+  const bottomUiRatio = Math.max(0, Math.min(0.42, (innerHeight - bottomTop) / innerHeight));
   const zoomScale = 100 / cameraZoomPct;
   const dist = Math.max(gh * 0.74, gw * 1.08) * zoomScale;
   const upwardBiasCells = gh * (0.08 + bottomUiRatio * 0.42);
+  // Lift the battlefield higher in portrait so we use top screen real estate.
+  const screenLiftCells = portrait ? gh * 0.1 : 0;
   camera.fov = portrait ? 50 : 44;
   camera.position.set(
     cx,
     dist * (portrait ? 1.24 + bottomUiRatio * 0.16 : 1.04),
-    cz + dist * (portrait ? 0.6 + bottomUiRatio * 0.22 : 0.8),
+    cz + dist * (portrait ? 0.54 + bottomUiRatio * 0.18 : 0.8),
   );
-  camera.lookAt(cx, 0, cz - (portrait ? upwardBiasCells : 0));
+  camera.lookAt(cx, 0, cz - (portrait ? upwardBiasCells - screenLiftCells : 0));
   camera.updateProjectionMatrix();
   gs.cameraBaseX = cx;
 }

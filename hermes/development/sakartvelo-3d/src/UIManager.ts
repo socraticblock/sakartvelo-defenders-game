@@ -11,6 +11,11 @@ import { audio } from './AudioManager';
 
 type OnLevelSelect = (era: number, level: number) => void;
 type OnEscape = () => void;
+type HudLayout = 'bottom' | 'left' | 'right' | 'top';
+const HUD_LAYOUT_KEY = 'sakartvelo_hud_layout';
+const BUILD_LAYOUT_KEY = 'sakartvelo_build_layout';
+const ABILITY_LAYOUT_KEY = 'sakartvelo_ability_layout';
+const DOCK_STACK_PREFIX = 'sakartvelo_dock_stack_';
 
 export class UIManager {
   // HUD elements
@@ -28,6 +33,7 @@ export class UIManager {
   private $heroHp = document.getElementById('hero-hp');
   private $heroStatus = document.getElementById('hero-status');
   private $gameInfoModal = document.getElementById('game-info-modal');
+  private $gameSettingsModal = document.getElementById('game-settings-modal');
   private enemyIntroQueue: string[] = [];
   private enemyIntroOpen = false;
 
@@ -41,6 +47,7 @@ export class UIManager {
 
   init(onLevelSelect: OnLevelSelect, onEscape: OnEscape): void {
     this.screens.init(onLevelSelect, onEscape);
+    this._applySavedHudLayout();
     this._bindWaveButtons();
     this._bindBuildStart();
     this._bindAbilityButtons();
@@ -132,6 +139,11 @@ export class UIManager {
           if (!document.hidden) gs.paused = false;
           return;
         }
+        if (this.$gameSettingsModal?.classList.contains('visible')) {
+          this.$gameSettingsModal.classList.remove('visible');
+          if (!document.hidden) gs.paused = false;
+          return;
+        }
         gs.selectedType = null;
         gs.selectedTower = null;
         this.panel.towerButtons.forEach(b => b.classList.remove('selected'));
@@ -142,15 +154,16 @@ export class UIManager {
   private _bindInfoModal(): void {
     const openBtn = document.getElementById('btn-game-info');
     const closeBtn = document.getElementById('btn-game-info-close');
+    const settingsBtn = document.getElementById('btn-game-settings');
+    const settingsCloseBtn = document.getElementById('btn-game-settings-close');
     const levelSelectBtn = document.getElementById('btn-game-level-select');
-    if (!openBtn || !this.$gameInfoModal || !closeBtn) return;
+    if (!openBtn || !this.$gameInfoModal || !closeBtn || !settingsBtn || !this.$gameSettingsModal || !settingsCloseBtn) return;
     this._bindCameraZoomControl();
+    this._bindDockLayoutControls();
 
     openBtn.addEventListener('click', () => {
       this.$gameInfoModal?.classList.add('visible');
       gs.paused = true;
-      audio.bindVolumeControls();
-      this._syncCameraZoomUi();
     });
     closeBtn.addEventListener('click', () => {
       this.$gameInfoModal?.classList.remove('visible');
@@ -163,8 +176,26 @@ export class UIManager {
       }
     });
 
+    settingsBtn.addEventListener('click', () => {
+      this.$gameSettingsModal?.classList.add('visible');
+      gs.paused = true;
+      audio.bindVolumeControls();
+      this._syncCameraZoomUi();
+      this._syncDockLayoutUi();
+    });
+    settingsCloseBtn.addEventListener('click', () => {
+      this.$gameSettingsModal?.classList.remove('visible');
+      if (!document.hidden) gs.paused = false;
+    });
+    this.$gameSettingsModal.addEventListener('click', (e) => {
+      if (e.target === this.$gameSettingsModal) {
+        this.$gameSettingsModal?.classList.remove('visible');
+        if (!document.hidden) gs.paused = false;
+      }
+    });
+
     levelSelectBtn?.addEventListener('click', () => {
-      this.$gameInfoModal?.classList.remove('visible');
+      this.$gameSettingsModal?.classList.remove('visible');
       this.screens.showLevelSelect(gs.currentLevel?.era ?? 0);
     });
   }
@@ -193,6 +224,93 @@ export class UIManager {
       const setZoom = (window as any).__setCameraZoom as ((v: number) => void) | undefined;
       setZoom?.(zoom);
     });
+  }
+
+  private _applySavedHudLayout(): void {
+    const legacy = this._parseHudLayout(localStorage.getItem(HUD_LAYOUT_KEY), 'bottom');
+    const build = this._parseHudLayout(localStorage.getItem(BUILD_LAYOUT_KEY), legacy);
+    const ability = this._parseHudLayout(localStorage.getItem(ABILITY_LAYOUT_KEY), legacy);
+    this._setDockLayout('build', build, true);
+    this._setDockLayout('ability', ability, true);
+  }
+
+  private _parseHudLayout(value: string | null, fallback: HudLayout): HudLayout {
+    const raw = (value || fallback).toLowerCase();
+    return (raw === 'left' || raw === 'right' || raw === 'top') ? raw : 'bottom';
+  }
+
+  private _getDockLayout(kind: 'build' | 'ability'): HudLayout {
+    return this._parseHudLayout(
+      localStorage.getItem(kind === 'build' ? BUILD_LAYOUT_KEY : ABILITY_LAYOUT_KEY),
+      'bottom',
+    );
+  }
+
+  private _setDockLayout(kind: 'build' | 'ability', layout: HudLayout, fromInit = false): void {
+    const otherKind = kind === 'build' ? 'ability' : 'build';
+    const otherLayout = this._getDockLayout(otherKind);
+    const prefix = kind === 'build' ? 'build-layout' : 'ability-layout';
+    document.body.classList.remove(`${prefix}-bottom`, `${prefix}-left`, `${prefix}-right`, `${prefix}-top`);
+    document.body.classList.add(`${prefix}-${layout}`);
+    localStorage.setItem(kind === 'build' ? BUILD_LAYOUT_KEY : ABILITY_LAYOUT_KEY, layout);
+    this._updateDockStackOrder(layout, otherKind, otherLayout, fromInit);
+    // Camera framing depends on dock placement.
+    const lvl = gs.currentLevel;
+    const setZoom = (window as any).__setCameraZoom as ((v: number) => void) | undefined;
+    const getZoom = (window as any).__getCameraZoom as (() => number) | undefined;
+    if (lvl && setZoom && getZoom) setZoom(getZoom());
+  }
+
+  private _updateDockStackOrder(
+    layout: HudLayout,
+    otherKind: 'build' | 'ability',
+    otherLayout: HudLayout,
+    fromInit: boolean,
+  ): void {
+    const classes = ['bottom', 'left', 'right', 'top'].flatMap(edge => [
+      `dock-stack-${edge}-build-first`,
+      `dock-stack-${edge}-ability-first`,
+    ]);
+    document.body.classList.remove(...classes);
+
+    if (layout === otherLayout) {
+      const key = `${DOCK_STACK_PREFIX}${layout}`;
+      const saved = localStorage.getItem(key);
+      const first = fromInit
+        ? (saved === 'ability' ? 'ability' : 'build')
+        : otherKind;
+      localStorage.setItem(key, first);
+    }
+
+    const buildLayout = this._getDockLayout('build');
+    const abilityLayout = this._getDockLayout('ability');
+    if (buildLayout === abilityLayout) {
+      const key = `${DOCK_STACK_PREFIX}${buildLayout}`;
+      const saved = localStorage.getItem(key);
+      const first = saved === 'ability' ? 'ability' : 'build';
+      document.body.classList.add(`dock-stack-${buildLayout}-${first}-first`);
+    }
+  }
+
+  private _syncDockLayoutUi(): void {
+    const build = document.getElementById('build-layout-game') as HTMLSelectElement | null;
+    const ability = document.getElementById('ability-layout-game') as HTMLSelectElement | null;
+    if (build) build.value = this._parseHudLayout(localStorage.getItem(BUILD_LAYOUT_KEY), 'bottom');
+    if (ability) ability.value = this._parseHudLayout(localStorage.getItem(ABILITY_LAYOUT_KEY), 'bottom');
+  }
+
+  private _bindDockLayoutControls(): void {
+    const bind = (id: string, kind: 'build' | 'ability') => {
+      const select = document.getElementById(id) as HTMLSelectElement | null;
+      if (!select || select.dataset.bound === '1') return;
+      select.dataset.bound = '1';
+      select.addEventListener('change', () => {
+        this._setDockLayout(kind, this._parseHudLayout(select.value, 'bottom'));
+      });
+    };
+    this._syncDockLayoutUi();
+    bind('build-layout-game', 'build');
+    bind('ability-layout-game', 'ability');
   }
 
   private _bindAbilityButtons(): void {

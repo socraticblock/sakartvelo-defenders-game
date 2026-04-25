@@ -69,6 +69,8 @@
     <button id="btn-game-info" class="hero-info-btn" aria-label="Open game info and settings">(i)</button>
   </div>
 
+  <button id="btn-game-settings" class="game-settings-btn game-ui" aria-label="Open game settings">🔧</button>
+
   <div id="game-info-modal" class="game-ui">
     <div class="game-info-card">
       <div class="game-info-header">
@@ -81,6 +83,21 @@
         <div class="game-info-line"><b>Q Colchian Poison:</b> deals 8 DPS for 5s to enemies within 4.2m. Best for large waves at choke points.</div>
         <div class="game-info-line"><b>W War Chant:</b> buffs nearby towers for 8s with +50% damage and +30% attack speed. Use before wave spikes.</div>
         <div class="game-info-line"><b>E Colchian Fire:</b> empowers towers for 10s with +100% damage, +50% attack speed, and +30% range. Save for bosses.</div>
+      </div>
+
+      <div class="game-info-section">
+        <div class="game-info-section-title">Controls</div>
+        <div class="game-info-line">Tap/click ground to move Medea. Tap tower to inspect and upgrade.</div>
+        <div class="game-info-line">Desktop: Q/W/E abilities, Esc to clear selection.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="game-settings-modal" class="game-ui">
+    <div class="game-info-card">
+      <div class="game-info-header">
+        <div class="game-info-title">Settings</div>
+        <button id="btn-game-settings-close" class="game-info-close" aria-label="Close">✕</button>
       </div>
 
       <div class="game-info-section">
@@ -104,12 +121,24 @@
           <input type="range" id="cam-zoom-game" min="80" max="120" value="100">
           <span class="vol-val" id="cam-zoom-game-val">100</span>
         </div>
-      </div>
-
-      <div class="game-info-section">
-        <div class="game-info-section-title">Controls</div>
-        <div class="game-info-line">Tap/click ground to move Medea. Tap tower to inspect and upgrade.</div>
-        <div class="game-info-line">Desktop: Q/W/E abilities, Esc to clear selection.</div>
+        <div class="game-info-row">
+          <span class="vol-icon">🧭</span>
+          <select id="build-layout-game" class="game-info-select">
+            <option value="bottom">Build Bottom</option>
+            <option value="left">Build Left</option>
+            <option value="right">Build Right</option>
+            <option value="top">Build Top</option>
+          </select>
+        </div>
+        <div class="game-info-row">
+          <span class="vol-icon">✨</span>
+          <select id="ability-layout-game" class="game-info-select">
+            <option value="bottom">Abilities Bottom</option>
+            <option value="left">Abilities Left</option>
+            <option value="right">Abilities Right</option>
+            <option value="top">Abilities Top</option>
+          </select>
+        </div>
       </div>
 
       <div class="game-info-section">

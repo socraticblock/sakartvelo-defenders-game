@@ -46,6 +46,72 @@
   color: #f0e6d2;
 }
 
+body.build-layout-bottom #bottom-bar {
+  left: 50%;
+  right: auto;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: auto;
+  max-width: calc(100% - 24px);
+  padding: 8px 10px;
+  border: 1px solid rgba(139, 105, 20, 0.35);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(3px);
+}
+
+body.build-layout-top #bottom-bar {
+  top: 0;
+  bottom: auto;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: auto;
+  max-width: calc(100% - 24px);
+  padding: 8px 10px;
+  border-top: none;
+  border-bottom: 1px solid rgba(139, 105, 20, 0.35);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(3px);
+}
+
+body.build-layout-left #bottom-bar,
+body.build-layout-right #bottom-bar {
+  top: 50%;
+  bottom: auto;
+  left: auto;
+  right: auto;
+  transform: translateY(-50%);
+  width: 120px;
+  flex-direction: column;
+  padding: 8px 6px;
+  gap: 6px;
+  border: 1px solid rgba(139, 105, 20, 0.35);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.86);
+  backdrop-filter: blur(3px);
+}
+
+body.build-layout-left #bottom-bar {
+  left: 10px;
+}
+
+body.build-layout-right #bottom-bar {
+  right: 10px;
+}
+
+body.build-layout-left .tower-btn,
+body.build-layout-left .wave-btn,
+body.build-layout-right .tower-btn,
+body.build-layout-right .wave-btn {
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 5px;
+  font-size: 11px;
+  line-height: 1.05;
+}
+
 .tower-btn {
   padding: 10px 16px;
   border: 2px solid #8b6914;
@@ -113,6 +179,87 @@
   white-space: nowrap;
 }
 
+body.ability-layout-bottom #hero-bar {
+  bottom: 0;
+  left: 50%;
+  right: auto;
+  top: auto;
+  transform: translateX(-50%);
+  width: auto;
+  max-width: calc(100% - 24px);
+}
+
+body.ability-layout-top #hero-bar {
+  top: 0;
+  bottom: auto;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: auto;
+  max-width: calc(100% - 24px);
+}
+
+body.dock-stack-top-build-first.build-layout-top #bottom-bar,
+body.dock-stack-top-ability-first.ability-layout-top #hero-bar {
+  top: 0;
+}
+
+body.dock-stack-top-build-first.ability-layout-top #hero-bar,
+body.dock-stack-top-ability-first.build-layout-top #bottom-bar {
+  top: 58px;
+}
+
+body.ability-layout-left #hero-bar,
+body.ability-layout-right #hero-bar {
+  top: 50%;
+  bottom: auto;
+  left: auto;
+  right: auto;
+  transform: translateY(-50%);
+  width: 82px;
+  max-width: 82px;
+  flex-direction: column;
+  padding: 8px 6px;
+}
+
+body.ability-layout-left #hero-bar {
+  left: 10px;
+}
+
+body.ability-layout-right #hero-bar {
+  right: 10px;
+}
+
+body.dock-stack-left-build-first.build-layout-left #bottom-bar,
+body.dock-stack-left-ability-first.ability-layout-left #hero-bar {
+  left: 10px;
+}
+
+body.dock-stack-left-build-first.ability-layout-left #hero-bar,
+body.dock-stack-left-ability-first.build-layout-left #bottom-bar {
+  left: 140px;
+}
+
+body.dock-stack-right-build-first.build-layout-right #bottom-bar,
+body.dock-stack-right-ability-first.ability-layout-right #hero-bar {
+  right: 10px;
+}
+
+body.dock-stack-right-build-first.ability-layout-right #hero-bar,
+body.dock-stack-right-ability-first.build-layout-right #bottom-bar {
+  right: 140px;
+}
+
+body.dock-stack-bottom-build-first.build-layout-bottom #bottom-bar,
+body.dock-stack-bottom-ability-first.ability-layout-bottom #hero-bar {
+  bottom: 0;
+}
+
+body.dock-stack-bottom-build-first.ability-layout-bottom #hero-bar,
+body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
+  bottom: 58px;
+}
+
 .hero-info-btn {
   width: 42px;
   height: 42px;
@@ -124,6 +271,22 @@
   font-family: 'Georgia', serif;
   font-size: 18px;
   font-weight: bold;
+}
+
+.game-settings-btn {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 14;
+  width: 46px;
+  height: 46px;
+  border: 2px solid #8b6914;
+  border-radius: 12px;
+  background: rgba(8, 14, 8, 0.86);
+  color: #f0e6d2;
+  cursor: pointer;
+  font-size: 20px;
+  box-shadow: 0 0 14px rgba(0, 0, 0, 0.35);
 }
 
 #game-info-modal {
@@ -138,6 +301,21 @@
 }
 
 #game-info-modal.visible {
+  display: flex;
+}
+
+#game-settings-modal {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 16px;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+#game-settings-modal.visible {
   display: flex;
 }
 
@@ -251,6 +429,17 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
+}
+
+.game-info-select {
+  flex: 1 1 auto;
+  min-height: 34px;
+  border: 1px solid #8b6914;
+  border-radius: 8px;
+  background: rgba(139, 105, 20, 0.2);
+  color: #f0e6d2;
+  font-family: 'Georgia', serif;
+  padding: 6px 8px;
 }
 
 .game-info-nav-btn {
@@ -592,6 +781,14 @@
     font-size: 16px;
   }
 
+  .game-settings-btn {
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    width: 42px;
+    height: 42px;
+    font-size: 18px;
+  }
+
   #tower-panel {
     position: absolute;
     left: 8px;
@@ -627,5 +824,162 @@
   .enemy-intro-card {
     max-width: none;
     border-radius: 18px;
+  }
+
+  body.build-layout-left #bottom-bar,
+  body.build-layout-right #bottom-bar {
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+    width: 108px;
+    height: auto;
+    padding: 8px 6px;
+    flex-direction: column;
+    gap: 6px;
+    border: 1px solid rgba(139, 105, 20, 0.35);
+    border-radius: 12px;
+  }
+
+  body.build-layout-left #bottom-bar {
+    left: 8px;
+    right: auto;
+  }
+
+  body.build-layout-right #bottom-bar {
+    right: 8px;
+    left: auto;
+  }
+
+  body.build-layout-left .tower-btn,
+  body.build-layout-left .wave-btn,
+  body.build-layout-right .tower-btn,
+  body.build-layout-right .wave-btn {
+    width: 100%;
+    min-height: 38px;
+    font-size: 10px;
+    line-height: 1.05;
+    padding: 5px 4px;
+  }
+
+  body.ability-layout-left #hero-bar,
+  body.ability-layout-right #hero-bar {
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+    width: 72px;
+    max-width: 72px;
+    flex-direction: column;
+    padding: 8px 6px;
+  }
+
+  body.ability-layout-left #hero-bar {
+    left: 8px;
+    right: auto;
+  }
+
+  body.ability-layout-right #hero-bar {
+    right: 8px;
+    left: auto;
+  }
+
+  body.build-layout-left.ability-layout-left #hero-bar {
+    left: 116px;
+  }
+
+  body.build-layout-right.ability-layout-right #hero-bar {
+    right: 116px;
+  }
+
+  body.build-layout-left.ability-layout-bottom #hero-bar,
+  body.build-layout-left.ability-layout-top #hero-bar {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: auto;
+    max-width: calc(100% - 16px);
+  }
+
+  body.build-layout-right.ability-layout-bottom #hero-bar,
+  body.build-layout-right.ability-layout-top #hero-bar {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: auto;
+    max-width: calc(100% - 16px);
+  }
+
+  body.build-layout-top #bottom-bar {
+    top: 0;
+    bottom: auto;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: auto;
+    max-width: calc(100% - 16px);
+    border-top: none;
+    border-bottom: 1px solid rgba(139, 105, 20, 0.35);
+    border-radius: 10px;
+  }
+
+  body.ability-layout-top #hero-bar {
+    top: 0;
+    bottom: auto;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: auto;
+    max-width: calc(100% - 16px);
+  }
+
+  body.build-layout-top.ability-layout-top #hero-bar {
+    top: 52px;
+  }
+
+  body.ability-layout-bottom #hero-bar {
+    bottom: env(safe-area-inset-bottom);
+  }
+
+  body.ability-layout-bottom #tower-panel {
+    bottom: calc(70px + env(safe-area-inset-bottom));
+  }
+
+  body.dock-stack-top-build-first.build-layout-top #bottom-bar,
+  body.dock-stack-top-ability-first.ability-layout-top #hero-bar {
+    top: 0;
+  }
+
+  body.dock-stack-top-build-first.ability-layout-top #hero-bar,
+  body.dock-stack-top-ability-first.build-layout-top #bottom-bar {
+    top: 52px;
+  }
+
+  body.dock-stack-bottom-build-first.build-layout-bottom #bottom-bar,
+  body.dock-stack-bottom-ability-first.ability-layout-bottom #hero-bar {
+    bottom: env(safe-area-inset-bottom);
+  }
+
+  body.dock-stack-bottom-build-first.ability-layout-bottom #hero-bar,
+  body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
+    bottom: calc(52px + env(safe-area-inset-bottom));
+  }
+
+  body.dock-stack-left-build-first.build-layout-left #bottom-bar,
+  body.dock-stack-left-ability-first.ability-layout-left #hero-bar {
+    left: 8px;
+  }
+
+  body.dock-stack-left-build-first.ability-layout-left #hero-bar,
+  body.dock-stack-left-ability-first.build-layout-left #bottom-bar {
+    left: 116px;
+  }
+
+  body.dock-stack-right-build-first.build-layout-right #bottom-bar,
+  body.dock-stack-right-ability-first.ability-layout-right #hero-bar {
+    right: 8px;
+  }
+
+  body.dock-stack-right-build-first.ability-layout-right #hero-bar,
+  body.dock-stack-right-ability-first.build-layout-right #bottom-bar {
+    right: 116px;
   }
 }

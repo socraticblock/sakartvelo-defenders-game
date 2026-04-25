@@ -335,7 +335,7 @@ export class InputManager {
   private _onPointerDown = (e: PointerEvent): void => {
     // Only handle Left Click (button 0)
     if (e.button !== 0) return;
-    if (this._isBlockedByUi(e.clientY)) return;
+    if (this._isBlockedByUi(e.clientX, e.clientY)) return;
 
     // Stop propagation so we don't trigger multiple handlers
     e.stopPropagation();
@@ -388,16 +388,16 @@ export class InputManager {
 
   private _onContextMenu = (e: MouseEvent): void => {
     e.preventDefault();
-    if (this._isBlockedByUi(e.clientY)) return;
+    if (this._isBlockedByUi(e.clientX, e.clientY)) return;
     const pos = this.getMouseGround();
     if (pos) this._cb.onHeroMove(pos.x, pos.z);
   };
 
-  private _isBlockedByUi(clientY: number): boolean {
+  private _isBlockedByUi(clientX: number, clientY: number): boolean {
     if (document.getElementById('game-info-modal')?.classList.contains('visible')) return true;
+    if (document.getElementById('game-settings-modal')?.classList.contains('visible')) return true;
     if (document.getElementById('enemy-intro-modal')?.classList.contains('visible')) return true;
-    const centerX = window.innerWidth * 0.5;
-    const topElement = document.elementFromPoint(centerX, Math.max(0, clientY));
+    const topElement = document.elementFromPoint(Math.max(0, clientX), Math.max(0, clientY));
     if (topElement?.closest('.game-ui') && !topElement.closest('canvas')) return true;
     const bottomBar = document.getElementById('bottom-bar');
     const heroBar = document.getElementById('hero-bar');
@@ -405,8 +405,12 @@ export class InputManager {
     const rects = [bottomBar, heroBar, towerPanel]
       .filter((el): el is HTMLElement => Boolean(el) && getComputedStyle(el!).display !== 'none')
       .map(el => el.getBoundingClientRect());
-    const topMost = rects.reduce((top, rect) => Math.min(top, rect.top), window.innerHeight);
-    return clientY >= topMost - 6;
+    return rects.some(r =>
+      clientX >= r.left - 6 &&
+      clientX <= r.right + 6 &&
+      clientY >= r.top - 6 &&
+      clientY <= r.bottom + 6
+    );
   }
 
   private _onResize = (): void => {
