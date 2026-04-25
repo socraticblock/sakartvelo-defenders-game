@@ -17,6 +17,7 @@ import {
   updateEffects,
 } from './Effects';
 import { updateEnemySlow, updateEnemyWallAttacks, updateEnemyDeaths } from './EnemyAI';
+import { magicParticles } from './MagicalParticles';
 
 export class GameLoop {
   private readonly _UPGRADE_RANGE = 1.6;
@@ -79,6 +80,7 @@ export class GameLoop {
       this._updateHeroBuilding(dt);
       updateEnemyDeaths(this._scene, this._camera);
       updateEffects(dt, this._camera);
+      magicParticles?.update(dt);
       this._updateWallHpBillboards();
       this._checkWaveComplete();
       gs.grid.update(performance.now() * 0.001, gs.selectedType !== null);
@@ -86,7 +88,7 @@ export class GameLoop {
 
     this._updateHover();
     this._updateCameraSway();
-    
+
     // Use the visuals manager for high-end rendering
     visuals.render(this._renderer, this._scene, this._camera);
   };
@@ -153,7 +155,7 @@ export class GameLoop {
 
     for (const tower of gs.towers) {
       let occluded = false;
-      
+
       // Get tower screen position (center-ish)
       tempV.copy(tower.group.position).y += 0.8; // Offset to tower mid-height
       tempV.project(this._camera);
@@ -167,7 +169,7 @@ export class GameLoop {
 
         // Calculate screen-space distance
         const distSq = towerScreenPos.distanceToSquared(targetScreenPos);
-        
+
         // If target is "behind" in world Z and close on screen
         const isBehind = targetPos.z < tower.group.position.z;
         if (isBehind && distSq < 0.04) { // 0.04 is ~20% of screen width squared

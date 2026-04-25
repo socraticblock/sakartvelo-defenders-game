@@ -24,9 +24,9 @@ export class ScreenManager {
     this._bindGameOverButtons();
     this._bindLevelCompleteButtons();
     this._bindTutorial();
-    
+
     console.log('ScreenManager.init complete');
-    
+
     culturalFacts.init();
   }
 
@@ -43,7 +43,7 @@ export class ScreenManager {
       if (debugLevels) debugLevels.textContent = String(gs.allLevels.length);
 
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('visible'));
-      
+
       // Toggle Game HUD visibility
       const isGameScreen = (id === 'none'); // Expand this if you have a dedicated 'game' screen ID
       document.querySelectorAll<HTMLElement>('.game-ui').forEach(el => {
@@ -86,9 +86,9 @@ export class ScreenManager {
     const container = document.getElementById('screen-level-select');
     if (container) {
       LevelSelect.show(
-        era, 
-        container, 
-        gs.allLevels, 
+        era,
+        container,
+        gs.allLevels,
         (e, l) => this._onLevelSelect?.(e, l),
         () => this.showIntro()
       );
@@ -233,7 +233,7 @@ export class ScreenManager {
     if (!overlay) return;
 
     const dismiss = () => overlay.classList.remove('visible');
-    
+
     overlay.addEventListener('click', dismiss);
     addEventListener('keydown', (e) => {
       if (overlay.classList.contains('visible')) {

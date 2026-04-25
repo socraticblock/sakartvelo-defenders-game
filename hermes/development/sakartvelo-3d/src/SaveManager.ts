@@ -79,7 +79,7 @@ export const SaveManager = {
         save.bestTimes[levelId] = time;
       }
     }
-    
+
     // Record completion
     save.completedLevels[levelId] = true;
     persist(save);
@@ -141,10 +141,10 @@ export const SaveManager = {
     const l = Number(level);
 
     if (e === 0 && l === 1) return true;
-    
+
     const currentId = this.levelId(e, l);
     const stars = this.getStars(currentId);
-    
+
     // If you already have stars, it's unlocked
     if (stars > 0) return true;
 
@@ -153,14 +153,14 @@ export const SaveManager = {
     let pLvl = l - 1;
     if (l === 1) {
       pEra = e - 1;
-      pLvl = 20; 
+      pLvl = 20;
     }
 
-    if (pEra < 0) return true; 
-    
+    if (pEra < 0) return true;
+
     const prevId = this.levelId(pEra, pLvl);
     const prevStars = this.getStars(prevId);
-    
+
     return prevStars > 0;
   },
 

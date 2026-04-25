@@ -12,6 +12,10 @@ import { GameLoop } from './GameLoop';
 import { SaveManager } from './SaveManager';
 import { Tower } from './Tower';
 import { screenMgr } from './ScreenManager';
+import { initMagicParticles } from './MagicalParticles';
+
+// Use the generated magical sprite
+const MAGIC_SPRITE = './magic_particle_sprite_1777051199311.png';
 
 // ─── Scene ────────────────────────────────────────────────────────────────
 
@@ -57,6 +61,8 @@ scene.add(ground);
 const hover = new THREE.Group();
 hover.visible = false;
 scene.add(hover);
+
+initMagicParticles(scene, MAGIC_SPRITE);
 
 const moveRing = new THREE.Mesh(
   new THREE.RingGeometry(0.25, 0.35, 16),

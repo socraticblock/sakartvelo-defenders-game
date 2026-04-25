@@ -25,6 +25,8 @@ interface PoisonDot {
   dps: number;
 }
 
+import { magicParticles } from './MagicalParticles';
+
 export class HeroAbilities {
   abilities: AbilityState[];
   [index: number]: AbilityState;
@@ -41,8 +43,8 @@ export class HeroAbilities {
     this.alchemyVfx = alchemyVfx;
     this.abilities = [
       { name: 'Colchian Poison', icon: '☠️', maxCd: 15, cooldown: 0, active: false, duration: 5, timer: 0 },
-      { name: 'War Chant', icon: '🌿', maxCd: 45, cooldown: 0, active: false, duration: 8, timer: 0 },
-      { name: 'Colchian Fire', icon: '⚗️', maxCd: 120, cooldown: 0, active: false, duration: 10, timer: 0 },
+      { name: 'War Chant', icon: '🌿', maxCd: 30, cooldown: 0, active: false, duration: 8, timer: 0 },
+      { name: 'Colchian Fire', icon: '🔥', maxCd: 60, cooldown: 0, active: false, duration: 10, timer: 0 },
     ];
   }
 
@@ -53,9 +55,16 @@ export class HeroAbilities {
     ab.active = true;
     ab.timer = ab.duration;
 
-    if (index === 0) this.applyPoison(enemies, heroPos);
-    else if (index === 1) this.applyHeal(towers, heroPos);
-    else if (index === 2) this.applyAlchemy(towers, heroPos);
+    if (index === 0) {
+      this.applyPoison(enemies, heroPos);
+      magicParticles?.spawnBurst(heroPos.clone().add(new THREE.Vector3(0, 0.5, 0)), 0x44ff44, 25);
+    } else if (index === 1) {
+      this.applyHeal(towers, heroPos);
+      magicParticles?.spawnBurst(heroPos.clone().add(new THREE.Vector3(0, 0.5, 0)), 0xffdd44, 40);
+    } else if (index === 2) {
+      this.applyAlchemy(towers, heroPos);
+      magicParticles?.spawnBurst(heroPos.clone().add(new THREE.Vector3(0, 0.5, 0)), 0xff4422, 60);
+    }
 
     return true;
   }

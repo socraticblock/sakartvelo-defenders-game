@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Enemy } from './Enemy';
+import { magicParticles } from './MagicalParticles';
 
 // ─── SHARED GEOMETRIES & MATERIALS (allocated once) ───
 const arrowGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.3, 4);
@@ -133,6 +134,13 @@ export class Projectile {
       _v3.add(this.mesh.position);
       _v3.y = this.mesh.position.y;
       this.mesh.lookAt(_v3);
+    }
+
+    // God-Tier Trails
+    if (this.towerType === 'archer') {
+      magicParticles?.spawn(this.mesh.position.clone(), new THREE.Vector3(0, 0, 0), this.isCrit ? 0xffcc44 : 0x8b6914, 0.04, 0.2);
+    } else {
+      magicParticles?.spawn(this.mesh.position.clone(), new THREE.Vector3(0, 0.1, 0), 0xff6633, 0.08, 0.4);
     }
 
     // Hit detection

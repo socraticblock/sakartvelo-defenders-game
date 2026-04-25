@@ -78,6 +78,8 @@ for (let i = 0; i < FLASH_POOL_SIZE; i++) {
   flashPool.push({ mesh, mat, life: 0, maxLife: 0.15, inUse: false });
 }
 
+import { magicParticles } from './MagicalParticles';
+
 export function spawnHitFlash(scene: THREE.Scene, pos: THREE.Vector3) {
   const hf = flashPool.find(f => !f.inUse);
   if (!hf) return;
@@ -88,6 +90,9 @@ export function spawnHitFlash(scene: THREE.Scene, pos: THREE.Vector3) {
   hf.life = hf.maxLife;
   hf.inUse = true;
   scene.add(hf.mesh);
+
+  // God-Tier Magical Sparkles
+  magicParticles?.spawnBurst(pos.clone().add(new THREE.Vector3(0, 0.3, 0)), 0xffcc44, 8);
 }
 
 // ═══════════════════════════════════════════════════

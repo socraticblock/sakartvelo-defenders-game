@@ -65,7 +65,7 @@ function render(era: number) {
   injectStyles();
 
   const eraLevels = allLevels.filter(l => l.era === era).sort((a, b) => a.level - b.level);
-  
+
   let html = `
     <div class="ls-container">
       <div class="ls-header">
@@ -141,7 +141,7 @@ function render(era: number) {
     html += `</div>`;
   }
 
-    html += `
+  html += `
       <div class="ls-footer">
         <button id="ls-back-btn">← Back</button>
         <button id="ls-reset-btn">Clear Progress</button>
