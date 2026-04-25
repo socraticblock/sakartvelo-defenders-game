@@ -4,6 +4,7 @@
  */
 
 const SAVE_KEY = 'sakartvelo_defenders_v1';
+const DEBUG_UNLOCK_ALL_LEVELS = true;
 
 export interface SaveData {
   version: number;
@@ -136,6 +137,8 @@ export const SaveManager = {
 
   /** Check if a specific level is unlocked */
   isLevelUnlocked(era: number, level: number): boolean {
+    if (DEBUG_UNLOCK_ALL_LEVELS) return true;
+
     // Force numbers to avoid string comparison issues
     const e = Number(era);
     const l = Number(level);
