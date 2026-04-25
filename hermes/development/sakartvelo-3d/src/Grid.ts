@@ -185,8 +185,11 @@ export class Grid {
   }
 
   private createPlinths(nodes: number[][]) {
+    const mobile = window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
+    const baseRadius = mobile ? 0.54 : 0.42;
+    const bottomRadius = mobile ? 0.62 : 0.48;
     // Octagonal beveled stone geometry
-    const stoneGeo = new THREE.CylinderGeometry(0.42, 0.48, 0.08, 8);
+    const stoneGeo = new THREE.CylinderGeometry(baseRadius, bottomRadius, 0.08, 8);
     const stoneMat = new THREE.MeshStandardMaterial({ 
       color: 0x6a6a5a, 
       roughness: 0.9, 
@@ -194,7 +197,7 @@ export class Grid {
     });
 
     // Golden glow ring for building "intent"
-    const auraGeo = new THREE.RingGeometry(0.45, 0.55, 32);
+    const auraGeo = new THREE.RingGeometry(mobile ? 0.58 : 0.45, mobile ? 0.72 : 0.55, 32);
     auraGeo.rotateX(-Math.PI / 2);
 
     const auraMat = new THREE.MeshBasicMaterial({ 
@@ -233,8 +236,8 @@ export class Grid {
           const pushDir = new THREE.Vector3().subVectors(pPos, cp);
           pushDir.y = 0;
           pushDir.normalize();
-          // Nudge by 0.45 units (almost half a cell)
-          pPos.add(pushDir.multiplyScalar(0.45));
+          // Nudge by about half a cell so tapping/building stays readable.
+          pPos.add(pushDir.multiplyScalar(mobile ? 0.58 : 0.45));
         }
       }
 

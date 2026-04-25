@@ -95,9 +95,16 @@ scene.add(moveRing);
 
 function setupCamera(gw: number, gh: number): void {
   const cx = gw / 2, cz = gh / 2;
-  const dist = Math.max(gw, gh) * 0.95;
-  camera.position.set(cx, dist * 0.85, cz + dist * 0.95);
+  const portrait = innerHeight > innerWidth && innerWidth <= 768;
+  const dist = Math.max(gw, gh) * (portrait ? 0.78 : 0.95);
+  camera.fov = portrait ? 52 : 45;
+  camera.position.set(
+    cx,
+    dist * (portrait ? 1.08 : 0.85),
+    cz + dist * (portrait ? 0.72 : 0.95),
+  );
   camera.lookAt(cx, 0, cz);
+  camera.updateProjectionMatrix();
   gs.cameraBaseX = cx;
 }
 
@@ -176,7 +183,8 @@ renderer.domElement.addEventListener('contextmenu', (e) => {
 
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
-  camera.updateProjectionMatrix();
+  if (gs.currentLevel) setupCamera(gs.currentLevel.grid_width, gs.currentLevel.grid_height);
+  else camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
 });
 
