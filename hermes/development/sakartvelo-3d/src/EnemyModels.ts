@@ -8,6 +8,8 @@ import {
   createWolf,
   createSiegeRam,
   createDevi,
+  createColchianRaider,
+  createColchianHorseman,
   type EnemyRig,
   P,
   makePart,
@@ -18,16 +20,9 @@ export type { EnemyArchetype } from './EnemyBuilders';
 export function createEnemyModel(type: string): EnemyRig {
   switch (type) {
     case 'infantry':
-      return createHumanoid({
-        bodyColor: P.fur, skirtColor: P.leather, beltColor: P.leather,
-        headColor: P.skin, weaponType: 'axe', shieldColor: P.wood,
-      });
+      return createColchianRaider();
     case 'cavalry':
-      return createHumanoid({
-        bodyColor: P.threat_orange, skirtColor: P.wood, beltColor: P.gold,
-        headColor: P.skin, helmet: true, helmetColor: P.bone,
-        weaponType: 'spear', scale: 1.1,
-      });
+      return createColchianHorseman();
     case 'siege':
       return createSiegeRam({});
     case 'flying':

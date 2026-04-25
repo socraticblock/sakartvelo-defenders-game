@@ -15,6 +15,7 @@ export class AudioManager {
   private _narrationAudio: HTMLAudioElement | null = null;
   private _eraAudioEl: HTMLAudioElement | null = null;
   private _eraAudioDuration = 0;
+  private _eraSessionId = 0;
   _eraPlaying = false;
 
   init(): void {
@@ -299,6 +300,7 @@ export class AudioManager {
     }
 
     this._eraPlaying = true;
+    const sessionId = ++this._eraSessionId;
     playBtn.textContent = '⏳ Loading...';
     playBtn.classList.add('playing');
     playBtn.disabled = true;
@@ -318,6 +320,8 @@ export class AudioManager {
 
     this._eraAudioEl.addEventListener('canplay', () => {
       if (!this._eraAudioEl) return;
+      if (sessionId !== this._eraSessionId) return;
+      if (!this._eraPlaying) return;
       this._eraAudioDuration = this._eraAudioEl.duration;
       playBtn.textContent = '⏸ Pause';
       playBtn.disabled = false;
@@ -333,6 +337,19 @@ export class AudioManager {
     if (this._eraAudioEl) this._eraAudioEl.pause();
     teleprompter.stop();
     this.resetEraPlayButton(this._eraAudioEl?.ended ? '▶ Play Narration' : '▶ Resume');
+  }
+
+  hardStopEraNarration(): void {
+    this._eraSessionId++;
+    this._eraPlaying = false;
+    if (this._eraAudioEl) {
+      this._eraAudioEl.pause();
+      this._eraAudioEl.currentTime = 0;
+    }
+    this._eraAudioEl = null;
+    this._eraAudioDuration = 0;
+    teleprompter.stop();
+    this.resetEraPlayButton('▶ Play Narration');
   }
 
   seekEraNarration(delta: number): void {

@@ -134,7 +134,10 @@ export class GameLoop {
 
   private _updateSpawn(dt: number): void {
     const spawned = gs.waveMgr?.update(dt);
-    if (spawned) gs.addEnemy(spawned, this._scene);
+    if (spawned) {
+      gs.addEnemy(spawned, this._scene);
+      this._ui.showEnemyIntro(spawned.type);
+    }
   }
 
   private _updateEnemies(dt: number): void {

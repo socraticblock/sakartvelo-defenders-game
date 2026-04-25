@@ -141,6 +141,56 @@
   display: flex;
 }
 
+#enemy-intro-modal {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  background: rgba(0, 0, 0, 0.58);
+  padding: 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+#enemy-intro-modal.visible {
+  display: flex;
+}
+
+.enemy-intro-card {
+  width: 100%;
+  max-width: 460px;
+  background: rgba(8, 14, 8, 0.98);
+  border: 2px solid #d4a017;
+  border-radius: 16px;
+  padding: 18px;
+  color: #f0e6d2;
+  box-shadow: 0 0 30px rgba(212, 160, 23, 0.2);
+}
+
+.enemy-intro-kicker {
+  color: #8a7a5a;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.enemy-intro-name {
+  color: #d4a017;
+  font-size: 24px;
+  font-weight: bold;
+  margin: 6px 0 14px;
+}
+
+.enemy-intro-block {
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.enemy-intro-block b {
+  color: #d4a017;
+}
+
 .game-info-card {
   width: 100%;
   max-width: 520px;

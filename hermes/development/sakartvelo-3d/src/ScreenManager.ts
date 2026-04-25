@@ -36,7 +36,7 @@ export class ScreenManager {
     try {
       console.log(`Showing screen: ${id}`);
       if (id !== 'screen-era') {
-        audio.stopEraNarration();
+        audio.hardStopEraNarration();
       }
 
       // Update Debug Overlay
@@ -190,7 +190,7 @@ export class ScreenManager {
 
     document.getElementById('btn-era-continue')?.addEventListener('click', () => {
       console.log('Era Continue clicked');
-      audio.stopEraNarration();
+      audio.hardStopEraNarration();
       this.showLevelSelect(0); // For now hardcoded to era 0
     });
   }

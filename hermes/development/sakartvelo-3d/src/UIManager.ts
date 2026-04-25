@@ -28,6 +28,8 @@ export class UIManager {
   private $heroHp = document.getElementById('hero-hp');
   private $heroStatus = document.getElementById('hero-status');
   private $gameInfoModal = document.getElementById('game-info-modal');
+  private enemyIntroQueue: string[] = [];
+  private enemyIntroOpen = false;
 
   // Sub-managers
   panel: TowerPanel;
@@ -207,6 +209,78 @@ export class UIManager {
   hideLevelName(): void {
     if (this.$levelName) this.$levelName.textContent = '';
   }
+
+  showEnemyIntro(type: string): void {
+    const key = `sakartvelo_enemy_intro_${type}`;
+    if (localStorage.getItem(key)) return;
+    localStorage.setItem(key, '1');
+    this.enemyIntroQueue.push(type);
+    if (!this.enemyIntroOpen) this._showNextEnemyIntro();
+  }
+
+  private _showNextEnemyIntro(): void {
+    const type = this.enemyIntroQueue.shift();
+    if (!type) {
+      this.enemyIntroOpen = false;
+      if (!document.hidden) gs.paused = false;
+      return;
+    }
+
+    const data = ENEMY_INTROS[type] || ENEMY_INTROS.infantry;
+    const modal = document.getElementById('enemy-intro-modal');
+    const name = document.getElementById('enemy-intro-name');
+    const lore = document.getElementById('enemy-intro-lore');
+    const threat = document.getElementById('enemy-intro-threat');
+    const counter = document.getElementById('enemy-intro-counter');
+    const ok = document.getElementById('enemy-intro-ok');
+    if (!modal || !name || !lore || !threat || !counter || !ok) return;
+
+    this.enemyIntroOpen = true;
+    gs.paused = true;
+    name.textContent = data.name;
+    lore.textContent = data.lore;
+    threat.textContent = data.threat;
+    counter.textContent = data.counter;
+    modal.classList.add('visible');
+
+    ok.onclick = () => {
+      modal.classList.remove('visible');
+      this._showNextEnemyIntro();
+    };
+  }
 }
 
 export const ui = new UIManager();
+
+const ENEMY_INTROS: Record<string, { name: string; lore: string; threat: string; counter: string }> = {
+  infantry: {
+    name: 'Colchian Raider',
+    lore: 'Local raiders and rival bands test the river villages before larger threats arrive.',
+    threat: 'Basic swarm enemy. Weak alone, dangerous in numbers.',
+    counter: 'Place archers near bends so they fire longer.',
+  },
+  cavalry: {
+    name: 'Horseman of Colchis',
+    lore: 'Mounted fighters moved quickly along river roads and forest paths, striking before villages could fully prepare.',
+    threat: 'Fast enemy that can slip past poor coverage.',
+    counter: 'Build near turns and use Medea poison when riders bunch up.',
+  },
+  siege: {
+    name: 'Bronze Siege Ram',
+    lore: 'Heavy rams represent organized war reaching Colchis, where wooden palisades and gates must hold.',
+    threat: 'Slow but tanky. Breaks walls hard.',
+    counter: 'Use catapults, upgraded archers, and delay with walls.',
+  },
+  flying: {
+    name: 'Sky Wolf',
+    lore: 'A mythic beast of the mountains, inspired by Georgian tales where wild nature itself becomes an enemy.',
+    threat: 'Very fast and light. Can rush through gaps.',
+    counter: 'Use long sight lines and upgraded archer range.',
+  },
+  boss: {
+    name: 'Mythic Boss',
+    lore: 'Colchian myth speaks of Devi, dragons, and guardians tied to sacred treasure and wild places.',
+    threat: 'Huge health and high pressure.',
+    counter: 'Save abilities and fight near your strongest upgraded towers.',
+  },
+};

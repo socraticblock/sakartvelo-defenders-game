@@ -8,6 +8,7 @@ export class Grid {
   private pathCells = new Set<string>();
   private occupiedCells = new Map<string, boolean>();
   private _curve: THREE.CatmullRomCurve3 | null = null;
+  private theme = 'colchis';
   worldPath: THREE.Vector3[] = [];
 
   readonly width: number;
@@ -16,6 +17,7 @@ export class Grid {
   constructor(level: LevelData) {
     this.width = level.grid_width;
     this.height = level.grid_height;
+    this.theme = level.theme || 'colchis';
 
     this.computePathCells(level.path_waypoints);
     this.computeWorldPath(level.path_waypoints);
@@ -24,6 +26,7 @@ export class Grid {
     this.createPlinths(level.build_nodes || []);
     this.createHitTestTiles();
     this.createEnvironmentDecorations();
+    this.createThemeDecorations();
     this.addDecorations();
   }
 
@@ -311,6 +314,126 @@ export class Grid {
     rockMesh.castShadow = true;
     rockMesh.receiveShadow = true;
     this.group.add(rockMesh);
+  }
+
+  private isDecorSafe(x: number, y: number): boolean {
+    const gx = Math.floor(x);
+    const gy = Math.floor(y);
+    if (gx < 0 || gx >= this.width || gy < 0 || gy >= this.height) return false;
+    if (this.pathCells.has(`${gx},${gy}`)) return false;
+    return !this.plinths.some(p => Math.abs(p.userData.gx + 0.5 - x) < 1.2 && Math.abs(p.userData.gy + 0.5 - y) < 1.2);
+  }
+
+  private addProp(mesh: THREE.Object3D, x: number, y: number, scale = 1): void {
+    if (!this.isDecorSafe(x, y)) return;
+    mesh.position.set(x, 0, y);
+    mesh.scale.setScalar(scale);
+    this.group.add(mesh);
+  }
+
+  private makeTree(): THREE.Group {
+    const g = new THREE.Group();
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.45, 5), new THREE.MeshLambertMaterial({ color: 0x5a3418 }));
+    trunk.position.y = 0.22;
+    const crown = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.65, 6), new THREE.MeshLambertMaterial({ color: 0x1f5a32 }));
+    crown.position.y = 0.72;
+    g.add(trunk, crown);
+    return g;
+  }
+
+  private makeStone(color = 0x777766): THREE.Mesh {
+    const m = new THREE.Mesh(new THREE.DodecahedronGeometry(0.22, 0), new THREE.MeshLambertMaterial({ color }));
+    m.position.y = 0.12;
+    m.castShadow = true;
+    return m;
+  }
+
+  private makeHut(): THREE.Group {
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.34, 0.34, 6), new THREE.MeshLambertMaterial({ color: 0x735938 }));
+    body.position.y = 0.17;
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(0.38, 0.28, 6), new THREE.MeshLambertMaterial({ color: 0x3a2a18 }));
+    roof.position.y = 0.48;
+    g.add(body, roof);
+    return g;
+  }
+
+  private makeFire(): THREE.Group {
+    const g = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.2, 0.06, 8), new THREE.MeshLambertMaterial({ color: 0x3a3020 }));
+    base.position.y = 0.03;
+    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.34, 5), new THREE.MeshBasicMaterial({ color: 0xd4a017 }));
+    flame.position.y = 0.24;
+    g.add(base, flame);
+    return g;
+  }
+
+  private makeWaterStrip(width: number, depth: number): THREE.Mesh {
+    const m = new THREE.Mesh(
+      new THREE.BoxGeometry(width, 0.03, depth),
+      new THREE.MeshBasicMaterial({ color: 0x245f73, transparent: true, opacity: 0.75 }),
+    );
+    m.position.y = 0.015;
+    return m;
+  }
+
+  private makeShrine(color = 0xd4a017): THREE.Group {
+    const g = new THREE.Group();
+    const a = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.12), new THREE.MeshLambertMaterial({ color: 0x6a6a5a }));
+    const b = a.clone();
+    a.position.set(-0.2, 0.28, 0);
+    b.position.set(0.2, 0.28, 0);
+    const top = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.1, 0.16), new THREE.MeshLambertMaterial({ color }));
+    top.position.y = 0.58;
+    g.add(a, b, top);
+    return g;
+  }
+
+  private createThemeDecorations(): void {
+    const addTrees = (n: number) => {
+      for (let i = 0; i < n; i++) this.addProp(this.makeTree(), 0.8 + Math.random() * (this.width - 1.6), 0.8 + Math.random() * (this.height - 1.6), 0.75 + Math.random() * 0.45);
+    };
+    const addStones = (n: number, color = 0x777766) => {
+      for (let i = 0; i < n; i++) this.addProp(this.makeStone(color), 0.7 + Math.random() * (this.width - 1.4), 0.7 + Math.random() * (this.height - 1.4), 0.6 + Math.random() * 0.8);
+    };
+
+    if (this.theme.includes('river') || this.theme.includes('stream') || this.theme.includes('marsh')) {
+      const water = this.makeWaterStrip(this.width, this.theme.includes('marsh') ? 1.5 : 0.75);
+      water.position.set(this.width / 2, 0.01, this.height - 0.7);
+      this.group.add(water);
+      addStones(10, 0xd4a017);
+    }
+    if (this.theme.includes('forest') || this.theme.includes('grove') || this.theme.includes('oak')) addTrees(24);
+    else addTrees(10);
+
+    if (this.theme.includes('coast') || this.theme.includes('cliffs')) {
+      const sea = this.makeWaterStrip(this.width, 1.2);
+      sea.position.set(this.width / 2, 0.01, 0.35);
+      this.group.add(sea);
+      addStones(16, 0x888880);
+    }
+    if (this.theme.includes('smith')) {
+      this.addProp(this.makeHut(), 2.0, 2.0, 1.1);
+      this.addProp(this.makeFire(), 3.0, 2.4, 1.2);
+      addStones(8, 0x5f5f58);
+    }
+    if (this.theme.includes('watchfires') || this.theme.includes('trial')) {
+      this.addProp(this.makeFire(), 2.0, 2.0, 1.3);
+      this.addProp(this.makeFire(), this.width - 2.0, 2.0, 1.3);
+      this.addProp(this.makeFire(), this.width - 2.0, this.height - 2.0, 1.3);
+    }
+    if (this.theme.includes('shrine') || this.theme.includes('fleece') || this.theme.includes('heart') || this.theme.includes('stones')) {
+      this.addProp(this.makeShrine(this.theme.includes('dragon') ? 0xaa3333 : 0xd4a017), this.width - 2.2, this.height - 2.2, 1.2);
+      addStones(12, 0x6a6a5a);
+    }
+    if (this.theme.includes('palisade') || this.theme.includes('gate')) {
+      for (let i = 2; i < this.width - 2; i += 1.2) {
+        const spike = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.5, 4), new THREE.MeshLambertMaterial({ color: 0x735938 }));
+        spike.position.y = 0.25;
+        this.addProp(spike, i, this.height - 1.0, 1);
+      }
+    }
+    if (this.theme.includes('devi') || this.theme.includes('ravine')) addStones(22, 0x4d4a44);
   }
 
   private addDecorations() {

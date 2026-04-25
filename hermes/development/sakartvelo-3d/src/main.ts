@@ -87,7 +87,7 @@ scene.add(moveRing);
 
 (window as any).__navigateToLevelSelect = () => {
   console.log('--- GLOBAL CONTINUE TRIGGERED ---');
-  audio.stopEraNarration();
+  audio.hardStopEraNarration();
   screenMgr.showLevelSelect(0);
 };
 
@@ -106,7 +106,7 @@ function startLevel(era: number, level: number): void {
   if (!lvl) return;
 
   audio.stopNarration();
-  audio.stopEraNarration();
+  audio.hardStopEraNarration();
   if (era === 0 && level === 1) {
     audio.playBGM('/audio/music-era0-lvl1.mp3');
   } else {
