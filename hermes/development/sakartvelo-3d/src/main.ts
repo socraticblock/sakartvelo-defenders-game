@@ -116,15 +116,16 @@ function setupCamera(gw: number, gh: number): void {
   const zoomScale = 100 / cameraZoomPct;
   const dist = Math.max(gh * 0.74, gw * 1.08) * zoomScale;
   const upwardBiasCells = gh * (0.08 + bottomUiRatio * 0.42);
-  // Lift the battlefield higher in portrait so we use top screen real estate.
-  const screenLiftCells = portrait ? gh * 0.1 : 0;
+  const zoomOutFactor = Math.max(0, Math.min(1, (100 - cameraZoomPct) / 20));
+  // Lift the battlefield higher, especially when zoomed out, without flattening the view.
+  const screenLiftCells = gh * (portrait ? 0.15 + zoomOutFactor * 0.1 : 0.06 + zoomOutFactor * 0.05);
   camera.fov = portrait ? 50 : 44;
   camera.position.set(
     cx,
-    dist * (portrait ? 1.24 + bottomUiRatio * 0.16 : 1.04),
-    cz + dist * (portrait ? 0.54 + bottomUiRatio * 0.18 : 0.8),
+    dist * (portrait ? 0.99 + bottomUiRatio * 0.1 : 0.9),
+    cz + dist * (portrait ? 0.76 + bottomUiRatio * 0.2 : 0.88),
   );
-  camera.lookAt(cx, 0, cz - (portrait ? upwardBiasCells - screenLiftCells : 0));
+  camera.lookAt(cx, 0, cz - upwardBiasCells + screenLiftCells);
   camera.updateProjectionMatrix();
   gs.cameraBaseX = cx;
 }
