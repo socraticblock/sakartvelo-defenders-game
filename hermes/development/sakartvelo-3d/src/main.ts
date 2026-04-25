@@ -104,29 +104,57 @@ scene.add(moveRing);
 
 function setupCamera(gw: number, gh: number): void {
   const cx = gw / 2, cz = gh / 2;
-  const portrait = innerHeight > innerWidth;
-  const heroBar = document.getElementById('hero-bar');
-  const bottomBar = document.getElementById('bottom-bar');
-  const uiRects = [heroBar, bottomBar]
+  const bottomUiRects = ['bottom-bar', 'hero-bar']
+    .map(id => document.getElementById(id))
     .filter((el): el is HTMLElement => Boolean(el) && getComputedStyle(el!).display !== 'none')
     .map(el => el.getBoundingClientRect())
-    .filter(r => r.top > innerHeight * 0.5);
-  const bottomTop = uiRects.length ? Math.min(...uiRects.map(r => r.top)) : innerHeight;
+    .filter(rect => rect.top > innerHeight * 0.58);
+  const bottomTop = bottomUiRects.length ? Math.min(...bottomUiRects.map(rect => rect.top)) : innerHeight;
   const bottomUiRatio = Math.max(0, Math.min(0.42, (innerHeight - bottomTop) / innerHeight));
   const zoomScale = 100 / cameraZoomPct;
-  const dist = Math.max(gh * 0.74, gw * 1.08) * zoomScale;
+  const dist = Math.max(gh * 0.75, gw * 1.06) * zoomScale;
   const upwardBiasCells = gh * (0.08 + bottomUiRatio * 0.42);
   const zoomOutFactor = Math.max(0, Math.min(1, (100 - cameraZoomPct) / 20));
-  // Lift the battlefield higher, especially when zoomed out, without flattening the view.
-  const screenLiftCells = gh * (portrait ? 0.15 + zoomOutFactor * 0.1 : 0.06 + zoomOutFactor * 0.05);
-  camera.fov = portrait ? 50 : 44;
-  camera.position.set(
-    cx,
-    dist * (portrait ? 0.99 + bottomUiRatio * 0.1 : 0.9),
-    cz + dist * (portrait ? 0.76 + bottomUiRatio * 0.2 : 0.88),
-  );
-  camera.lookAt(cx, 0, cz - upwardBiasCells + screenLiftCells);
+  const screenLiftCells = gh * (0.14 + zoomOutFactor * 0.1);
+  const targetBottomY = Math.min(innerHeight - 12, bottomTop - 12);
+  const camHeight = dist * (0.96 + bottomUiRatio * 0.12);
+  const camDepth = dist * (0.82 + bottomUiRatio * 0.2);
+  const baseTargetZ = cz - upwardBiasCells + screenLiftCells;
+  const mapBottom = new THREE.Vector3(cx, 0, gh - 0.08);
+
+  camera.fov = 46;
+  camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
+
+  const applyTarget = (targetZ: number): number => {
+    camera.position.set(cx, camHeight, targetZ + camDepth);
+    camera.lookAt(cx, 0, targetZ);
+    camera.updateMatrixWorld(true);
+    const projected = mapBottom.clone().project(camera);
+    return (1 - projected.y) * 0.5 * innerHeight;
+  };
+
+  let targetZ = baseTargetZ;
+  const minTargetZ = baseTargetZ - gh * 0.75;
+  const maxTargetZ = baseTargetZ + gh * 0.75;
+
+  // Solve bottom-map screen anchor while preserving camera angle.
+  for (let i = 0; i < 6; i++) {
+    const y = applyTarget(targetZ);
+    if (!Number.isFinite(y)) break;
+    const errPx = targetBottomY - y;
+    if (Math.abs(errPx) < 1) break;
+
+    const sampleStep = 0.35;
+    const y2 = applyTarget(targetZ + sampleStep);
+    const slope = (y2 - y) / sampleStep;
+    if (!Number.isFinite(slope) || Math.abs(slope) < 0.001) break;
+
+    const dz = THREE.MathUtils.clamp(errPx / slope, -gh * 0.18, gh * 0.18);
+    targetZ = THREE.MathUtils.clamp(targetZ + dz, minTargetZ, maxTargetZ);
+  }
+
+  applyTarget(targetZ);
   gs.cameraBaseX = cx;
 }
 
