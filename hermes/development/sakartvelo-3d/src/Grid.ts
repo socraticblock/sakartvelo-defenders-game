@@ -26,8 +26,8 @@ export class Grid {
     this.computeWorldPath(level.path_waypoints);
     this.createOrganicGround();
     this.createPathRibbon(level.path_waypoints);
-    this.createPlinths(level.build_nodes || []);
     this.createHitTestTiles();
+    this.createPlinths(level.build_nodes || []);
     this.createEnvironmentDecorations();
     this.createThemeDecorations();
     this.createDefenseObjective();
@@ -260,6 +260,13 @@ export class Grid {
           pushDir.normalize();
           // Nudge by about half a cell so tapping/building stays readable.
           pPos.add(pushDir.multiplyScalar(mobile ? 0.58 : 0.45));
+          
+          // CRITICAL: Synchronize the hit-test tile with the visual nudge
+          const tile = this.tiles[y]?.[x];
+          if (tile) {
+            tile.position.x = pPos.x;
+            tile.position.z = pPos.z;
+          }
         }
       }
 
@@ -267,10 +274,12 @@ export class Grid {
 
       const stone = new THREE.Mesh(stoneGeo, stoneMat);
       stone.receiveShadow = true;
+      stone.userData = { gx: x, gy: y, isPath: false };
       group.add(stone);
 
       const aura = new THREE.Mesh(auraGeo, auraMat);
       aura.position.y = 0.05; // Slightly above stone top
+      aura.userData = { gx: x, gy: y, isPath: false };
       group.add(aura);
 
       group.userData = { gx: x, gy: y, aura, occupied: false };
@@ -282,7 +291,7 @@ export class Grid {
   // ─── HIT-TEST TILES (invisible, for raycasting only) ──────────────────
 
   private createHitTestTiles() {
-    const tileGeo = new THREE.BoxGeometry(0.94, 0.12, 0.94);
+    const tileGeo = new THREE.BoxGeometry(1.0, 0.12, 1.0);
     const hitMat = new THREE.MeshBasicMaterial({ visible: false });
 
     for (let y = 0; y < this.height; y++) {
@@ -591,7 +600,15 @@ export class Grid {
   }
 
   getAllTileMeshes(): THREE.Object3D[] {
-    return this.tiles.flat();
+    const meshes: THREE.Object3D[] = [...this.tiles.flat()];
+    this.plinths.forEach(p => {
+      p.children.forEach(c => {
+        if (c instanceof THREE.Mesh && c.userData.gx !== undefined) {
+          meshes.push(c);
+        }
+      });
+    });
+    return meshes;
   }
 
   getPlinthVisualPos(gx: number, gy: number): THREE.Vector3 | null {

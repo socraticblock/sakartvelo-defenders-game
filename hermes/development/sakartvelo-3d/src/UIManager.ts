@@ -221,8 +221,19 @@ export class UIManager {
   }
 
   closeBuildCircle(): void {
-    if (this.buildCircleMovePrimed && gs.hero && !gs.hero.pendingBuild) {
-      gs.hero.moveTarget = null;
+    if (this.buildCircleMovePrimed && gs.hero && !gs.hero.pendingBuild && this.buildCircleCell) {
+      // Only cancel the move if the hero is still headed for the plinth.
+      // If the user clicked somewhere else, moveTarget will have changed already.
+      const target = gs.hero.moveTarget;
+      if (target) {
+        const px = this.buildCircleCell.gx + 0.5;
+        const pz = this.buildCircleCell.gy + 0.5;
+        const dx = target.x - px;
+        const dz = target.z - pz;
+        if (dx * dx + dz * dz < 0.01) {
+          gs.hero.moveTarget = null;
+        }
+      }
     }
     this.buildCircleMovePrimed = false;
     this.buildCircleCell = null;
