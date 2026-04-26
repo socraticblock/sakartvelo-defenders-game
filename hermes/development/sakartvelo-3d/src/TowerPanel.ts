@@ -120,13 +120,20 @@ export class TowerPanel {
       const t = gs.selectedTower;
       gs.pendingUpgradeTower = t;
       gs.hero.moveTo(t.gx + 0.5, t.gy + 0.5);
+      
+      t.showRange(false);
+      gs.selectedTower = null;
+      gs.targetTimeScale = 1.0;
       this.$circle?.classList.remove('visible');
     };
     const doSell = () => {
       if (!gs.selectedTower || gs.gameOver || !gs.grid) return;
       const scene = (window as any).__scene;
+      
+      gs.selectedTower.showRange(false);
       gs.sellTower(gs.selectedTower, scene);
       gs.selectedTower = null;
+      gs.targetTimeScale = 1.0;
       this.$circle?.classList.remove('visible');
     };
     this.$upgradeBtn.addEventListener('click', doUpgrade);
