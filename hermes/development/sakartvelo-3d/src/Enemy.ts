@@ -3,6 +3,7 @@ import { ENEMY_CONFIGS } from './types';
 import { createEnemyModel } from './EnemyModels';
 import { animateRig } from './EnemyAnimations';
 import { type EnemyRig } from './EnemyBuilders';
+import { gs } from './GameState';
 
 export class Enemy {
   group: THREE.Group;
@@ -121,7 +122,7 @@ export class Enemy {
     }
 
     // Animate rig (walk cycle)
-    const time = performance.now() * 0.001;
+    const time = gs.gameTime;
     animateRig(this.rig, time, true, this.type === 'siege');
 
     // Vertical bob

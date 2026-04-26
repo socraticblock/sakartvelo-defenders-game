@@ -9,6 +9,7 @@ import { Tower } from './Tower';
 import { makePart } from './EnemyModels';
 import { outlineGroup } from './CelShader';
 import { HeroAbilities } from './HeroAbilities';
+import { gs } from './GameState';
 
 export class Hero {
   group: THREE.Group;
@@ -180,7 +181,7 @@ export class Hero {
       return;
     }
 
-    const time = performance.now() * 0.001;
+    const time = gs.gameTime;
     const isMoving = this.moveTarget !== null;
 
     // Idle float vs grounded while moving

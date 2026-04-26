@@ -218,6 +218,7 @@ export class UIManager {
     this.buildCircleOpenedAtMs = performance.now();
     this.buildCircleCell = { gx, gy };
     this.buildCircleMovePrimed = primeMove;
+    gs.targetTimeScale = 0.1;
   }
 
   closeBuildCircle(): void {
@@ -238,6 +239,9 @@ export class UIManager {
     this.buildCircleMovePrimed = false;
     this.buildCircleCell = null;
     this.$buildCircle?.classList.remove('visible');
+    if (!gs.selectedTower) {
+      gs.targetTimeScale = 1.0;
+    }
   }
 
   private _bindBuildCircle(): void {

@@ -43,6 +43,9 @@ export class GameState {
   // ─── Game flow ───────────────────────────────────────────
   gameOver = false;
   paused = false;
+  targetTimeScale = 1.0;
+  currentTimeScale = 1.0;
+  gameTime = 0; // Scaled time for synchronized slow-mo animations
   waveCountdown = 0;
   waveCountdownActive = false;
   waveCompleteProcessed = false;

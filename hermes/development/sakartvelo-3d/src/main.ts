@@ -216,6 +216,7 @@ input.init(renderer, camera, scene, {
   },
   onTowerClick: (tower) => {
     gs.selectedTower = tower;
+    gs.targetTimeScale = 0.1;
     tower.showRange(true);
     ui.update();
   },
@@ -230,12 +231,14 @@ input.init(renderer, camera, scene, {
     if (gs.selectedTower) gs.selectedTower.showRange(false);
     ui.setTowerPlacementType(null); 
     gs.selectedTower = null; 
+    gs.targetTimeScale = 1.0;
     ui.update(); 
   },
   onDeselect: () => { 
     if (gs.selectedTower) gs.selectedTower.showRange(false);
     ui.setTowerPlacementType(null); 
     gs.selectedTower = null; 
+    gs.targetTimeScale = 1.0;
     ui.update(); 
   },
 });

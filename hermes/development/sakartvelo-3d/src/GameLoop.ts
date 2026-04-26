@@ -78,8 +78,19 @@ export class GameLoop {
 
   private _animate = (): void => {
     requestAnimationFrame(this._animate);
-    const dt = Math.min(this._clock.getDelta(), 0.05);
+    const rawDt = Math.min(this._clock.getDelta(), 0.05);
     const now = performance.now() * 0.001;
+
+    // Time Dilation Lerp (smoothly transition to target speed)
+    if (gs.currentTimeScale !== gs.targetTimeScale) {
+      gs.currentTimeScale += (gs.targetTimeScale - gs.currentTimeScale) * Math.min(rawDt * 10.0, 1.0);
+      if (Math.abs(gs.currentTimeScale - gs.targetTimeScale) < 0.01) {
+        gs.currentTimeScale = gs.targetTimeScale;
+      }
+    }
+
+    const dt = rawDt * gs.currentTimeScale;
+    gs.gameTime += dt;
 
     if (!gs.gameOver && !gs.paused && gs.waveMgr && gs.grid) {
       this._updateBuildPhase(dt);
