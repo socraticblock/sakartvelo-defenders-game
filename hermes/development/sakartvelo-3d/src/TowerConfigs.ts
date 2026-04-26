@@ -31,20 +31,20 @@ export const TOWER_CONFIGS: Record<string, TowerConfig> = {
 // Tower level multipliers: [L1, L2, L3]
 export const TOWER_LEVEL_MULTS = {
   archer: {
-    damage:  [1.0, 1.6, 2.4],
-    range:   [1.0, 1.1, 1.25],
-    speed:   [1.0, 1.25, 1.6],
+    damage:  [1.0, 1.9, 3.0],
+    range:   [1.0, 1.15, 1.35],
+    speed:   [1.0, 1.35, 1.85],
     crit:    [0,   0,   0.25],
   },
   catapult: {
-    damage:  [1.0, 1.5, 2.2],
-    range:   [1.0, 1.1, 1.2],
-    speed:   [1.0, 1.2, 1.4],
-    splash:  [0,   0.8, 1.5],
+    damage:  [1.0, 1.8, 2.9],
+    range:   [1.0, 1.15, 1.3],
+    speed:   [1.0, 1.3, 1.7],
+    splash:  [0,   1.1, 1.9],
   },
   wall: {
-    hp:      [600, 1200, 2100],
-    slow:    [0.25, 0.35, 0.5],
-    reflect: [0,   0,   8],
+    hp:      [700, 1550, 2900],
+    slow:    [0.3, 0.42, 0.58],
+    reflect: [0,   0,   10],
   },
 };
