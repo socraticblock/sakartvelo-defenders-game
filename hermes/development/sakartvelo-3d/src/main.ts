@@ -171,16 +171,15 @@ function startLevel(era: number, level: number): void {
   }
   gs.initLevel(lvl, scene);
   ui.reset();
-  setupCamera(lvl.grid_width, lvl.grid_height);
-
-  (window as any).__grid = gs.grid;
-
   ui.screens.showGameUI();
-  ui.showLevelName(lvl.name);
-  ui.screens.hideGameOver();
-  ui.screens.hideLevelComplete();
-  ui.screens.showTutorial(lvl.level);
-  ui.update();
+  
+  // Wait for DOM layout to finish so getBoundingClientRect is accurate
+  setTimeout(() => {
+    setupCamera(lvl.grid_width, lvl.grid_height);
+    (window as any).__grid = gs.grid;
+    ui.showLevelName(lvl.name);
+    ui.screens.hideGameOver(); ui.screens.hideLevelComplete(); ui.screens.showTutorial(lvl.level); ui.update();
+  }, 100);
 }
 
 // ─── Init ────────────────────────────────────────────────────────────────
