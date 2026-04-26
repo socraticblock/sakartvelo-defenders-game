@@ -175,6 +175,10 @@ export class UIManager {
   setTowerPlacementType(type: string | null): void {
     gs.selectedType = type;
     gs.selectedTower = null;
+    
+    // Slow down time for tactical placement
+    gs.targetTimeScale = type ? 0.1 : 1.0;
+    
     this.closeBuildCircle();
     this.panel.towerButtons.forEach(b => b.classList.remove('selected'));
     if (this.$wallModeBtn) this.$wallModeBtn.classList.toggle('selected', gs.selectedType === 'wall');

@@ -127,7 +127,7 @@ export class Tower {
     if (this.type === 'archer') {
       buildArcherMesh(this.group, lv, scaleMult, this.config.color);
     } else if (this.type === 'catapult') {
-      buildCatapultMesh(this.group, lv, scaleMult);
+      buildCatapultMesh(this.group, lv, scaleMult, this.config.color);
     } else if (this.type === 'wall') {
       if (!this.hpBg) this.hpBg = new THREE.Mesh(new THREE.BoxGeometry(1, 0.06, 0.01), new THREE.MeshBasicMaterial({ color: 0x333333 }));
       if (!this.hpFill) this.hpFill = new THREE.Mesh(new THREE.BoxGeometry(1, 0.04, 0.02), new THREE.MeshBasicMaterial({ color: 0x44dd44 }));

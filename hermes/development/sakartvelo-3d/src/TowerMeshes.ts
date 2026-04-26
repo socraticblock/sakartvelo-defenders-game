@@ -179,10 +179,10 @@ export function buildArcherMesh(
 }
 
 export function buildCatapultMesh(
-  group: THREE.Group, lv: number, scaleMult: number,
+  group: THREE.Group, lv: number, scaleMult: number, color: number,
 ): void {
   const isL3 = lv >= 3;
-  const lightened = new THREE.Color(isL3 ? 0x444444 : 0x735938).addScalar(0.2).getHex();
+  const lightened = new THREE.Color(color).addScalar(0.2).getHex();
   
   // 1. CHASSIS (Reinforced Stone/Iron for L3)
   const platform = new THREE.Mesh(
