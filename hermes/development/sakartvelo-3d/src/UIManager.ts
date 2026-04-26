@@ -84,23 +84,21 @@ export class UIManager {
     if (!gs.currentLevel) return;
     const wm = gs.waveMgr;
 
-    if (this.$gold) this.$gold.textContent = String(gs.gold);
-    if (this.$lives) this.$lives.textContent = String(gs.lives);
+    this.setText(this.$gold, String(gs.gold));
+    this.setText(this.$lives, String(gs.lives));
 
     if (wm) {
-      if (this.$wave) this.$wave.textContent = String(wm.waveNum);
-      if (this.$totalWaves) this.$totalWaves.textContent = String(wm.totalWaves);
+      this.setText(this.$wave, String(wm.waveNum));
+      this.setText(this.$totalWaves, String(wm.totalWaves));
     }
 
     if (gs.hero) {
       if (gs.hero.alive) {
-        if (this.$heroHp) this.$heroHp.textContent = `❤️ ${Math.ceil(gs.hero.hp)}/${gs.hero.maxHp}`;
-        if (this.$heroStatus) this.$heroStatus.textContent = '';
+        this.setText(this.$heroHp, `❤️ ${Math.ceil(gs.hero.hp)}/${gs.hero.maxHp}`);
+        this.setText(this.$heroStatus, '');
       } else {
-        if (this.$heroHp) this.$heroHp.textContent = '💀 Dead';
-        if (this.$heroStatus) {
-          this.$heroStatus.textContent = `Respawn: ${Math.ceil(gs.hero.respawnTimeRemaining)}s`;
-        }
+        this.setText(this.$heroHp, '💀 Dead');
+        this.setText(this.$heroStatus, `Respawn: ${Math.ceil(gs.hero.respawnTimeRemaining)}s`);
       }
       this.screens.updateAbilities(gs.hero);
     }
@@ -110,22 +108,28 @@ export class UIManager {
       const canSpawn = gs.canSpawnInfantry();
       const baseText = `⚔ Infantry (${gs.infantryCost}g)`;
       this.$infantrySpawnBtn.disabled = !canSpawn;
-      this.$infantrySpawnBtn.textContent = cd > 0 ? `${baseText} ${cd.toFixed(1)}s` : baseText;
+      this.setText(this.$infantrySpawnBtn, cd > 0 ? `${baseText} ${cd.toFixed(1)}s` : baseText);
     }
 
     this.panel.update();
 
     if (wm?.inBuildPhase) {
       const remaining = wm.buildPhaseTimer;
-      if (this.$buildTimer) this.$buildTimer.textContent = String(Math.ceil(remaining));
+      this.setText(this.$buildTimer, String(Math.ceil(remaining)));
       const bonus = Math.ceil(remaining * 2);
-      this.$buildStartBtn.textContent = `▶ Start Wave Now (+${bonus}g)`;
+      this.setText(this.$buildStartBtn, `▶ Start Wave Now (+${bonus}g)`);
     }
 
     if (gs.waveCountdownActive && wm && !wm.active) {
       const bonus = Math.ceil(gs.waveCountdown * 3);
       this.$waveBtn.disabled = false;
-      this.$waveBtn.textContent = `▶ Next Wave (+${bonus}g) [${Math.ceil(gs.waveCountdown)}s]`;
+      this.setText(this.$waveBtn, `▶ Next Wave (+${bonus}g) [${Math.ceil(gs.waveCountdown)}s]`);
+    }
+  }
+
+  private setText(el: HTMLElement | null, text: string) {
+    if (el && el.textContent !== text) {
+      el.textContent = text;
     }
   }
 

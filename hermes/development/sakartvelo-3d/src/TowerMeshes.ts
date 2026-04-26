@@ -6,8 +6,10 @@
 import * as THREE from 'three';
 import { toon, outlineGroup } from './CelShader';
 import { mythic, mythicToon } from './MythicMaterials';
+import { geoCache } from './GeometryCache';
 
 function createSwayFlag(width: number, height: number, color: number): THREE.Mesh {
+  // NOTE: Cannot use geoCache here — geometry.translate() below mutates it.
   const geometry = new THREE.PlaneGeometry(width, height, 10, 6);
 
   // Move the geometry so the left edge is anchored at the pole.
@@ -81,19 +83,19 @@ export function buildArcherMesh(
   };
 
   add(new THREE.Mesh(
-    new THREE.CylinderGeometry(0.42 * scaleMult, 0.48 * scaleMult, baseY * 2, 8),
+    geoCache.getCylinder(0.42 * scaleMult, 0.48 * scaleMult, baseY * 2, 8),
     mythic(stone, 0.1, 0.9),
   )).position.y = baseY;
 
   add(new THREE.Mesh(
-    new THREE.CylinderGeometry(0.34 * scaleMult, 0.42 * scaleMult, 0.12, 8),
+    geoCache.getCylinder(0.34 * scaleMult, 0.42 * scaleMult, 0.12, 8),
     mythicToon(0x504b3f),
   )).position.y = baseY * 2 + 0.06;
 
   for (const x of [-1, 1]) {
     for (const z of [-1, 1]) {
       const leg = add(new THREE.Mesh(
-        new THREE.BoxGeometry(0.1 * scaleMult, towerH, 0.1 * scaleMult),
+        geoCache.getBox(0.1 * scaleMult, towerH, 0.1 * scaleMult),
         mythicToon(wood),
       ));
       leg.position.set(x * 0.26 * scaleMult, baseY * 2 + towerH / 2, z * 0.26 * scaleMult);
@@ -105,7 +107,7 @@ export function buildArcherMesh(
   const braceY = baseY * 2 + towerH * 0.48;
   for (const z of [-1, 1]) {
     const brace = add(new THREE.Mesh(
-      new THREE.BoxGeometry(0.68 * scaleMult, 0.06 * scaleMult, 0.06 * scaleMult),
+      geoCache.getBox(0.68 * scaleMult, 0.06 * scaleMult, 0.06 * scaleMult),
       mythic(wood, 0.1, 0.85),
     ));
     brace.position.set(0, braceY, z * 0.28 * scaleMult);
@@ -114,26 +116,26 @@ export function buildArcherMesh(
 
   const topY = baseY * 2 + towerH;
   add(new THREE.Mesh(
-    new THREE.BoxGeometry(0.78 * scaleMult, 0.12 * scaleMult, 0.78 * scaleMult),
+    geoCache.getBox(0.78 * scaleMult, 0.12 * scaleMult, 0.78 * scaleMult),
     mythicToon(lightened),
   )).position.y = topY;
 
   for (const z of [-0.36, 0.36]) {
     add(new THREE.Mesh(
-      new THREE.BoxGeometry(0.74 * scaleMult, 0.1 * scaleMult, 0.06 * scaleMult),
+      geoCache.getBox(0.74 * scaleMult, 0.1 * scaleMult, 0.06 * scaleMult),
       mythicToon(gold),
     )).position.set(0, topY + 0.12, z * scaleMult);
   }
   for (const x of [-0.36, 0.36]) {
     add(new THREE.Mesh(
-      new THREE.BoxGeometry(0.06 * scaleMult, 0.1 * scaleMult, 0.74 * scaleMult),
+      geoCache.getBox(0.06 * scaleMult, 0.1 * scaleMult, 0.74 * scaleMult),
       mythicToon(gold),
     )).position.set(x * scaleMult, topY + 0.12, 0);
   }
 
   const roofHeight = (lv === 3 ? 0.58 : 0.42) * scaleMult;
   const roof = add(new THREE.Mesh(
-    new THREE.ConeGeometry(0.5 * scaleMult, roofHeight, 4),
+    geoCache.getCone(0.5 * scaleMult, roofHeight, 4),
     mythicToon(roofColor),
   ));
   roof.position.y = topY + 0.22 + roofHeight / 2;
@@ -141,7 +143,7 @@ export function buildArcherMesh(
 
   if (lv >= 2) {
     const bannerPole = add(new THREE.Mesh(
-      new THREE.CylinderGeometry(0.012, 0.012, 0.5 * scaleMult, 6),
+      geoCache.getCylinder(0.012, 0.012, 0.5 * scaleMult, 6),
       mythic(0x2f2f2f, 0.2, 0.8),
     ));
     bannerPole.position.set(0.34 * scaleMult, topY + 0.38, -0.28 * scaleMult);
@@ -156,17 +158,17 @@ export function buildArcherMesh(
   for (let i = 0; i < archerCount; i++) {
     const [x, z] = spots[i];
     const body = add(new THREE.Mesh(
-      new THREE.CylinderGeometry(0.055 * scaleMult, 0.07 * scaleMult, 0.16 * scaleMult, 5),
+      geoCache.getCylinder(0.055 * scaleMult, 0.07 * scaleMult, 0.16 * scaleMult, 5),
       toon(0x1b3a26),
     ));
     body.position.set(x * scaleMult, topY + 0.24, z * scaleMult);
     const head = add(new THREE.Mesh(
-      new THREE.BoxGeometry(0.075 * scaleMult, 0.075 * scaleMult, 0.075 * scaleMult),
+      geoCache.getBox(0.075 * scaleMult, 0.075 * scaleMult, 0.075 * scaleMult),
       toon(0xd2b08e),
     ));
     head.position.set(x * scaleMult, topY + 0.36, z * scaleMult);
     const bow = add(new THREE.Mesh(
-      new THREE.TorusGeometry(0.09 * scaleMult, 0.006 * scaleMult, 5, 12, Math.PI),
+      geoCache.getTorus(0.09 * scaleMult, 0.006 * scaleMult, 5, 12, Math.PI),
       mythic(0x4a2c16, 0.1, 0.85),
     ));
     bow.position.set((x + 0.06) * scaleMult, topY + 0.29, (z + 0.08) * scaleMult);
@@ -184,7 +186,7 @@ export function buildCatapultMesh(
   
   // 1. CHASSIS (Reinforced Stone/Iron for L3)
   const platform = new THREE.Mesh(
-    new THREE.BoxGeometry(0.6 * scaleMult, isL3 ? 0.25 : 0.15 * scaleMult, 0.5 * scaleMult),
+    geoCache.getBox(0.6 * scaleMult, isL3 ? 0.25 : 0.15 * scaleMult, 0.5 * scaleMult),
     mythicToon(lightened)
   );
   platform.position.y = isL3 ? 0.12 : 0.075; 
@@ -192,7 +194,7 @@ export function buildCatapultMesh(
   group.add(platform);
 
   const frontPlate = new THREE.Mesh(
-    new THREE.BoxGeometry(0.68 * scaleMult, 0.12 * scaleMult, 0.06 * scaleMult),
+    geoCache.getBox(0.68 * scaleMult, 0.12 * scaleMult, 0.06 * scaleMult),
     mythicToon(isL3 ? 0x5f5a4a : 0x4a3320),
   );
   frontPlate.position.set(0, 0.22 * scaleMult, 0.28 * scaleMult);
@@ -203,7 +205,7 @@ export function buildCatapultMesh(
   for (const x of [-0.25, 0.25]) {
     for (const z of [-0.2, 0.2]) {
       const wheel = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.12 * scaleMult, 0.12 * scaleMult, 0.08, 8),
+        geoCache.getCylinder(0.12 * scaleMult, 0.12 * scaleMult, 0.08, 8),
         mythic(isL3 ? 0x222222 : 0x444444, 0.2, 0.7)
       );
       wheel.rotation.z = Math.PI / 2;
@@ -215,7 +217,7 @@ export function buildCatapultMesh(
   // 2. THE ARM & BUCKET (Heavier for L3)
   const armHeight = isL3 ? 0.9 * scaleMult : 0.6 * scaleMult;
   const arm = new THREE.Mesh(
-    new THREE.BoxGeometry(0.08 * scaleMult, armHeight, 0.08 * scaleMult),
+    geoCache.getBox(0.08 * scaleMult, armHeight, 0.08 * scaleMult),
     mythic(0x5d4037, 0.1, 0.9)
   );
   arm.rotation.x = -Math.PI / 4;
@@ -223,7 +225,7 @@ export function buildCatapultMesh(
   group.add(arm);
 
   const crossBeam = new THREE.Mesh(
-    new THREE.BoxGeometry(0.62 * scaleMult, 0.07 * scaleMult, 0.07 * scaleMult),
+    geoCache.getBox(0.62 * scaleMult, 0.07 * scaleMult, 0.07 * scaleMult),
     mythic(0x735938, 0.1, 0.85),
   );
   crossBeam.position.set(0, 0.36 * scaleMult, 0.02 * scaleMult);
@@ -231,14 +233,14 @@ export function buildCatapultMesh(
 
   const bucketSize = isL3 ? 0.3 * scaleMult : 0.2 * scaleMult;
   const bucket = new THREE.Mesh(
-    new THREE.BoxGeometry(bucketSize, 0.1 * scaleMult, bucketSize),
+    geoCache.getBox(bucketSize, 0.1 * scaleMult, bucketSize),
     mythicToon(isL3 ? 0xd4a017 : 0x8d6e63)
   );
   bucket.position.set(0, 0.4 * scaleMult + Math.sin(Math.PI / 4) * (armHeight / 2), -0.1 * scaleMult - Math.cos(Math.PI / 4) * (armHeight / 2));
   group.add(bucket);
 
   const stone = new THREE.Mesh(
-    new THREE.IcosahedronGeometry((isL3 ? 0.13 : 0.1) * scaleMult, 0),
+    geoCache.getIcosahedron((isL3 ? 0.13 : 0.1) * scaleMult, 0),
     mythicToon(0x777766),
   );
   stone.position.copy(bucket.position);
@@ -248,7 +250,7 @@ export function buildCatapultMesh(
   if (isL3) {
     // War Banner for Catapult
     const pole = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.01, 0.01, 0.6),
+      geoCache.getCylinder(0.01, 0.01, 0.6, 8),
       mythic(0x333333, 0.1, 0.9)
     );
     pole.position.set(0.2, 0.5, 0.2);
@@ -303,6 +305,7 @@ function buildWoodenPalisade(
       const z = (j - (logCount - 1) / 2) * logStep;
       
       const randH = wallH + (Math.random() * 0.1 - 0.05);
+      // NOTE: randH is unique per-log, so caching would create too many unique keys.
       const log = add(new THREE.Mesh(
         new THREE.CylinderGeometry(0.08, 0.09, randH, 6),
         mythicToon(logColor)
@@ -327,7 +330,7 @@ function buildWoodenPalisade(
     // Rope bindings
     for (const y of [wallH * 0.3, wallH * 0.7]) {
       const rope = add(new THREE.Mesh(
-        new THREE.BoxGeometry(0.85, 0.03, 0.85),
+        geoCache.getBox(0.85, 0.03, 0.85),
         mythic(ropeColor, 0, 0.9)
       ));
       rope.position.y = y;
@@ -336,7 +339,7 @@ function buildWoodenPalisade(
     // Bronze bands
     for (const y of [wallH * 0.25, wallH * 0.75]) {
       const band = add(new THREE.Mesh(
-        new THREE.BoxGeometry(0.9, 0.06, 0.9),
+        geoCache.getBox(0.9, 0.06, 0.9),
         mythicToon(bronzeColor)
       ));
       band.position.y = y;
@@ -346,7 +349,7 @@ function buildWoodenPalisade(
   // 3. LEVEL 3 EXTRAS (Walkway & Spikes)
   if (lv >= 3) {
     const platform = add(new THREE.Mesh(
-      new THREE.BoxGeometry(0.7, 0.08, 0.7),
+      geoCache.getBox(0.7, 0.08, 0.7),
       mythicToon(0x3e2723)
     ));
     platform.position.y = wallH * 0.6;
@@ -354,7 +357,7 @@ function buildWoodenPalisade(
     // Small bronze spikes at the base
     for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
       const spike = add(new THREE.Mesh(
-        new THREE.ConeGeometry(0.04, 0.2, 4),
+        geoCache.getCone(0.04, 0.2, 4),
         mythicToon(bronzeColor)
       ));
       spike.position.set(Math.cos(angle) * 0.45, 0.1, Math.sin(angle) * 0.45);
@@ -378,7 +381,7 @@ function buildStoneBastion(
   // 1. MAIN BASTION (Layered with a beveled base)
   const baseH = 0.1;
   const bastionBase = new THREE.Mesh(
-    new THREE.BoxGeometry(0.98, baseH, 0.98),
+    geoCache.getBox(0.98, baseH, 0.98),
     mythic(wallColor, 0.1, 0.9)
   );
   bastionBase.position.y = baseH / 2;
@@ -386,7 +389,7 @@ function buildStoneBastion(
   group.add(bastionBase);
 
   const mainWall = new THREE.Mesh(
-    new THREE.BoxGeometry(0.92, wallH - baseH, 0.92),
+    geoCache.getBox(0.92, wallH - baseH, 0.92),
     mythicToon(wallColor)
   );
   mainWall.position.y = baseH + (wallH - baseH) / 2;
@@ -395,7 +398,7 @@ function buildStoneBastion(
 
   for (const z of [-0.47, 0.47]) {
     const band = new THREE.Mesh(
-      new THREE.BoxGeometry(0.98, 0.06, 0.04),
+      geoCache.getBox(0.98, 0.06, 0.04),
       mythicToon(lv >= 3 ? 0xd4a017 : 0x5a4a32),
     );
     band.position.set(0, wallH * 0.55, z);
@@ -403,7 +406,7 @@ function buildStoneBastion(
   }
   for (const x of [-0.47, 0.47]) {
     const band = new THREE.Mesh(
-      new THREE.BoxGeometry(0.04, 0.06, 0.98),
+      geoCache.getBox(0.04, 0.06, 0.98),
       mythicToon(lv >= 3 ? 0xd4a017 : 0x5a4a32),
     );
     band.position.set(x, wallH * 0.55, 0);
@@ -415,7 +418,7 @@ function buildStoneBastion(
   for (const dx of [-1, 1]) {
     for (const dz of [-1, 1]) {
       const tooth = new THREE.Mesh(
-        new THREE.BoxGeometry(bSize, bSize, bSize),
+        geoCache.getBox(bSize, bSize, bSize),
         mythicToon(wallColor)
       );
       tooth.position.set(dx * 0.35, wallH + bSize / 2, dz * 0.35);
@@ -425,7 +428,7 @@ function buildStoneBastion(
 
   for (let i = -1; i <= 1; i++) {
     const frontSpike = new THREE.Mesh(
-      new THREE.ConeGeometry(0.035, 0.22, 4),
+      geoCache.getCone(0.035, 0.22, 4),
       mythic(0x735938, 0.1, 0.8),
     );
     frontSpike.position.set(i * 0.25, wallH + 0.09, 0.48);
@@ -437,7 +440,7 @@ function buildStoneBastion(
   if (lv >= 2) {
     for (let i = -1; i <= 1; i++) {
       const stake = new THREE.Mesh(
-        new THREE.ConeGeometry(0.04, 0.25, 4),
+        geoCache.getCone(0.04, 0.25, 4),
         mythic(0x735938, 0.1, 0.8)
       );
       stake.position.set(i * 0.2, wallH + 0.12, 0.45);
@@ -449,14 +452,14 @@ function buildStoneBastion(
   // 4. LEGENDARY BAND (Level 3)
   if (lv >= 3) {
     const band = new THREE.Mesh(
-      new THREE.BoxGeometry(0.95, 0.05, 0.95),
+      geoCache.getBox(0.95, 0.05, 0.95),
       mythic(0x555555, 0.8, 0.3)
     );
     band.position.y = wallH * 0.7;
     group.add(band);
   }
 
-  // HP bar
+  // HP bar — each wall needs its own geometry since the fill is scaled per-frame.
   const hbW = 0.9;
   hpBg.geometry = new THREE.BoxGeometry(hbW, 0.06, 0.01);
   hpBg.position.y = wallH + 0.25;

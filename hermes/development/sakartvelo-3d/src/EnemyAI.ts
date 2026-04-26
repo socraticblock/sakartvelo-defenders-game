@@ -6,51 +6,47 @@
 import * as THREE from 'three';
 import { gs } from './GameState';
 import { ENEMY_CONFIGS } from './types';
-import { Tower } from './Tower';
 import { spawnFloatingGold } from './Effects';
 
 const SLOW_RANGE_SQ = 1.5 * 1.5;
 const ATTACK_RANGE_SQ = 0.64;
-
-const _wallVec = new THREE.Vector3();
 const _enemyPos = new THREE.Vector3();
 
 export function updateEnemySlow(): void {
-  const wallCache: Array<{ t: Tower; x: number; z: number }> = [];
-  for (const t of gs.towers) {
-    if (t.type === 'wall' && t.getWallHp() > 0) {
-      wallCache.push({ t, x: t.gx + 0.5, z: t.gy + 0.5 });
-    }
-  }
-  const friendlyCache = gs.friendlies.map(f => ({ x: f.group.position.x, z: f.group.position.z, alive: f.alive }));
-
   for (const enemy of gs.enemies) {
     if (!enemy.alive) continue;
     let totalSlow = 0;
     _enemyPos.copy(enemy.getPos());
+    
     let blockedByFriendly = false;
-    for (const f of friendlyCache) {
+    for (const f of gs.friendlies) {
       if (!f.alive) continue;
-      const dx = _enemyPos.x - f.x;
-      const dz = _enemyPos.z - f.z;
+      const dx = _enemyPos.x - f.group.position.x;
+      const dz = _enemyPos.z - f.group.position.z;
       if (dx * dx + dz * dz <= 0.9 * 0.9) {
         blockedByFriendly = true;
         break;
       }
     }
+    
     if (blockedByFriendly) {
       enemy.isBlocked = true;
       enemy.speed = 0;
       continue;
     }
-    for (const w of wallCache) {
-      _wallVec.set(w.x, 0, w.z);
-      const dx = _enemyPos.x - w.x;
-      const dz = _enemyPos.z - w.z;
-      if (dx * dx + dz * dz <= SLOW_RANGE_SQ) {
-        totalSlow = Math.max(totalSlow, w.t.getWallSlow());
+    
+    for (const t of gs.towers) {
+      if (t.type === 'wall' && t.getWallHp() > 0) {
+        const wx = t.gx + 0.5;
+        const wz = t.gy + 0.5;
+        const dx = _enemyPos.x - wx;
+        const dz = _enemyPos.z - wz;
+        if (dx * dx + dz * dz <= SLOW_RANGE_SQ) {
+          totalSlow = Math.max(totalSlow, t.getWallSlow());
+        }
       }
     }
+    
     if (enemy.isBlocked) {
       enemy.speed = 0;
     } else {
@@ -60,40 +56,36 @@ export function updateEnemySlow(): void {
 }
 
 export function updateEnemyWallAttacks(scene: THREE.Scene, camera: THREE.Camera): void {
-  const wallCache: Array<{ t: Tower; x: number; z: number }> = [];
-  for (const t of gs.towers) {
-    if (t.type === 'wall' && t.getWallHp() > 0) {
-      wallCache.push({ t, x: t.gx + 0.5, z: t.gy + 0.5 });
-    }
-  }
-
   for (const enemy of gs.enemies) {
     if (!enemy.alive) continue;
     enemy.isBlocked = false; // Reset each frame; re-set below if still hitting a wall
     _enemyPos.copy(enemy.getPos());
-    for (let wi = 0; wi < wallCache.length; wi++) {
-      const w = wallCache[wi];
-      if (w.t.getWallHp() <= 0) continue;
-      const dx = _enemyPos.x - w.x;
-      const dz = _enemyPos.z - w.z;
-      if (dx * dx + dz * dz <= ATTACK_RANGE_SQ) {
-        enemy.isBlocked = true;
-        enemy.speed = 0;
-        const dmg = ENEMY_CONFIGS[enemy.type]?.wallDmg ?? 10;
-        const destroyed = w.t.takeWallDamage(dmg);
-        w.t.billboardHp(camera);
+    
+    for (const t of gs.towers) {
+      if (t.type === 'wall' && t.getWallHp() > 0) {
+        const wx = t.gx + 0.5;
+        const wz = t.gy + 0.5;
+        const dx = _enemyPos.x - wx;
+        const dz = _enemyPos.z - wz;
+        
+        if (dx * dx + dz * dz <= ATTACK_RANGE_SQ) {
+          enemy.isBlocked = true;
+          enemy.speed = 0;
+          const dmg = ENEMY_CONFIGS[enemy.type]?.wallDmg ?? 10;
+          const destroyed = t.takeWallDamage(dmg);
+          t.billboardHp(camera);
 
-        const reflect = w.t.getWallReflect();
-        if (reflect > 0) enemy.takeDamage(reflect);
+          const reflect = t.getWallReflect();
+          if (reflect > 0) enemy.takeDamage(reflect);
 
-        if (destroyed) {
-          gs.grid!.free(w.t.gx, w.t.gy);
-          scene.remove(w.t.group);
-          gs.towers = gs.towers.filter(t => t !== w.t);
-          wallCache.splice(wi, 1);
-          if (gs.selectedTower === w.t) gs.selectedTower = null;
+          if (destroyed) {
+            gs.grid!.free(t.gx, t.gy);
+            scene.remove(t.group);
+            gs.towers = gs.towers.filter(tw => tw !== t);
+            if (gs.selectedTower === t) gs.selectedTower = null;
+          }
+          break; // Stop checking walls for this enemy
         }
-        break;
       }
     }
   }

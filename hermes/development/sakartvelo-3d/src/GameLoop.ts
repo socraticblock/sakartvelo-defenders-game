@@ -34,6 +34,9 @@ export class GameLoop {
 
   private _clock = new THREE.Clock();
   private _waveCompleteProcessed = false;
+  private _wallDistTimer = 0;
+  private _cachedWallDistances: number[] = [];
+  private _occlusionTimer = 0;
 
   init(
     renderer: THREE.WebGLRenderer,
@@ -164,7 +167,7 @@ export class GameLoop {
   }
 
   private _updateFriendlies(dt: number): void {
-    const wallDistances = this._getWallDistancesFromHome();
+    const wallDistances = this._getWallDistancesFromHome(dt);
     for (const unit of gs.friendlies) {
       const nextWall = wallDistances.find(d => d > unit.distanceFromHome) ?? null;
       unit.update(dt, gs.enemies, nextWall);
@@ -188,7 +191,11 @@ export class GameLoop {
     }
   }
 
-  private _getWallDistancesFromHome(): number[] {
+  private _getWallDistancesFromHome(dt: number): number[] {
+    this._wallDistTimer -= dt;
+    if (this._wallDistTimer > 0) return this._cachedWallDistances;
+    this._wallDistTimer = 0.5;
+
     const path = gs.grid?.getWorldPath();
     if (!path || path.length < 2) return [];
     const cumul: number[] = [0];
@@ -218,6 +225,8 @@ export class GameLoop {
         return Math.max(0, total - fromStart);
       })
       .sort((a, b) => a - b);
+    
+    this._cachedWallDistances = fromHome;
     return fromHome;
   }
 
@@ -234,10 +243,14 @@ export class GameLoop {
         }
       }
     }
-    this._updateOcclusion();
+    this._updateOcclusion(dt);
   }
 
-  private _updateOcclusion(): void {
+  private _updateOcclusion(dt: number): void {
+    this._occlusionTimer -= dt;
+    if (this._occlusionTimer > 0) return;
+    this._occlusionTimer = 0.1; // Run 10 times a second max
+    
     // 1. Get units that need visibility (Hero + enemies)
     const targets: THREE.Vector3[] = [];
     if (gs.hero) targets.push(gs.hero.group.position);
