@@ -81,6 +81,7 @@ scene.add(moveRing);
 (window as any).__scene = scene;
 (window as any).__audioMgr = audio;
 (window as any).__gs = gs;
+(window as any).__camera = camera;
 (window as any).__setCameraZoom = (v: number) => {
   const clamped = Math.max(80, Math.min(120, Number(v) || 100));
   cameraZoomPct = clamped;
@@ -206,7 +207,7 @@ input.init(renderer, camera, scene, {
     // ONLY walk if the spot is actually buildable (on a plinth)
     if (gs.grid.isBuildable(gx, gy, gs.selectedType === 'wall')) {
       gs.hero.pendingBuild = { type: gs.selectedType, gx, gy, isPath };
-      gs.selectedType = null;
+      ui.setTowerPlacementType(null);
       ui.panel.towerButtons.forEach(b => b.classList.remove('selected'));
     } else {
       // Optional: Visual feedback for "Can't build here"
@@ -218,16 +219,21 @@ input.init(renderer, camera, scene, {
     tower.showRange(true);
     ui.update();
   },
+  onBuildNodeClick: (gx, gy) => {
+    if (gs.gameOver || !gs.grid || !gs.hero) return;
+    if (gs.selectedType === 'wall') return;
+    ui.openBuildCircleAtCell(gx, gy);
+  },
   onAbility: (idx) => gs.hero?.activateAbility(idx, gs.enemies, gs.towers),
   onEscape: () => { 
     if (gs.selectedTower) gs.selectedTower.showRange(false);
-    gs.selectedType = null; 
+    ui.setTowerPlacementType(null); 
     gs.selectedTower = null; 
     ui.update(); 
   },
   onDeselect: () => { 
     if (gs.selectedTower) gs.selectedTower.showRange(false);
-    gs.selectedType = null; 
+    ui.setTowerPlacementType(null); 
     gs.selectedTower = null; 
     ui.update(); 
   },

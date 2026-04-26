@@ -585,4 +585,8 @@ export class Grid {
   getWorldPath(): THREE.Vector3[] {
     return this.worldPath;
   }
+
+  isPlinthCell(gx: number, gy: number): boolean {
+    return this.plinths.some(p => p.userData.gx === gx && p.userData.gy === gy);
+  }
 }

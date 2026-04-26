@@ -82,8 +82,10 @@ export class GameLoop {
       this._updateBuildPhase(dt);
       this._updateWaveCountdown(dt);
       this._updateSpawn(dt);
+      this._updateInfantryCooldown(dt);
       updateEnemySlow();
       this._updateEnemies(dt);
+      this._updateFriendlies(dt);
       updateEnemyWallAttacks(this._scene, this._camera);
       this._updateTowers(dt);
       this._updateProjectiles(dt);
@@ -140,6 +142,10 @@ export class GameLoop {
     }
   }
 
+  private _updateInfantryCooldown(dt: number): void {
+    if (gs.infantryCooldown > 0) gs.infantryCooldown = Math.max(0, gs.infantryCooldown - dt);
+  }
+
   private _updateEnemies(dt: number): void {
     let boss: any = null;
     for (const enemy of gs.enemies) {
@@ -155,6 +161,64 @@ export class GameLoop {
     } else {
       this._ui.showBossHp(false);
     }
+  }
+
+  private _updateFriendlies(dt: number): void {
+    const wallDistances = this._getWallDistancesFromHome();
+    for (const unit of gs.friendlies) {
+      const nextWall = wallDistances.find(d => d > unit.distanceFromHome) ?? null;
+      unit.update(dt, gs.enemies, nextWall);
+
+      // Enemy contact damage back to infantry (simple collision combat).
+      for (const enemy of gs.enemies) {
+        if (!enemy.alive) continue;
+        const d = enemy.getPos().distanceTo(unit.group.position);
+        if (d <= 0.85) {
+          unit.takeDamage((enemy.type === 'siege' ? 18 : 8) * dt);
+        }
+      }
+    }
+
+    for (let i = gs.friendlies.length - 1; i >= 0; i--) {
+      const unit = gs.friendlies[i];
+      if (!unit.alive) {
+        this._scene.remove(unit.group);
+        gs.friendlies.splice(i, 1);
+      }
+    }
+  }
+
+  private _getWallDistancesFromHome(): number[] {
+    const path = gs.grid?.getWorldPath();
+    if (!path || path.length < 2) return [];
+    const cumul: number[] = [0];
+    let total = 0;
+    for (let i = 0; i < path.length - 1; i++) {
+      total += path[i].distanceTo(path[i + 1]);
+      cumul.push(total);
+    }
+    const toDistanceFromStart = (x: number, z: number): number => {
+      let bestIdx = 0;
+      let bestDist = Infinity;
+      for (let i = 0; i < path.length; i++) {
+        const dx = path[i].x - x;
+        const dz = path[i].z - z;
+        const d2 = dx * dx + dz * dz;
+        if (d2 < bestDist) {
+          bestDist = d2;
+          bestIdx = i;
+        }
+      }
+      return cumul[bestIdx];
+    };
+    const fromHome = gs.towers
+      .filter(t => t.type === 'wall' && t.getWallHp() > 0)
+      .map(t => {
+        const fromStart = toDistanceFromStart(t.gx + 0.5, t.gy + 0.5);
+        return Math.max(0, total - fromStart);
+      })
+      .sort((a, b) => a - b);
+    return fromHome;
   }
 
   private _updateTowers(dt: number): void {

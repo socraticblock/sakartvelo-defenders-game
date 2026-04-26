@@ -12,6 +12,7 @@ import { ProjectilePool } from './Projectile';
 import { WaveManager } from './WaveManager';
 import { Hero } from './Hero';
 import { SaveManager } from './SaveManager';
+import { FriendlyInfantry } from './FriendlyInfantry';
 
 export class GameState {
   // ─── Entities ───────────────────────────────────────────
@@ -19,12 +20,15 @@ export class GameState {
   waveMgr: WaveManager | null = null;
   hero: Hero | null = null;
   enemies: Enemy[] = [];
+  friendlies: FriendlyInfantry[] = [];
   towers: Tower[] = [];
   projectilePool!: ProjectilePool;
 
   // ─── Economy ─────────────────────────────────────────────
   gold = 100;
   lives = 20;
+  infantryCost = 35;
+  infantryCooldown = 0;
 
   // ─── Selection ───────────────────────────────────────────
   selectedType: string | null = null;   // tower type being placed
@@ -67,11 +71,13 @@ export class GameState {
   initLevel(lvl: LevelData, scene: THREE.Scene): void {
     // Clean up old level entities
     this.enemies.forEach(e => scene.remove(e.group));
+    this.friendlies.forEach(f => scene.remove(f.group));
     this.towers.forEach(t => scene.remove(t.group));
     if (this.grid) scene.remove(this.grid.group);
     if (this.hero) scene.remove(this.hero.group);
 
     this.enemies = [];
+    this.friendlies = [];
     this.towers = [];
     this.projectilePool?.dispose();
     this.projectilePool = new ProjectilePool(scene);
@@ -89,6 +95,7 @@ export class GameState {
     this.waveCompleteProcessed = false;
     this.popupDismissed = false;
     this.bossKilled = false;
+    this.infantryCooldown = 0;
 
     this.grid = new Grid(lvl);
     scene.add(this.grid.group);
@@ -199,6 +206,20 @@ export class GameState {
   removeEnemy(enemy: Enemy, scene: THREE.Scene): void {
     scene.remove(enemy.group);
     this.enemies = this.enemies.filter(e => e !== enemy);
+  }
+
+  canSpawnInfantry(): boolean {
+    return !!this.grid && !this.gameOver && this.gold >= this.infantryCost && this.infantryCooldown <= 0;
+  }
+
+  spawnFriendlyInfantry(scene: THREE.Scene): boolean {
+    if (!this.grid || !this.canSpawnInfantry()) return false;
+    const unit = new FriendlyInfantry(this.grid.getWorldPath());
+    this.gold -= this.infantryCost;
+    this.infantryCooldown = 8;
+    this.friendlies.push(unit);
+    scene.add(unit.group);
+    return true;
   }
 
   // ─── Save ────────────────────────────────────────────────

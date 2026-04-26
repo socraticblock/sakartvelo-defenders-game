@@ -339,6 +339,82 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
   font-weight: bold;
 }
 
+.hero-wall-btn {
+  width: 42px;
+  height: 42px;
+  border: 2px solid #8b6914;
+  border-radius: 10px;
+  background: rgba(139, 105, 20, 0.25);
+  color: #f0e6d2;
+  cursor: pointer;
+  font-family: 'Georgia', serif;
+  font-size: 20px;
+}
+
+.hero-wall-btn.selected {
+  background: rgba(139, 105, 20, 0.8);
+  border-color: #d4a017;
+  box-shadow: 0 0 10px rgba(212, 160, 23, 0.45);
+}
+
+.infantry-spawn-btn {
+  position: absolute;
+  left: 14px;
+  bottom: 90px;
+  z-index: 12;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 2px solid #8b6914;
+  border-radius: 10px;
+  background: rgba(8, 14, 8, 0.88);
+  color: #f0e6d2;
+  font-family: 'Georgia', serif;
+  font-size: 12px;
+}
+
+.infantry-spawn-btn:disabled {
+  opacity: 0.45;
+}
+
+#build-circle {
+  position: absolute;
+  z-index: 20;
+  display: none;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(139, 105, 20, 0.45);
+  transform: translate(-50%, -50%);
+}
+
+#build-circle.visible {
+  display: block;
+}
+
+.build-circle-btn {
+  position: absolute;
+  min-width: 104px;
+  min-height: 34px;
+  border: 1px solid #8b6914;
+  border-radius: 18px;
+  background: rgba(139, 105, 20, 0.35);
+  color: #f0e6d2;
+  font-family: 'Georgia', serif;
+  font-size: 12px;
+  transform: translate(-50%, -50%);
+}
+
+#build-circle-archer {
+  left: 50%;
+  top: 24%;
+}
+
+#build-circle-catapult {
+  left: 50%;
+  top: 76%;
+}
+
 .game-settings-btn {
   position: absolute;
   right: 12px;
@@ -845,6 +921,21 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
     height: 40px;
     border-radius: 10px;
     font-size: 16px;
+  }
+
+  .hero-wall-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    font-size: 18px;
+  }
+
+  .infantry-spawn-btn {
+    left: 8px;
+    bottom: calc(112px + env(safe-area-inset-bottom));
+    min-height: 38px;
+    padding: 6px 10px;
+    font-size: 11px;
   }
 
   .game-settings-btn {

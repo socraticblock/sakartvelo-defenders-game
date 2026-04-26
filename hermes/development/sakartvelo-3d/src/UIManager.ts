@@ -4,10 +4,12 @@
  * Tower buttons → TowerPanel.ts
  * Screens/tutorial/cultural facts → ScreenManager.ts
  */
+import * as THREE from 'three';
 import { gs } from './GameState';
 import { TowerPanel } from './TowerPanel';
 import { screenMgr } from './ScreenManager';
 import { audio } from './AudioManager';
+import { TOWER_CONFIGS } from './types';
 
 type OnLevelSelect = (era: number, level: number) => void;
 type OnEscape = () => void;
@@ -33,6 +35,11 @@ export class UIManager {
   private $levelName = document.getElementById('level-name');
   private $heroHp = document.getElementById('hero-hp');
   private $heroStatus = document.getElementById('hero-status');
+  private $wallModeBtn = document.getElementById('wall-mode-btn') as HTMLButtonElement | null;
+  private $infantrySpawnBtn = document.getElementById('infantry-spawn-btn') as HTMLButtonElement | null;
+  private $buildCircle = document.getElementById('build-circle');
+  private $buildCircleArcher = document.getElementById('build-circle-archer') as HTMLButtonElement | null;
+  private $buildCircleCatapult = document.getElementById('build-circle-catapult') as HTMLButtonElement | null;
   private $gameInfoModal = document.getElementById('game-info-modal');
   private $gameSettingsModal = document.getElementById('game-settings-modal');
   private $bossHpContainer = document.getElementById('boss-hp-container');
@@ -42,6 +49,8 @@ export class UIManager {
   private $heroBar = document.getElementById('hero-bar');
   private dockResizeObserver: ResizeObserver | null = null;
   private dockViewportMode: 'compact' | 'full' | null = null;
+  private buildCircleCell: { gx: number; gy: number } | null = null;
+  private buildCircleOpenedAtMs = 0;
   private enemyIntroQueue: string[] = [];
   private enemyIntroOpen = false;
 
@@ -61,6 +70,8 @@ export class UIManager {
     this._bindWaveButtons();
     this._bindBuildStart();
     this._bindAbilityButtons();
+    this._bindBuildCircle();
+    this._bindWallAndInfantryButtons();
     this._bindInfoModal();
     this._bindEscape();
     setInterval(() => this.update(), 100);
@@ -91,6 +102,14 @@ export class UIManager {
         }
       }
       this.screens.updateAbilities(gs.hero);
+    }
+    if (this.$wallModeBtn) this.$wallModeBtn.classList.toggle('selected', gs.selectedType === 'wall');
+    if (this.$infantrySpawnBtn) {
+      const cd = Math.max(0, gs.infantryCooldown);
+      const canSpawn = gs.canSpawnInfantry();
+      const baseText = `⚔ Infantry (${gs.infantryCost}g)`;
+      this.$infantrySpawnBtn.disabled = !canSpawn;
+      this.$infantrySpawnBtn.textContent = cd > 0 ? `${baseText} ${cd.toFixed(1)}s` : baseText;
     }
 
     this.panel.update();
@@ -137,6 +156,7 @@ export class UIManager {
     this.$waveBtn.disabled = false;
     this.$waveBtn.textContent = '⚔ Start Wave';
     this.$buildOverlay?.classList.remove('visible');
+    this.closeBuildCircle();
   }
 
   // ─── Escape ──────────────────────────────────────────────────────────────
@@ -156,9 +176,90 @@ export class UIManager {
         }
         gs.selectedType = null;
         gs.selectedTower = null;
+        this.closeBuildCircle();
         this.panel.towerButtons.forEach(b => b.classList.remove('selected'));
       }
     });
+  }
+
+  setTowerPlacementType(type: string | null): void {
+    gs.selectedType = type;
+    gs.selectedTower = null;
+    this.closeBuildCircle();
+    this.panel.towerButtons.forEach(b => b.classList.remove('selected'));
+    if (this.$wallModeBtn) this.$wallModeBtn.classList.toggle('selected', gs.selectedType === 'wall');
+  }
+
+  openBuildCircleAtCell(gx: number, gy: number): void {
+    if (!this.$buildCircle || !gs.grid) return;
+    if (gs.gameOver) return;
+    const worldPos = gs.grid.getPlinthVisualPos(gx, gy) || new THREE.Vector3(gx + 0.5, 0.1, gy + 0.5);
+    const cam = (window as any).__camera as THREE.Camera | undefined;
+    if (!cam) return;
+    const v = new THREE.Vector3(worldPos.x, worldPos.y + 0.2, worldPos.z).project(cam);
+    const sx = (v.x * 0.5 + 0.5) * window.innerWidth;
+    const sy = (-v.y * 0.5 + 0.5) * window.innerHeight;
+    const clampedX = Math.max(88, Math.min(window.innerWidth - 88, sx));
+    const clampedY = Math.max(88, Math.min(window.innerHeight - 88, sy));
+    this.$buildCircle.style.left = `${Math.round(clampedX)}px`;
+    this.$buildCircle.style.top = `${Math.round(clampedY)}px`;
+    if (this.$buildCircleArcher) {
+      this.$buildCircleArcher.disabled = !gs.unlockedTowers.has('archer') || gs.gold < TOWER_CONFIGS.archer.cost;
+    }
+    if (this.$buildCircleCatapult) {
+      this.$buildCircleCatapult.disabled = !gs.unlockedTowers.has('catapult') || gs.gold < TOWER_CONFIGS.catapult.cost;
+    }
+    this.$buildCircle.classList.add('visible');
+    this.buildCircleOpenedAtMs = performance.now();
+    this.buildCircleCell = { gx, gy };
+  }
+
+  closeBuildCircle(): void {
+    this.buildCircleCell = null;
+    this.$buildCircle?.classList.remove('visible');
+  }
+
+  private _bindBuildCircle(): void {
+    const bindPick = (btn: HTMLButtonElement | null, type: 'archer' | 'catapult') => {
+      if (!btn || btn.dataset.bound === '1') return;
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (!this.buildCircleCell || !gs.hero || !gs.grid || gs.gameOver) return;
+        const { gx, gy } = this.buildCircleCell;
+        if (!gs.grid.isBuildable(gx, gy, false)) return;
+        gs.hero.pendingBuild = { type, gx, gy, isPath: false };
+        this.setTowerPlacementType(null);
+      });
+    };
+    bindPick(this.$buildCircleArcher, 'archer');
+    bindPick(this.$buildCircleCatapult, 'catapult');
+    document.addEventListener('pointerdown', (e) => {
+      if (performance.now() - this.buildCircleOpenedAtMs < 80) return;
+      const t = e.target as HTMLElement | null;
+      if (!t) return;
+      if (t.closest('#build-circle')) return;
+      this.closeBuildCircle();
+    });
+  }
+
+  private _bindWallAndInfantryButtons(): void {
+    if (this.$wallModeBtn && this.$wallModeBtn.dataset.bound !== '1') {
+      this.$wallModeBtn.dataset.bound = '1';
+      this.$wallModeBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.setTowerPlacementType(gs.selectedType === 'wall' ? null : 'wall');
+      });
+    }
+    if (this.$infantrySpawnBtn && this.$infantrySpawnBtn.dataset.bound !== '1') {
+      this.$infantrySpawnBtn.dataset.bound = '1';
+      this.$infantrySpawnBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const scene = (window as any).__scene;
+        if (!scene) return;
+        gs.spawnFriendlyInfantry(scene);
+      });
+    }
   }
 
   private _bindInfoModal(): void {

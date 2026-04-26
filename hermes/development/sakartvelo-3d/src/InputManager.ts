@@ -15,6 +15,7 @@ type KBLayout = 'qwerty' | 'azerty';
 interface InputCallbacks {
   onHeroMove: (x: number, z: number) => void;
   onGridClick: (gx: number, gy: number, isPath: boolean) => void;
+  onBuildNodeClick: (gx: number, gy: number) => void;
   onTowerClick: (tower: Tower) => void;
   onAbility: (idx: number) => void;
   onEscape: () => void;
@@ -375,6 +376,10 @@ export class InputManager {
 
     const cell = this.getMouseGrid(grid);
     if (cell) {
+      if (grid.isPlinthCell(cell.gx, cell.gy)) {
+        this._cb.onBuildNodeClick(cell.gx, cell.gy);
+        return;
+      }
       const pos = this.getMouseGround();
       if (pos) {
         this._cb.onHeroMove(pos.x, pos.z);
