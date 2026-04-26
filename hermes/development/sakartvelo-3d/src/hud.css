@@ -1,5 +1,19 @@
 /* hud.css — In-game Heads-Up Display and interaction panels */
 
+:root {
+  /* Safe default for small/medium screens. */
+  --hud-map-side-inset: 10px;
+  --hud-side-stack-gap: 130px;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    /* On large screens, keep side docks close to the map region. */
+    --hud-map-anchor-width: min(calc(100vw - 24px), 980px);
+    --hud-map-side-inset: max(10px, calc((100vw - var(--hud-map-anchor-width)) / 2 + 8px));
+  }
+}
+
 #hud {
   position: absolute;
   top: 0;
@@ -142,11 +156,11 @@ body.build-layout-right #bottom-bar {
 }
 
 body.build-layout-left #bottom-bar {
-  left: 10px;
+  left: var(--hud-map-side-inset);
 }
 
 body.build-layout-right #bottom-bar {
-  right: 10px;
+  right: var(--hud-map-side-inset);
 }
 
 body.build-layout-left .tower-btn,
@@ -271,31 +285,31 @@ body.ability-layout-right #hero-bar {
 }
 
 body.ability-layout-left #hero-bar {
-  left: 10px;
+  left: var(--hud-map-side-inset);
 }
 
 body.ability-layout-right #hero-bar {
-  right: 10px;
+  right: var(--hud-map-side-inset);
 }
 
 body.dock-stack-left-build-first.build-layout-left #bottom-bar,
 body.dock-stack-left-ability-first.ability-layout-left #hero-bar {
-  left: 10px;
+  left: var(--hud-map-side-inset);
 }
 
 body.dock-stack-left-build-first.ability-layout-left #hero-bar,
 body.dock-stack-left-ability-first.build-layout-left #bottom-bar {
-  left: 140px;
+  left: calc(var(--hud-map-side-inset) + var(--hud-side-stack-gap));
 }
 
 body.dock-stack-right-build-first.build-layout-right #bottom-bar,
 body.dock-stack-right-ability-first.ability-layout-right #hero-bar {
-  right: 10px;
+  right: var(--hud-map-side-inset);
 }
 
 body.dock-stack-right-build-first.ability-layout-right #hero-bar,
 body.dock-stack-right-ability-first.build-layout-right #bottom-bar {
-  right: 140px;
+  right: calc(var(--hud-map-side-inset) + var(--hud-side-stack-gap));
 }
 
 body.dock-stack-bottom-build-first.build-layout-bottom #bottom-bar,
@@ -878,68 +892,47 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
     border-radius: 18px;
   }
 
+  /* Phone safety: side-selected docks collapse to bottom to avoid map overlap. */
   body.build-layout-left #bottom-bar,
   body.build-layout-right #bottom-bar {
-    top: 50%;
-    bottom: auto;
-    transform: translateY(-50%);
-    width: 108px;
-    height: auto;
-    padding: 8px 6px;
-    flex-direction: column;
-    gap: 6px;
-    border: 1px solid rgba(139, 105, 20, 0.35);
-    border-radius: 12px;
-  }
-
-  body.build-layout-left #bottom-bar {
+    top: auto;
+    bottom: env(safe-area-inset-bottom);
     left: 8px;
-    right: auto;
-  }
-
-  body.build-layout-right #bottom-bar {
     right: 8px;
-    left: auto;
+    width: auto;
+    transform: none;
+    flex-direction: row;
+    padding: 6px 8px max(8px, env(safe-area-inset-bottom));
+    gap: 4px;
+    justify-content: space-between;
+    border-radius: 10px;
   }
 
   body.build-layout-left .tower-btn,
   body.build-layout-left .wave-btn,
   body.build-layout-right .tower-btn,
   body.build-layout-right .wave-btn {
-    width: 100%;
-    min-height: 38px;
-    font-size: 10px;
-    line-height: 1.05;
+    width: auto;
+    min-height: 42px;
+    flex: 1 1 0;
     padding: 5px 4px;
+    font-size: 10px;
+    line-height: 1.1;
   }
 
   body.ability-layout-left #hero-bar,
   body.ability-layout-right #hero-bar {
-    top: 50%;
-    bottom: auto;
-    transform: translateY(-50%);
-    width: 72px;
-    max-width: 72px;
-    flex-direction: column;
-    padding: 8px 6px;
-  }
-
-  body.ability-layout-left #hero-bar {
+    top: auto;
+    bottom: calc(var(--dock-bottom-build-first-offset, 52px) + env(safe-area-inset-bottom));
     left: 8px;
-    right: auto;
-  }
-
-  body.ability-layout-right #hero-bar {
     right: 8px;
-    left: auto;
-  }
-
-  body.build-layout-left.ability-layout-left #hero-bar {
-    left: 116px;
-  }
-
-  body.build-layout-right.ability-layout-right #hero-bar {
-    right: 116px;
+    width: auto;
+    max-width: none;
+    transform: none;
+    flex-direction: row;
+    justify-content: center;
+    padding: 6px 8px;
+    gap: 5px;
   }
 
   body.build-layout-left.ability-layout-bottom #hero-bar,
@@ -991,6 +984,11 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
     bottom: env(safe-area-inset-bottom);
   }
 
+  body.build-layout-left.ability-layout-bottom #hero-bar,
+  body.build-layout-right.ability-layout-bottom #hero-bar {
+    bottom: calc(var(--dock-bottom-build-first-offset, 52px) + env(safe-area-inset-bottom));
+  }
+
   body.ability-layout-bottom #tower-panel {
     bottom: calc(70px + env(safe-area-inset-bottom));
   }
@@ -1025,7 +1023,7 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
 
   body.dock-stack-left-build-first.ability-layout-left #hero-bar,
   body.dock-stack-left-ability-first.build-layout-left #bottom-bar {
-    left: 116px;
+    left: 8px;
   }
 
   body.dock-stack-right-build-first.build-layout-right #bottom-bar,
@@ -1035,6 +1033,6 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
 
   body.dock-stack-right-build-first.ability-layout-right #hero-bar,
   body.dock-stack-right-ability-first.build-layout-right #bottom-bar {
-    right: 116px;
+    right: 8px;
   }
 }

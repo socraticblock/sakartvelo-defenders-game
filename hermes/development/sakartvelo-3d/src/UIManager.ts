@@ -16,6 +16,7 @@ const HUD_LAYOUT_KEY = 'sakartvelo_hud_layout';
 const BUILD_LAYOUT_KEY = 'sakartvelo_build_layout';
 const ABILITY_LAYOUT_KEY = 'sakartvelo_ability_layout';
 const DOCK_STACK_PREFIX = 'sakartvelo_dock_stack_';
+const MOBILE_LAYOUT_MAX_WIDTH = 768;
 
 export class UIManager {
   // HUD elements
@@ -40,6 +41,7 @@ export class UIManager {
   private $bottomBar = document.getElementById('bottom-bar');
   private $heroBar = document.getElementById('hero-bar');
   private dockResizeObserver: ResizeObserver | null = null;
+  private dockViewportMode: 'compact' | 'full' | null = null;
   private enemyIntroQueue: string[] = [];
   private enemyIntroOpen = false;
 
@@ -55,6 +57,7 @@ export class UIManager {
     this.screens.init(onLevelSelect, onEscape);
     this._applySavedHudLayout();
     this._bindDockSpacingObserver();
+    this._bindResponsiveDockLayout();
     this._bindWaveButtons();
     this._bindBuildStart();
     this._bindAbilityButtons();
@@ -253,14 +256,24 @@ export class UIManager {
     );
   }
 
+  private _isCompactDockViewport(): boolean {
+    return window.matchMedia(`(max-width: ${MOBILE_LAYOUT_MAX_WIDTH}px)`).matches;
+  }
+
+  private _getEffectiveDockLayout(layout: HudLayout): HudLayout {
+    if (!this._isCompactDockViewport()) return layout;
+    return (layout === 'left' || layout === 'right') ? 'bottom' : layout;
+  }
+
   private _setDockLayout(kind: 'build' | 'ability', layout: HudLayout, fromInit = false): void {
     const otherKind = kind === 'build' ? 'ability' : 'build';
-    const otherLayout = this._getDockLayout(otherKind);
+    const effectiveLayout = this._getEffectiveDockLayout(layout);
+    const otherLayout = this._getEffectiveDockLayout(this._getDockLayout(otherKind));
     const prefix = kind === 'build' ? 'build-layout' : 'ability-layout';
     document.body.classList.remove(`${prefix}-bottom`, `${prefix}-left`, `${prefix}-right`, `${prefix}-top`);
-    document.body.classList.add(`${prefix}-${layout}`);
+    document.body.classList.add(`${prefix}-${effectiveLayout}`);
     localStorage.setItem(kind === 'build' ? BUILD_LAYOUT_KEY : ABILITY_LAYOUT_KEY, layout);
-    this._updateDockStackOrder(layout, otherKind, otherLayout, fromInit);
+    this._updateDockStackOrder(effectiveLayout, otherKind, otherLayout, fromInit);
     this._updateDockStackOffsets();
     // Camera framing depends on dock placement.
     const lvl = gs.currentLevel;
@@ -290,14 +303,26 @@ export class UIManager {
       localStorage.setItem(key, first);
     }
 
-    const buildLayout = this._getDockLayout('build');
-    const abilityLayout = this._getDockLayout('ability');
+    const buildLayout = this._getEffectiveDockLayout(this._getDockLayout('build'));
+    const abilityLayout = this._getEffectiveDockLayout(this._getDockLayout('ability'));
     if (buildLayout === abilityLayout) {
       const key = `${DOCK_STACK_PREFIX}${buildLayout}`;
       const saved = localStorage.getItem(key);
       const first = saved === 'ability' ? 'ability' : 'build';
       document.body.classList.add(`dock-stack-${buildLayout}-${first}-first`);
     }
+  }
+
+  private _bindResponsiveDockLayout(): void {
+    const applyIfModeChanged = () => {
+      const nextMode: 'compact' | 'full' = this._isCompactDockViewport() ? 'compact' : 'full';
+      if (nextMode === this.dockViewportMode) return;
+      this.dockViewportMode = nextMode;
+      this._applySavedHudLayout();
+      this._syncDockLayoutUi();
+    };
+    applyIfModeChanged();
+    window.addEventListener('resize', applyIfModeChanged);
   }
 
   private _bindDockSpacingObserver(): void {
@@ -325,8 +350,38 @@ export class UIManager {
   private _syncDockLayoutUi(): void {
     const build = document.getElementById('build-layout-game') as HTMLSelectElement | null;
     const ability = document.getElementById('ability-layout-game') as HTMLSelectElement | null;
-    if (build) build.value = this._parseHudLayout(localStorage.getItem(BUILD_LAYOUT_KEY), 'bottom');
-    if (ability) ability.value = this._parseHudLayout(localStorage.getItem(ABILITY_LAYOUT_KEY), 'bottom');
+    const compact = this._isCompactDockViewport();
+    const updateSelect = (select: HTMLSelectElement | null, kind: 'build' | 'ability') => {
+      if (!select) return;
+      for (const opt of Array.from(select.options)) {
+        if (opt.value === 'left' || opt.value === 'right') {
+          opt.disabled = compact;
+          opt.hidden = compact;
+        } else {
+          opt.hidden = false;
+        }
+      }
+      const stored = this._parseHudLayout(
+        localStorage.getItem(kind === 'build' ? BUILD_LAYOUT_KEY : ABILITY_LAYOUT_KEY),
+        'bottom',
+      );
+      select.value = compact ? this._getEffectiveDockLayout(stored) : stored;
+    };
+    updateSelect(build, 'build');
+    updateSelect(ability, 'ability');
+
+    const section = ability?.closest('.game-info-section');
+    if (section) {
+      let note = section.querySelector('#dock-layout-mobile-note') as HTMLDivElement | null;
+      if (!note) {
+        note = document.createElement('div');
+        note.id = 'dock-layout-mobile-note';
+        note.className = 'game-info-line';
+        ability?.parentElement?.insertAdjacentElement('afterend', note);
+      }
+      note.textContent = 'Side layout is desktop-only on small screens.';
+      note.style.display = compact ? 'block' : 'none';
+    }
   }
 
   private _bindDockLayoutControls(): void {
