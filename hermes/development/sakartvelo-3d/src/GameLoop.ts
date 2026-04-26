@@ -20,6 +20,7 @@ import {
 import { updateEnemySlow, updateEnemyWallAttacks, updateEnemyDeaths } from './EnemyAI';
 import { magicParticles } from './MagicalParticles';
 import { ambientDust } from './AmbientDust';
+import { warHorn } from './WarHorn';
 
 export class GameLoop {
   private readonly _UPGRADE_RANGE = 1.6;
@@ -112,6 +113,22 @@ export class GameLoop {
       this._updateWallHpBillboards();
       this._checkWaveComplete();
       gs.grid.update(now, gs.selectedType);
+      
+      // Update WarHorn
+      if (!gs.waveMgr.active || gs.waveMgr.inBuildPhase) {
+        warHorn.show();
+        // Shake it if auto-start is imminent
+        const isVibrating = gs.waveMgr.waveNum > 0 && gs.waveCountdownActive && gs.waveCountdown < 3;
+        warHorn.update(now, isVibrating);
+
+        if (this._ui.$hornBonus) {
+          const pos = warHorn.getScreenPosition(this._camera);
+          this._ui.$hornBonus.style.left = `${pos.x}px`;
+          this._ui.$hornBonus.style.top = `${pos.y}px`;
+        }
+      } else {
+        warHorn.hide();
+      }
     }
 
     this._updateHover();
@@ -131,10 +148,9 @@ export class GameLoop {
     const remaining = gs.waveMgr.updateBuildPhase(dt);
     if (remaining <= 0) {
       gs.waveMgr.endBuildPhase();
-      this._ui.hideBuildPhase();
-      if (gs.waveMgr.startNext()) {
-        this._ui.$waveBtn.disabled = true;
-        this._ui.$waveBtn.textContent = '⚔ Wave in progress...';
+      // Wave 1 doesn't auto-start, others do
+      if (gs.waveMgr.waveNum > 0) {
+        gs.waveMgr.startNext();
       }
     }
   }

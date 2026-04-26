@@ -14,6 +14,7 @@ import { Tower } from './Tower';
 import { screenMgr } from './ScreenManager';
 import { initMagicParticles } from './MagicalParticles';
 import { initAmbientDust } from './AmbientDust';
+import { warHorn } from './WarHorn';
 
 // Use the generated magical sprite
 const MAGIC_SPRITE = '/magic_particle_sprite.png';
@@ -173,6 +174,11 @@ function startLevel(era: number, level: number): void {
   gs.initLevel(lvl, scene);
   ui.reset();
   ui.screens.showGameUI();
+  
+  if (gs.grid && gs.grid.worldPath.length > 0) {
+    warHorn.init(gs.grid.worldPath[0]);
+    scene.add(warHorn.group);
+  }
   
   // Wait for DOM layout to finish so getBoundingClientRect is accurate
   setTimeout(() => {

@@ -27,11 +27,11 @@ export class UIManager {
   $lives = document.getElementById('lives');
   $wave = document.getElementById('wave');
   $totalWaves = document.getElementById('total-waves');
-  $waveBtn = document.getElementById('wave-btn') as HTMLButtonElement;
+  $hornBonus = document.getElementById('horn-bonus');
+  $hornBonusGold = document.getElementById('horn-bonus-gold');
   private $buildOverlay = document.getElementById('build-overlay');
   private $buildTimer = document.getElementById('build-timer');
   private $bpEnemyList = document.getElementById('bp-enemy-list');
-  private $buildStartBtn = document.getElementById('build-start-btn') as HTMLButtonElement;
   private $levelName = document.getElementById('level-name');
   private $heroHp = document.getElementById('hero-hp');
   private $heroStatus = document.getElementById('hero-status');
@@ -45,7 +45,6 @@ export class UIManager {
   private $bossHpContainer = document.getElementById('boss-hp-container');
   private $bossName = document.getElementById('boss-name');
   private $bossHpFill = document.getElementById('boss-hp-fill');
-  private $bottomBar = document.getElementById('bottom-bar');
   private $heroBar = document.getElementById('hero-bar');
   private dockResizeObserver: ResizeObserver | null = null;
   private dockViewportMode: 'compact' | 'full' | null = null;
@@ -68,8 +67,6 @@ export class UIManager {
     this._applySavedHudLayout();
     this._bindDockSpacingObserver();
     this._bindResponsiveDockLayout();
-    this._bindWaveButtons();
-    this._bindBuildStart();
     this._bindAbilityButtons();
     this._bindBuildCircle();
     this._bindWallAndInfantryButtons();
@@ -113,17 +110,28 @@ export class UIManager {
 
     this.panel.update();
 
+    // Re-fetch horn elements if module loaded before DOM
+    if (!this.$hornBonus) this.$hornBonus = document.getElementById('horn-bonus');
+    if (!this.$hornBonusGold) this.$hornBonusGold = document.getElementById('horn-bonus-gold');
+
     if (wm?.inBuildPhase) {
       const remaining = wm.buildPhaseTimer;
       this.setText(this.$buildTimer, String(Math.ceil(remaining)));
       const bonus = Math.ceil(remaining * 2);
-      this.setText(this.$buildStartBtn, `▶ Start Wave Now (+${bonus}g)`);
-    }
-
-    if (gs.waveCountdownActive && wm && !wm.active) {
+      if (this.$hornBonus) {
+        this.$hornBonus.style.display = 'block';
+        this.setText(this.$hornBonusGold, `+${bonus}g`);
+        this.$hornBonus.style.color = bonus > 10 ? '#ffd700' : (bonus > 5 ? '#ffa500' : '#ff4444');
+      }
+    } else if (gs.waveCountdownActive && wm && !wm.active) {
       const bonus = Math.ceil(gs.waveCountdown * 3);
-      this.$waveBtn.disabled = false;
-      this.setText(this.$waveBtn, `▶ Next Wave (+${bonus}g) [${Math.ceil(gs.waveCountdown)}s]`);
+      if (this.$hornBonus) {
+        this.$hornBonus.style.display = 'block';
+        this.setText(this.$hornBonusGold, `+${bonus}g`);
+        this.$hornBonus.style.color = bonus > 10 ? '#ffd700' : (bonus > 5 ? '#ffa500' : '#ff4444');
+      }
+    } else {
+      if (this.$hornBonus) this.$hornBonus.style.display = 'none';
     }
   }
 
@@ -135,32 +143,9 @@ export class UIManager {
 
   // ─── Wave / Build phase buttons ───────────────────────────────────────────
 
-  private _bindWaveButtons(): void {
-    this.$waveBtn.addEventListener('click', () => {
-      if (gs.gameOver || !gs.waveMgr || gs.waveMgr.active || gs.waveMgr.inBuildPhase) return;
-      const bonus = gs.waveCountdownActive ? gs.getCountdownBonus() : 0;
-      gs.startWave(bonus);
-      this.$waveBtn.disabled = true;
-      this.$waveBtn.textContent = '⚔ Wave in progress...';
-    });
-  }
-
-  private _bindBuildStart(): void {
-    this.$buildStartBtn.addEventListener('click', () => {
-      if (gs.gameOver || !gs.waveMgr?.inBuildPhase) return;
-      const bonus = gs.getBuildPhaseBonus();
-      gs.waveMgr.endBuildPhase();
-      this.$buildOverlay?.classList.remove('visible');
-      gs.startWave(bonus);
-      this.$waveBtn.disabled = true;
-      this.$waveBtn.textContent = '⚔ Wave in progress...';
-    });
-  }
-
   reset(): void {
-    this.$waveBtn.disabled = false;
-    this.$waveBtn.textContent = '⚔ Start Wave';
     this.$buildOverlay?.classList.remove('visible');
+    // Do NOT hide hornBonus here, let update() handle it based on WaveManager state
     this.closeBuildCircle();
   }
 

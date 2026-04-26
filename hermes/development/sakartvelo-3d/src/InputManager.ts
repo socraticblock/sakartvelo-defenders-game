@@ -9,6 +9,7 @@ import { Grid } from './Grid';
 import { Tower } from './Tower';
 import { TileUserData, TOWER_CONFIGS } from './types';
 import { buildArcherMesh, buildCatapultMesh, buildWallMesh } from './TowerMeshes';
+import { warHorn } from './WarHorn';
 
 type KBLayout = 'qwerty' | 'azerty';
 
@@ -41,6 +42,7 @@ export class InputManager {
   private _isPinching = false;
   private _initialPinchDist = 0;
   private _initialZoom = 100;
+  private _wheelDilationTimer: any = null;
 
   // Three.js refs
   private _renderer!: THREE.WebGLRenderer;
@@ -303,6 +305,9 @@ export class InputManager {
       if (e.touches.length >= 2) e.preventDefault();
     }, { passive: false });
 
+    // Touchpad pinch-to-zoom
+    this._renderer.domElement.addEventListener('wheel', this._onWheel, { passive: false });
+
     // Right click — hero move
     this._renderer.domElement.addEventListener('contextmenu', this._onContextMenu);
 
@@ -419,6 +424,19 @@ export class InputManager {
     const grid = gs.grid;
     if (!grid) return;
 
+    // Check WarHorn FIRST
+    if (warHorn.group.visible && gs.waveMgr && (!gs.waveMgr.active || gs.waveMgr.inBuildPhase)) {
+      this._getNormalizedMouse();
+      this._ray.setFromCamera(this._mouse, this._camera);
+      const hits = this._ray.intersectObject(warHorn.group, true);
+      if (hits.length > 0) {
+        console.log('--- WAR HORN HIT! ---');
+        const bonus = gs.waveMgr.inBuildPhase ? gs.getBuildPhaseBonus() : (gs.waveCountdownActive ? gs.getCountdownBonus() : 0);
+        gs.startWave(bonus);
+        return; // Click swallowed
+      }
+    }
+
     // Placement mode: ray hits tall tower meshes before the ground tile — always use grid.
     if (gs.selectedType) {
       const rawCell = this.getMouseGrid(grid);
@@ -495,6 +513,34 @@ export class InputManager {
     (this._camera as THREE.PerspectiveCamera).updateProjectionMatrix();
     this._renderer.setSize(innerWidth, innerHeight);
     this._mouseDirty = true;
+  };
+
+  private _onWheel = (e: WheelEvent): void => {
+    // Only intercept if it's a touchpad pinch (ctrlKey) or standard scroll zoom
+    // Note: deltaY is positive when zooming OUT (scrolling down)
+    if (e.ctrlKey) {
+      e.preventDefault();
+      
+      const currentZoom = (window as any).__getCameraZoom?.() || 100;
+      // Invert delta: scrolling down/pinching in = negative delta in some browsers, but let's assume standard
+      // deltaY > 0 means zoom OUT -> targetZoom should decrease.
+      const targetZoom = currentZoom - e.deltaY * 0.15;
+      
+      if ((window as any).__setCameraZoom) {
+        (window as any).__setCameraZoom(targetZoom);
+      }
+
+      // Tactical Time Dilation for touchpad
+      gs.targetTimeScale = 0.1;
+      clearTimeout(this._wheelDilationTimer);
+      this._wheelDilationTimer = setTimeout(() => {
+        // Only restore if no other menus are open and no physical pinch is active
+        const buildMenuOpen = document.getElementById('build-circle')?.classList.contains('visible');
+        if (!this._isPinching && !gs.selectedTower && !buildMenuOpen) {
+          gs.targetTimeScale = 1.0;
+        }
+      }, 250);
+    }
   };
 }
 

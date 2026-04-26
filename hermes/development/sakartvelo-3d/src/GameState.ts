@@ -161,6 +161,9 @@ export class GameState {
 
   startWave(bonus = 0): boolean {
     if (!this.waveMgr) return false;
+    // Force end build phase if we are in it
+    if (this.waveMgr.inBuildPhase) this.waveMgr.endBuildPhase();
+    
     if (this.waveMgr.startNext()) {
       this.gold += bonus;
       this.waveCountdownActive = false;

@@ -23,6 +23,9 @@ export class WaveManager {
   constructor(level: LevelData, worldPath: THREE.Vector3[]) {
     this.waves = level.waves;
     this.worldPath = worldPath;
+    // Start the very first wave in build phase so the player can plan
+    this.inBuildPhase = true;
+    this.buildPhaseTimer = this.BUILD_PHASE_DURATION;
   }
 
   /** Start the 25-second build phase after a wave ends. Returns true if build phase started. */
@@ -68,7 +71,10 @@ export class WaveManager {
   }
 
   startNext(): boolean {
-    if (this.allDone || this.active || this.inBuildPhase) return false;
+    if (this.allDone || this.active) return false;
+    // If we're in build phase, clicking starts the wave immediately
+    if (this.inBuildPhase) this.inBuildPhase = false;
+    
     this.currentWave++;
     if (this.currentWave >= this.waves.length) { this.allDone = true; return false; }
 
