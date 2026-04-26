@@ -37,6 +37,9 @@ export class UIManager {
   private $bossHpContainer = document.getElementById('boss-hp-container');
   private $bossName = document.getElementById('boss-name');
   private $bossHpFill = document.getElementById('boss-hp-fill');
+  private $bottomBar = document.getElementById('bottom-bar');
+  private $heroBar = document.getElementById('hero-bar');
+  private dockResizeObserver: ResizeObserver | null = null;
   private enemyIntroQueue: string[] = [];
   private enemyIntroOpen = false;
 
@@ -51,6 +54,7 @@ export class UIManager {
   init(onLevelSelect: OnLevelSelect, onEscape: OnEscape): void {
     this.screens.init(onLevelSelect, onEscape);
     this._applySavedHudLayout();
+    this._bindDockSpacingObserver();
     this._bindWaveButtons();
     this._bindBuildStart();
     this._bindAbilityButtons();
@@ -257,6 +261,7 @@ export class UIManager {
     document.body.classList.add(`${prefix}-${layout}`);
     localStorage.setItem(kind === 'build' ? BUILD_LAYOUT_KEY : ABILITY_LAYOUT_KEY, layout);
     this._updateDockStackOrder(layout, otherKind, otherLayout, fromInit);
+    this._updateDockStackOffsets();
     // Camera framing depends on dock placement.
     const lvl = gs.currentLevel;
     const setZoom = (window as any).__setCameraZoom as ((v: number) => void) | undefined;
@@ -293,6 +298,28 @@ export class UIManager {
       const first = saved === 'ability' ? 'ability' : 'build';
       document.body.classList.add(`dock-stack-${buildLayout}-${first}-first`);
     }
+  }
+
+  private _bindDockSpacingObserver(): void {
+    if (typeof ResizeObserver === 'undefined') {
+      this._updateDockStackOffsets();
+      return;
+    }
+    this.dockResizeObserver = new ResizeObserver(() => this._updateDockStackOffsets());
+    if (this.$bottomBar) this.dockResizeObserver.observe(this.$bottomBar);
+    if (this.$heroBar) this.dockResizeObserver.observe(this.$heroBar);
+    window.addEventListener('resize', () => this._updateDockStackOffsets());
+    this._updateDockStackOffsets();
+  }
+
+  private _updateDockStackOffsets(): void {
+    const buildHeight = this.$bottomBar?.getBoundingClientRect().height ?? 0;
+    const abilityHeight = this.$heroBar?.getBoundingClientRect().height ?? 0;
+    const gap = 8;
+    const buildFirstOffset = Math.ceil(buildHeight + gap);
+    const abilityFirstOffset = Math.ceil(abilityHeight + gap);
+    document.body.style.setProperty('--dock-bottom-build-first-offset', `${buildFirstOffset}px`);
+    document.body.style.setProperty('--dock-bottom-ability-first-offset', `${abilityFirstOffset}px`);
   }
 
   private _syncDockLayoutUi(): void {

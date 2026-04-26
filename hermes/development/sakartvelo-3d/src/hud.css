@@ -305,7 +305,11 @@ body.dock-stack-bottom-ability-first.ability-layout-bottom #hero-bar {
 
 body.dock-stack-bottom-build-first.ability-layout-bottom #hero-bar,
 body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
-  bottom: 58px;
+  bottom: var(--dock-bottom-build-first-offset, 58px);
+}
+
+body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
+  bottom: var(--dock-bottom-ability-first-offset, 58px);
 }
 
 .hero-info-btn {
@@ -1006,9 +1010,12 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
     bottom: env(safe-area-inset-bottom);
   }
 
-  body.dock-stack-bottom-build-first.ability-layout-bottom #hero-bar,
+  body.dock-stack-bottom-build-first.ability-layout-bottom #hero-bar {
+    bottom: calc(var(--dock-bottom-build-first-offset, 52px) + env(safe-area-inset-bottom));
+  }
+
   body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
-    bottom: calc(52px + env(safe-area-inset-bottom));
+    bottom: calc(var(--dock-bottom-ability-first-offset, 52px) + env(safe-area-inset-bottom));
   }
 
   body.dock-stack-left-build-first.build-layout-left #bottom-bar,
