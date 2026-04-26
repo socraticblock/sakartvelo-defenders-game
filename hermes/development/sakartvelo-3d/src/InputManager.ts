@@ -36,6 +36,12 @@ export class InputManager {
   private _mouseDirty = false;
   private _lastHoverType: string | null = null;
 
+  // Pinch-to-zoom
+  private _activePointers = new Map<number, PointerEvent>();
+  private _isPinching = false;
+  private _initialPinchDist = 0;
+  private _initialZoom = 100;
+
   // Three.js refs
   private _renderer!: THREE.WebGLRenderer;
   private _camera!: THREE.Camera;
@@ -289,6 +295,13 @@ export class InputManager {
 
     // Mouse click — tower select or tower place
     this._renderer.domElement.addEventListener('pointerdown', this._onPointerDown);
+    document.addEventListener('pointerup', this._onPointerUp);
+    document.addEventListener('pointercancel', this._onPointerUp);
+
+    // Prevent native browser pinch-to-zoom
+    this._renderer.domElement.addEventListener('touchmove', (e) => {
+      if (e.touches.length >= 2) e.preventDefault();
+    }, { passive: false });
 
     // Right click — hero move
     this._renderer.domElement.addEventListener('contextmenu', this._onContextMenu);
@@ -327,14 +340,73 @@ export class InputManager {
     // No longer tracking keys for movement
   };
 
+  private _onPointerUp = (e: PointerEvent): void => {
+    this._activePointers.delete(e.pointerId);
+
+    if (this._isPinching && this._activePointers.size < 2) {
+      this._isPinching = false;
+      // Restore time if no UI menus are open
+      if (!gs.selectedTower && !document.getElementById('build-circle')?.classList.contains('visible')) {
+        gs.targetTimeScale = 1.0;
+      }
+    }
+  };
+
   private _onPointerMove = (e: PointerEvent): void => {
+    if (this._activePointers.has(e.pointerId)) {
+      this._activePointers.set(e.pointerId, e);
+    }
+
+    if (this._activePointers.size >= 2) {
+      const pts = Array.from(this._activePointers.values());
+      const dx = pts[0].clientX - pts[1].clientX;
+      const dy = pts[0].clientY - pts[1].clientY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (!this._isPinching) {
+        if (Math.abs(dist - this._initialPinchDist) > 10) { // Deadzone
+          this._isPinching = true;
+          this._initialPinchDist = dist;
+          gs.targetTimeScale = 0.1; // Tactical Time Dilation
+        }
+      }
+
+      if (this._isPinching) {
+        const delta = dist - this._initialPinchDist;
+        // Pinching out (fingers spread) = dist increases = delta positive = zoom out?
+        // Wait, spread fingers = zoom IN (percentage decreases, or camera gets closer).
+        // Let's test standard mapping: zoom in = camera physically closer = zoomPct increases?
+        // Our camera zoom pct: 100 is normal. Higher means zoomed OUT? No, "zoom" usually means magnification.
+        // Wait, zoomPct in main: `const zoomScale = 100 / cameraZoomPct; dist = ... * zoomScale`
+        // So higher zoomPct = smaller dist = zoomed IN (magnified).
+        // Fingers spread -> dist increases -> delta > 0 -> we want zoom IN -> targetZoom increases!
+        const targetZoom = this._initialZoom + delta * 0.3;
+        if ((window as any).__setCameraZoom) {
+          (window as any).__setCameraZoom(targetZoom);
+        }
+      }
+      return; // Do not process hover while pinching
+    }
+
     this._mouseX = e.clientX;
     this._mouseY = e.clientY;
     this._mouseDirty = true;
   };
 
   private _onPointerDown = (e: PointerEvent): void => {
-    // Only handle Left Click (button 0)
+    this._activePointers.set(e.pointerId, e);
+
+    if (this._activePointers.size >= 2) {
+      const pts = Array.from(this._activePointers.values());
+      const dx = pts[0].clientX - pts[1].clientX;
+      const dy = pts[0].clientY - pts[1].clientY;
+      this._initialPinchDist = Math.sqrt(dx * dx + dy * dy);
+      this._initialZoom = (window as any).__getCameraZoom?.() || 100;
+      this._isPinching = false;
+      return; // Cancel regular click
+    }
+
+    // Only handle Left Click (button 0) for primary interactions
     if (e.button !== 0) return;
     if (this._isBlockedByUi(e.clientX, e.clientY)) return;
 
