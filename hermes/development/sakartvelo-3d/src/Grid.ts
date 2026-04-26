@@ -11,6 +11,7 @@ export class Grid {
   private theme = 'colchis';
   private defenseTarget = 'village_gate';
   worldPath: THREE.Vector3[] = [];
+  private pathHighlightMeshes: THREE.Mesh[] = [];
 
   readonly width: number;
   readonly height: number;
@@ -33,11 +34,14 @@ export class Grid {
     this.addDecorations();
   }
 
-  /** Update method for animating pulsing auras (Mobile UX) */
-  update(time: number, isSelecting: boolean) {
+  /** Update method for animating pulsing auras and wall-path highlight. */
+  update(time: number, selectedType: string | null) {
+    const isWallMode = selectedType === 'wall';
+    const isBuildSelecting = selectedType !== null && !isWallMode;
+
     this.plinths.forEach(p => {
       const aura = p.userData.aura as THREE.Mesh;
-      if (isSelecting && !p.userData.occupied) {
+      if (isBuildSelecting && !p.userData.occupied) {
         aura.visible = true;
         // Stronger pulse in placement mode for mobile readability.
         const mat = aura.material as THREE.MeshBasicMaterial;
@@ -47,6 +51,17 @@ export class Grid {
         aura.visible = false;
       }
     });
+
+    for (const mesh of this.pathHighlightMeshes) {
+      const mat = mesh.material as THREE.MeshLambertMaterial;
+      if (isWallMode) {
+        mat.emissive.setHex(0xd4a017);
+        mat.emissiveIntensity = 0.16 + Math.sin(time * 6) * 0.06;
+      } else {
+        mat.emissive.setHex(0x000000);
+        mat.emissiveIntensity = 0;
+      }
+    }
   }
 
   private computePathCells(waypoints: number[][]) {
@@ -152,6 +167,7 @@ export class Grid {
     const pathMesh = new THREE.Mesh(geo, pathMat);
     pathMesh.receiveShadow = true;
     this.group.add(pathMesh);
+    this.pathHighlightMeshes.push(pathMesh);
 
     // 3. Organic Path Border (Jagged dirt edge)
     const borderVertices: number[] = [];
@@ -185,6 +201,7 @@ export class Grid {
     const borderMesh = new THREE.Mesh(borderGeo, borderMat);
     borderMesh.receiveShadow = true;
     this.group.add(borderMesh);
+    this.pathHighlightMeshes.push(borderMesh);
   }
 
   private createPlinths(nodes: number[][]) {

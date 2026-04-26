@@ -222,7 +222,8 @@ input.init(renderer, camera, scene, {
   onBuildNodeClick: (gx, gy) => {
     if (gs.gameOver || !gs.grid || !gs.hero) return;
     if (gs.selectedType === 'wall') return;
-    ui.openBuildCircleAtCell(gx, gy);
+    issueHeroMoveCommand(gx + 0.5, gy + 0.5);
+    ui.openBuildCircleAtCell(gx, gy, true);
   },
   onAbility: (idx) => gs.hero?.activateAbility(idx, gs.enemies, gs.towers),
   onEscape: () => { 

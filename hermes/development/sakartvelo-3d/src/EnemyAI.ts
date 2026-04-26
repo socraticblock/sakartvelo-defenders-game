@@ -22,11 +22,27 @@ export function updateEnemySlow(): void {
       wallCache.push({ t, x: t.gx + 0.5, z: t.gy + 0.5 });
     }
   }
+  const friendlyCache = gs.friendlies.map(f => ({ x: f.group.position.x, z: f.group.position.z, alive: f.alive }));
 
   for (const enemy of gs.enemies) {
     if (!enemy.alive) continue;
     let totalSlow = 0;
     _enemyPos.copy(enemy.getPos());
+    let blockedByFriendly = false;
+    for (const f of friendlyCache) {
+      if (!f.alive) continue;
+      const dx = _enemyPos.x - f.x;
+      const dz = _enemyPos.z - f.z;
+      if (dx * dx + dz * dz <= 0.9 * 0.9) {
+        blockedByFriendly = true;
+        break;
+      }
+    }
+    if (blockedByFriendly) {
+      enemy.isBlocked = true;
+      enemy.speed = 0;
+      continue;
+    }
     for (const w of wallCache) {
       _wallVec.set(w.x, 0, w.z);
       const dx = _enemyPos.x - w.x;

@@ -97,7 +97,7 @@ export class GameLoop {
       magicParticles?.update(dt);
       this._updateWallHpBillboards();
       this._checkWaveComplete();
-      gs.grid.update(now, gs.selectedType !== null);
+      gs.grid.update(now, gs.selectedType);
     }
 
     this._updateHover();

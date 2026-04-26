@@ -51,6 +51,7 @@ export class UIManager {
   private dockViewportMode: 'compact' | 'full' | null = null;
   private buildCircleCell: { gx: number; gy: number } | null = null;
   private buildCircleOpenedAtMs = 0;
+  private buildCircleMovePrimed = false;
   private enemyIntroQueue: string[] = [];
   private enemyIntroOpen = false;
 
@@ -190,7 +191,7 @@ export class UIManager {
     if (this.$wallModeBtn) this.$wallModeBtn.classList.toggle('selected', gs.selectedType === 'wall');
   }
 
-  openBuildCircleAtCell(gx: number, gy: number): void {
+  openBuildCircleAtCell(gx: number, gy: number, primeMove = false): void {
     if (!this.$buildCircle || !gs.grid) return;
     if (gs.gameOver) return;
     const worldPos = gs.grid.getPlinthVisualPos(gx, gy) || new THREE.Vector3(gx + 0.5, 0.1, gy + 0.5);
@@ -212,9 +213,14 @@ export class UIManager {
     this.$buildCircle.classList.add('visible');
     this.buildCircleOpenedAtMs = performance.now();
     this.buildCircleCell = { gx, gy };
+    this.buildCircleMovePrimed = primeMove;
   }
 
   closeBuildCircle(): void {
+    if (this.buildCircleMovePrimed && gs.hero && !gs.hero.pendingBuild) {
+      gs.hero.moveTarget = null;
+    }
+    this.buildCircleMovePrimed = false;
     this.buildCircleCell = null;
     this.$buildCircle?.classList.remove('visible');
   }
