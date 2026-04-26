@@ -164,8 +164,8 @@ function startLevel(era: number, level: number): void {
 
   audio.stopNarration();
   audio.hardStopEraNarration();
-  if (era === 0 && level === 1) {
-    audio.playBGM('/audio/music-era0-lvl1.mp3');
+  if (era === 0 && level >= 1 && level <= 10) {
+    audio.playBGM(`/audio/music-era0-lvl${level}.mp3`);
   } else {
     audio.stopBGM();
   }
