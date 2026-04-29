@@ -164,6 +164,9 @@ function startLevel(era: number, level: number): void {
   const lvl = gs.allLevels.find(l => l.era === era && l.level === level);
   if (!lvl) return;
 
+  // Clean up previous level's resources
+  loop.cleanup();
+
   audio.stopNarration();
   audio.hardStopEraNarration();
   if (era === 0 && level >= 1 && level <= 20) {

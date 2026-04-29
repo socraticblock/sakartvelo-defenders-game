@@ -53,6 +53,9 @@ export class Hero {
   private readonly RESPAWN_TIME = 15;
   private respawnTimer = 0;
 
+  // Command Link visual feedback
+  commandLinked = false;
+
   /** Seconds remaining until respawn (meaningful when `alive` is false). */
   get respawnTimeRemaining(): number {
     return this.respawnTimer;
@@ -201,6 +204,14 @@ export class Hero {
     this.rightArm.rotation.x = Math.sin(time * 2 + 0.5) * 0.2;
     this.staffOrb.scale.setScalar(0.8 + Math.sin(time * 3) * 0.2 + this.attackGlow * 0.55);
     (this.auraMesh.material as THREE.MeshBasicMaterial).opacity = 0.03 + Math.sin(time * 2) * 0.015;
+
+    // Command link visual: orb turns gold when linked
+    const orbMat = this.staffOrb.material as THREE.MeshBasicMaterial;
+    if (this.commandLinked) {
+      orbMat.color.lerp(new THREE.Color(0xd4a017), 0.1); // Gradually shift to gold
+    } else {
+      orbMat.color.lerp(new THREE.Color(0x44ff88), 0.1); // Gradually return to green
+    }
 
     // Selection ring
     if (this.selected) {

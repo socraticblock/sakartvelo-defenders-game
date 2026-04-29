@@ -1,0 +1,886 @@
+diff --git a/hermes/development/sakartvelo-3d/src/AudioManager.ts b/hermes/development/sakartvelo-3d/src/AudioManager.ts
+index f83cc10..11d9269 100644
+--- a/hermes/development/sakartvelo-3d/src/AudioManager.ts
++++ b/hermes/development/sakartvelo-3d/src/AudioManager.ts
+@@ -315,6 +315,69 @@ export class AudioManager {
+   playBuildHammering(): void { this._playSweep('square', 3000, 2600, 0.04, 0.035); }
+   playLowHealthPulse(): void { this._playSweep('sine', 60, 55, 0.18, 0.08); }
+ 
++  playComboHit(comboCount: number): void {
++    const ctx = this._getCtx();
++    const t = ctx.currentTime;
++    const baseFreq = 600 + Math.min(comboCount, 8) * 80;
++    const osc = ctx.createOscillator();
++    const g = ctx.createGain();
++    osc.type = 'triangle';
++    osc.frequency.setValueAtTime(baseFreq, t);
++    osc.frequency.exponentialRampToValueAtTime(Math.max(1, baseFreq * 1.4), t + 0.08);
++    g.gain.setValueAtTime(0.12, t);
++    g.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
++    osc.connect(g);
++    g.connect(this._masterGain!);
++    osc.start(t);
++    osc.stop(t + 0.16);
++  }
++
++  playWallHit(): void {
++    const ctx = this._getCtx();
++    const t = ctx.currentTime;
++    const osc = ctx.createOscillator();
++    const g = ctx.createGain();
++    osc.type = 'square';
++    osc.frequency.setValueAtTime(200, t);
++    osc.frequency.exponentialRampToValueAtTime(80, t + 0.08);
++    g.gain.setValueAtTime(0.06, t);
++    g.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
++    osc.connect(g);
++    g.connect(this._masterGain!);
++    osc.start(t);
++    osc.stop(t + 0.11);
++  }
++
++  playBossDeathExplosion(): void {
++    const ctx = this._getCtx();
++    const t = ctx.currentTime;
++    // Deep rumble
++    const rumble = ctx.createOscillator();
++    const rg = ctx.createGain();
++    rumble.type = 'sawtooth';
++    rumble.frequency.setValueAtTime(60, t);
++    rumble.frequency.exponentialRampToValueAtTime(20, t + 1.5);
++    rg.gain.setValueAtTime(0.3, t);
++    rg.gain.exponentialRampToValueAtTime(0.01, t + 1.8);
++    rumble.connect(rg);
++    rg.connect(this._masterGain!);
++    rumble.start(t);
++    rumble.stop(t + 1.85);
++
++    // High shatter
++    const shatter = ctx.createOscillator();
++    const sg = ctx.createGain();
++    shatter.type = 'sine';
++    shatter.frequency.setValueAtTime(1200, t);
++    shatter.frequency.exponentialRampToValueAtTime(200, t + 0.5);
++    sg.gain.setValueAtTime(0.15, t);
++    sg.gain.exponentialRampToValueAtTime(0.01, t + 0.6);
++    shatter.connect(sg);
++    sg.connect(this._masterGain!);
++    shatter.start(t);
++    shatter.stop(t + 0.65);
++  }
++
+   playVictory(): void {
+     const ctx = this._getCtx();
+     const notes = [440, 554.37, 659.25, 880, 1108.73]; // A Major 9
+diff --git a/hermes/development/sakartvelo-3d/src/ComboIndicator.ts b/hermes/development/sakartvelo-3d/src/ComboIndicator.ts
+new file mode 100644
+index 0000000..ab76072
+--- /dev/null
++++ b/hermes/development/sakartvelo-3d/src/ComboIndicator.ts
+@@ -0,0 +1,127 @@
++/**
++ * ComboIndicator.ts
++ * Shows a combo counter when enemies are killed in rapid succession.
++ * Viral moment: "5x COMBO!" with Georgian text creates shareable moments.
++ */
++import { audio } from './AudioManager';
++
++const COMBO_WINDOW = 2.5; // seconds between kills to maintain combo
++
++// Georgian combo labels for viral recognition
++const KA_COMBO: Record<number, string> = {
++  2: 'ორმაგი!',
++  3: 'სამმაგი!',
++  4: 'ოთხმაგი!',
++  5: '5x შეუჩერებელი!',
++  6: '6x გამარჯვება!',
++  7: '7x გმირი!',
++};
++
++const EN_COMBO: Record<number, string> = {
++  2: 'DOUBLE!',
++  3: 'TRIPLE!',
++  4: 'QUAD!',
++  5: '5x UNSTOPPABLE!',
++  6: '6x VICTORIOUS!',
++  7: '7x HEROIC!',
++};
++
++export class ComboIndicator {
++  private _count = 0;
++  private _timer = 0;
++  private _el: HTMLDivElement | null = null;
++  private _subEl: HTMLDivElement | null = null;
++
++  constructor() {
++    this._ensureDOM();
++  }
++
++  private _ensureDOM(): void {
++    if (this._el) return;
++    let el = document.getElementById('combo-indicator');
++    if (!el) {
++      el = document.createElement('div');
++      el.id = 'combo-indicator';
++      el.style.cssText = `
++        position: fixed; top: 18%; left: 50%; transform: translate(-50%, -50%);
++        z-index: 200; pointer-events: none; text-align: center;
++        opacity: 0; transition: opacity 0.2s, transform 0.2s;
++      `;
++
++      const main = document.createElement('div');
++      main.id = 'combo-main';
++      main.style.cssText = `
++        font-family: Georgia, serif; font-size: clamp(28px, 6vw, 52px);
++        font-weight: bold; color: #d4a017;
++        text-shadow: 0 0 20px rgba(212,160,23,0.6), 0 2px 8px rgba(0,0,0,0.9);
++        letter-spacing: 3px; text-transform: uppercase;
++      `;
++      el.appendChild(main);
++
++      const sub = document.createElement('div');
++      sub.id = 'combo-sub';
++      sub.style.cssText = `
++        font-family: Georgia, serif; font-size: clamp(16px, 3vw, 24px);
++        color: #c0a860; margin-top: 4px;
++        text-shadow: 0 1px 4px rgba(0,0,0,0.8);
++      `;
++      el.appendChild(sub);
++
++      document.body.appendChild(el);
++    }
++    this._el = el as HTMLDivElement;
++    this._mainEl = this._el.querySelector('#combo-main') as HTMLDivElement;
++    this._subEl = this._el.querySelector('#combo-sub') as HTMLDivElement;
++  }
++
++  private _mainEl: HTMLDivElement | null = null;
++
++  /** Call when an enemy is killed. */
++  onKill(): void {
++    this._ensureDOM();
++    this._count++;
++    this._timer = COMBO_WINDOW;
++
++    if (this._count < 2) return; // No combo for single kills
++
++    const label = this._count <= 7 ? EN_COMBO[this._count] : `${this._count}x COMBO!`;
++    const kaLabel = this._count <= 7 ? KA_COMBO[this._count] : `${this._count}x!`;
++
++    if (this._mainEl) this._mainEl.textContent = label;
++    if (this._subEl) this._subEl.textContent = kaLabel;
++
++    if (this._el) {
++      this._el.style.opacity = '1';
++      this._el.style.transform = 'translate(-50%, -50%) scale(1.15)';
++      window.setTimeout(() => {
++        if (this._el) this._el.style.transform = 'translate(-50%, -50%) scale(1)';
++      }, 100);
++    }
++
++    // Play a rising tone for combos
++    if (this._count >= 3) {
++      audio.playComboHit(this._count);
++    }
++  }
++
++  /** Call each frame with delta time. */
++  update(dt: number): void {
++    if (this._timer <= 0) return;
++    this._timer -= dt;
++
++    if (this._timer <= 0) {
++      // Combo ended
++      this._count = 0;
++      if (this._el) this._el.style.opacity = '0';
++    }
++  }
++
++  /** Reset on level start. */
++  reset(): void {
++    this._count = 0;
++    this._timer = 0;
++    if (this._el) this._el.style.opacity = '0';
++  }
++}
++
++export const comboIndicator = new ComboIndicator();
+diff --git a/hermes/development/sakartvelo-3d/src/Enemy.ts b/hermes/development/sakartvelo-3d/src/Enemy.ts
+index 6e955af..20b9f1e 100644
+--- a/hermes/development/sakartvelo-3d/src/Enemy.ts
++++ b/hermes/development/sakartvelo-3d/src/Enemy.ts
+@@ -6,6 +6,8 @@ import { type EnemyRig } from './EnemyBuilders';
+ import { gs } from './GameState';
+ 
+ export class Enemy {
++  private static _tmpDir = new THREE.Vector3();
++
+   group: THREE.Group;
+   rig: EnemyRig;
+   healthBg: THREE.Mesh;
+@@ -139,8 +141,8 @@ export class Enemy {
+       if (rem <= this.segmentLengths[i]) {
+         const t = rem / this.segmentLengths[i];
+         this.group.position.lerpVectors(this.worldPath[i], this.worldPath[i + 1], t);
+-        // Face direction
+-        const dir = new THREE.Vector3().subVectors(this.worldPath[i + 1], this.worldPath[i]);
++        // Face direction — reuse a cached vector to avoid per-frame allocation
++        const dir = Enemy._tmpDir.subVectors(this.worldPath[i + 1], this.worldPath[i]);
+         if (dir.length() > 0.01) {
+           this.rig.root.rotation.y = Math.atan2(dir.x, dir.z);
+         }
+diff --git a/hermes/development/sakartvelo-3d/src/EnemyAI.ts b/hermes/development/sakartvelo-3d/src/EnemyAI.ts
+index 116ecc7..a5a5873 100644
+--- a/hermes/development/sakartvelo-3d/src/EnemyAI.ts
++++ b/hermes/development/sakartvelo-3d/src/EnemyAI.ts
+@@ -9,6 +9,9 @@ import { ENEMY_CONFIGS } from './types';
+ import { spawnFloatingGold, spawnHitFlash } from './Effects';
+ import { Enemy } from './Enemy';
+ import { audio } from './AudioManager';
++import { screenShake } from './ScreenShake';
++import { comboIndicator } from './ComboIndicator';
++import { magicParticles } from './MagicalParticles';
+ 
+ const SLOW_RANGE_SQ = 2.0 * 2.0;
+ const ATTACK_RANGE_SQ = 0.64;
+@@ -86,12 +89,14 @@ export function updateEnemyWallAttacks(scene: THREE.Scene, camera: THREE.Camera,
+           const dmg = ENEMY_CONFIGS[enemy.type]?.wallDmg ?? 10;
+           const destroyed = t.takeWallDamage(dmg);
+           t.billboardHp(camera);
++          audio.playWallHit();
+ 
+           const reflect = t.getWallReflect();
+           if (reflect > 0) enemy.takeDamage(reflect);
+ 
+           if (destroyed) {
+             audio.playWallDestruction();
++            screenShake.trigger(0.3, 0.3);
+             gs.grid!.free(t.gx, t.gy);
+             scene.remove(t.group);
+             gs.towers = gs.towers.filter(tw => tw !== t);
+@@ -131,10 +136,19 @@ export function updateEnemyDeaths(scene: THREE.Scene, camera: THREE.Camera): voi
+     if (!enemy.alive) {
+       if (enemy.reachedEnd) {
+         gs.loseLife(enemy.livesCost);
++        screenShake.trigger(0.25, 0.25);
+       } else {
+         gs.addGold(enemy.reward);
+         spawnFloatingGold(scene, enemy.getPos(), enemy.reward, camera);
+-        if (enemy.type === 'boss') gs.bossKilled = true;
++        comboIndicator.onKill();
++        if (enemy.type === 'boss') {
++          gs.bossKilled = true;
++          // Boss death explosion
++          audio.playBossDeathExplosion();
++          screenShake.trigger(0.6, 0.8);
++          // Spawn massive gold particle burst
++          magicParticles?.spawnBurst(enemy.getPos().clone().add(new THREE.Vector3(0, 0.5, 0)), 0xd4a017, 40);
++        }
+       }
+       gs.removeEnemy(enemy, scene);
+     }
+diff --git a/hermes/development/sakartvelo-3d/src/GameLoop.ts b/hermes/development/sakartvelo-3d/src/GameLoop.ts
+index 3c696f9..067ff5c 100644
+--- a/hermes/development/sakartvelo-3d/src/GameLoop.ts
++++ b/hermes/development/sakartvelo-3d/src/GameLoop.ts
+@@ -21,6 +21,10 @@ import { updateEnemySlow, updateEnemyWallAttacks, updateEnemyDeaths } from './En
+ import { magicParticles } from './MagicalParticles';
+ import { ambientDust } from './AmbientDust';
+ import { warHorn } from './WarHorn';
++import { bossCinematic } from './BossCinematic';
++import { shareManager, ShareManager, type ShareCardData } from './ShareManager';
++import { screenShake } from './ScreenShake';
++import { comboIndicator } from './ComboIndicator';
+ 
+ const BOSS_NAMES: Record<string, string> = {
+   devi: 'Devi, Terror of the Mountains',
+@@ -50,6 +54,10 @@ export class GameLoop {
+   private _lastLevelKey = '';
+   private _commandLinkLine: THREE.Line | null = null;
+   private _defeatShown = false;
++  private _bossCinematicPlayed = false;
++  private _victoryCelebrating = false;
++  private _victoryPhase = 0; // 0=none, 1=silence, 2=music, 3=chronicle, 4=share
++  private _victoryTimer = 0;
+ 
+   init(
+     renderer: THREE.WebGLRenderer,
+@@ -105,6 +113,11 @@ export class GameLoop {
+     const dt = rawDt * gs.currentTimeScale;
+     gs.gameTime += dt;
+ 
++    // Boss cinematic runs even when game-over (it controls its own time scale)
++    if (bossCinematic.active) {
++      bossCinematic.update(rawDt, this._camera);
++    }
++
+     if (!gs.gameOver && !gs.paused && gs.waveMgr && gs.grid) {
+       gs.levelElapsedTime += dt;
+       this._updateBuildPhase(dt);
+@@ -124,10 +137,12 @@ export class GameLoop {
+       this._updateHeroBuilding(dt);
+       updateEnemyDeaths(this._scene, this._camera);
+       this._updateLifeLossFeedback();
++      this._checkBossSpawn();
+       updateEffects(dt, this._camera);
+       magicParticles?.update(dt);
+       this._updateWallHpBillboards();
+       this._checkWaveComplete();
++      comboIndicator.update(dt);
+       gs.grid.update(now, gs.selectedType);
+       
+       // Update WarHorn
+@@ -149,10 +164,23 @@ export class GameLoop {
+ 
+     this._updateHover();
+     this._updateCameraSway(now);
++
++    // Screen shake offset
++    if (screenShake.active) {
++      const shakeOffset = screenShake.update(rawDt);
++      this._camera.position.add(shakeOffset);
++    }
++
+     ambientDust?.update(this._camera, now);
+ 
+     // Use the visuals manager for high-end rendering
+     visuals.render(this._renderer, this._scene, this._camera);
++
++    // Restore camera after shake offset (prevents drift)
++    if (screenShake.active) {
++      // Shake offset is consumed by render, no need to restore since
++      // _updateCameraSway recalculates position each frame
++    }
+   };
+ 
+   private _updateHover(): void {
+@@ -195,6 +223,10 @@ export class GameLoop {
+   private _updateEnemies(dt: number): void {
+     let boss: any = null;
+     for (const enemy of gs.enemies) {
++      // During boss cinematic, freeze boss movement
++      if (bossCinematic.active && enemy.type === 'boss') {
++        enemy.speed = 0;
++      }
+       enemy.update(dt, this._camera);
+       if (enemy.type === 'boss' && enemy.alive) {
+         boss = enemy;
+@@ -209,6 +241,26 @@ export class GameLoop {
+     }
+   }
+ 
++  /** Check if a boss just spawned and trigger the cinematic. */
++  private _checkBossSpawn(): void {
++    if (this._bossCinematicPlayed) return;
++    const boss = gs.enemies.find(e => e.type === 'boss' && e.alive);
++    if (!boss) return;
++
++    if (this._currentWaveHasBoss()) {
++      this._bossCinematicPlayed = true;
++      const bossName = this._getBossDisplayName();
++      bossCinematic.trigger(
++        boss.getPos().clone(),
++        bossName,
++        () => {
++          // Cinematic complete — boss is now active
++          audio.playBossRoar();
++        },
++      );
++    }
++  }
++
+   private _updateFriendlies(dt: number): void {
+     const wallDistances = this._getWallDistancesFromHome(dt);
+     for (const unit of gs.friendlies) {
+@@ -474,6 +526,7 @@ export class GameLoop {
+       gs.commandLinkTower.setSynergyActive(false);
+     }
+     gs.commandLinkTower = best;
++    if (hero) hero.commandLinked = !!best; // Visual feedback on staff orb
+     if (best) {
+       best.setSynergyActive(true);
+       this._updateCommandLinkLine(hero.group.position, best.group.position, dt);
+@@ -586,6 +639,9 @@ export class GameLoop {
+       this._lastLevelKey = levelKey;
+       this._lastLives = gs.lives;
+       this._defeatShown = false;
++      this._bossCinematicPlayed = false; // Reset for level restart
++      this._victoryCelebrating = false;
++      this._victoryPhase = 0;
+       return;
+     }
+ 
+@@ -621,30 +677,64 @@ export class GameLoop {
+     if (gs.waveMgr.waveNum >= gs.waveMgr.totalWaves) {
+       gs.waveMgr.clear();
+ 
+-      // Freeze gameplay first.
++      // ─── Victory Celebration (phased) ───────────────────────
++      // Instead of instant popup, run a phased emotional arc.
+       gs.gameOver = true;
+-
+-      // Persist stars before any UI transition.
++      gs.targetTimeScale = 0.0; // Freeze
++      gs.currentTimeScale = 0.0;
+       gs.saveLevelComplete(true);
+-
+-      // Refresh the map immediately so background / next navigation is up to date.
+       this._ui.screens.refreshLevelSelect();
+ 
+-      const era = Number(gs.currentLevel?.era ?? 0);
+-      const level = Number(gs.currentLevel?.level ?? 1);
+-      const stars = gs.getStars();
+-
+-      const finishVictoryFlow = () => {
++      this._victoryCelebrating = true;
++      this._victoryPhase = 1; // Phase 1: Silence
++      this._victoryTimer = 0;
++
++      // Pre-render share card while frozen
++      const bossName = this._currentWaveHasBoss() ? this._getBossDisplayName() : undefined;
++      const shareData = ShareManager.fromGameState(bossName);
++      shareManager.renderCard(shareData); // Pre-render to canvas
++      (window as any).__lastShareData = shareData;
++
++      // Phase 1 → Phase 2 after 0.8s silence
++      window.setTimeout(() => {
++        if (!this._victoryCelebrating) return;
++        this._victoryPhase = 2; // Phase 2: Music swell
++        const stars = gs.getStars();
+         this._audio.playVictory();
+         this._audio.playVictoryMelody(stars);
+-        this._ui.screens.showLevelComplete('Level Complete', stars);
+-      };
+ 
+-      if (this._currentWaveHasBoss() && gs.bossKilled) {
+-        showVictoryPopup('Boss Defeated!', this._getBossVictoryText(), finishVictoryFlow);
+-      } else {
+-        showPopup(era, level, finishVictoryFlow);
+-      }
++        // Pulse towers gold
++        for (const t of gs.towers) {
++          t.group.traverse(c => {
++            if (c instanceof THREE.Mesh && c.material instanceof THREE.MeshLambertMaterial) {
++              c.material.emissive.setHex(0x332200);
++              window.setTimeout(() => c.material.emissive.setHex(0x000000), 1200);
++            }
++          });
++        }
++
++        // Phase 2 → Phase 3 after 1.5s
++        window.setTimeout(() => {
++          if (!this._victoryCelebrating) return;
++          this._victoryPhase = 3; // Phase 3: Chronicle reveal
++
++          const era = Number(gs.currentLevel?.era ?? 0);
++          const level = Number(gs.currentLevel?.level ?? 1);
++          const stars = gs.getStars();
++
++          const finishFlow = () => {
++            this._ui.screens.showLevelComplete('Level Complete', stars);
++            // Add share button to level complete screen
++            this._addShareButton();
++          };
++
++          if (this._currentWaveHasBoss() && gs.bossKilled) {
++            showVictoryPopup('Boss Defeated!', this._getBossVictoryText(), finishFlow);
++          } else {
++            showPopup(era, level, finishFlow);
++          }
++        }, 1500);
++      }, 800);
+     } else {
+       gs.waveMgr.clear();
+       // No more popups between waves! Just start the build phase.
+@@ -654,9 +744,59 @@ export class GameLoop {
+     }
+   }
+ 
++  /** Add a share button to the level complete screen. */
++  private _addShareButton(): void {
++    const screen = document.getElementById('screen-level-complete');
++    if (!screen) return;
++    // Remove existing share button if any
++    screen.querySelector('.share-btn')?.remove();
++
++    const shareBtn = document.createElement('button');
++    shareBtn.className = 'share-btn';
++    shareBtn.textContent = 'Share Victory';
++    shareBtn.style.cssText = `
++      margin-top: 12px; padding: 10px 28px;
++      background: linear-gradient(135deg, #d4a017, #8b6914);
++      color: #fff; border: none; border-radius: 6px;
++      font-size: 16px; font-weight: bold; cursor: pointer;
++      text-transform: uppercase; letter-spacing: 1px;
++    `;
++    shareBtn.addEventListener('click', async () => {
++      const data = (window as any).__lastShareData as ShareCardData | undefined;
++      if (data) {
++        await shareManager.share(data);
++      }
++    });
++
++    const btnGroup = screen.querySelector('.lc-btn-group');
++    if (btnGroup) {
++      btnGroup.insertBefore(shareBtn, btnGroup.firstChild);
++    } else {
++      screen.appendChild(shareBtn);
++    }
++  }
++
+   private _updateCameraSway(time: number): void {
+     if (!gs.currentLevel) return;
+     const t = time * 0.1;
+     this._camera.position.x = gs.cameraBaseX + Math.sin(t) * 0.15;
+   }
++
++  /** Clean up resources when switching levels. Call from main.ts before initLevel. */
++  cleanup(): void {
++    if (this._commandLinkLine) {
++      this._commandLinkLine.geometry.dispose();
++      (this._commandLinkLine.material as THREE.Material).dispose();
++      this._scene.remove(this._commandLinkLine);
++      this._commandLinkLine = null;
++    }
++    this._bossCinematicPlayed = false;
++    this._victoryCelebrating = false;
++    this._victoryPhase = 0;
++    this._victoryTimer = 0;
++    this._defeatShown = false;
++    this._waveCompleteProcessed = false;
++    bossCinematic.dispose();
++    comboIndicator.reset();
++  }
+ }
+diff --git a/hermes/development/sakartvelo-3d/src/GameState.ts b/hermes/development/sakartvelo-3d/src/GameState.ts
+index c329fd2..f4507a7 100644
+--- a/hermes/development/sakartvelo-3d/src/GameState.ts
++++ b/hermes/development/sakartvelo-3d/src/GameState.ts
+@@ -13,6 +13,7 @@ import { WaveManager } from './WaveManager';
+ import { Hero } from './Hero';
+ import { SaveManager } from './SaveManager';
+ import { FriendlyInfantry } from './FriendlyInfantry';
++import { comboIndicator } from './ComboIndicator';
+ 
+ export class GameState {
+   // ─── Entities ───────────────────────────────────────────
+@@ -103,6 +104,7 @@ export class GameState {
+     this.bossKilled = false;
+     this.infantryCooldown = 0;
+     this.levelElapsedTime = 0;
++    comboIndicator.reset();
+ 
+     this.grid = new Grid(lvl);
+     scene.add(this.grid.group);
+diff --git a/hermes/development/sakartvelo-3d/src/Hero.ts b/hermes/development/sakartvelo-3d/src/Hero.ts
+index 2bf379a..55ad34d 100644
+--- a/hermes/development/sakartvelo-3d/src/Hero.ts
++++ b/hermes/development/sakartvelo-3d/src/Hero.ts
+@@ -53,6 +53,9 @@ export class Hero {
+   private readonly RESPAWN_TIME = 15;
+   private respawnTimer = 0;
+ 
++  // Command Link visual feedback
++  commandLinked = false;
++
+   /** Seconds remaining until respawn (meaningful when `alive` is false). */
+   get respawnTimeRemaining(): number {
+     return this.respawnTimer;
+@@ -202,6 +205,14 @@ export class Hero {
+     this.staffOrb.scale.setScalar(0.8 + Math.sin(time * 3) * 0.2 + this.attackGlow * 0.55);
+     (this.auraMesh.material as THREE.MeshBasicMaterial).opacity = 0.03 + Math.sin(time * 2) * 0.015;
+ 
++    // Command link visual: orb turns gold when linked
++    const orbMat = this.staffOrb.material as THREE.MeshBasicMaterial;
++    if (this.commandLinked) {
++      orbMat.color.lerp(new THREE.Color(0xd4a017), 0.1); // Gradually shift to gold
++    } else {
++      orbMat.color.lerp(new THREE.Color(0x44ff88), 0.1); // Gradually return to green
++    }
++
+     // Selection ring
+     if (this.selected) {
+       this.ring.visible = true;
+diff --git a/hermes/development/sakartvelo-3d/src/Projectile.ts b/hermes/development/sakartvelo-3d/src/Projectile.ts
+index 0774ae2..f35cc51 100644
+--- a/hermes/development/sakartvelo-3d/src/Projectile.ts
++++ b/hermes/development/sakartvelo-3d/src/Projectile.ts
+@@ -16,6 +16,9 @@ const heroMagicGeo = new THREE.IcosahedronGeometry(0.09, 1);
+ const heroMagicMat = new THREE.MeshBasicMaterial({ color: 0x55ffaa });
+ const heroMagicGlowGeo = new THREE.SphereGeometry(0.18, 8, 8);
+ const heroMagicGlowMat = new THREE.MeshBasicMaterial({ color: 0x66ff99, transparent: true, opacity: 0.32 });
++// Command-linked hero bolt is gold-tinted
++const heroMagicLinkedMat = new THREE.MeshBasicMaterial({ color: 0xddcc44 });
++const heroMagicLinkedGlowMat = new THREE.MeshBasicMaterial({ color: 0xffdd66, transparent: true, opacity: 0.38 });
+ 
+ // Reusable vectors (zero allocations in update loop)
+ const _v1 = new THREE.Vector3();
+diff --git a/hermes/development/sakartvelo-3d/src/ScreenShake.ts b/hermes/development/sakartvelo-3d/src/ScreenShake.ts
+new file mode 100644
+index 0000000..aeae2fc
+--- /dev/null
++++ b/hermes/development/sakartvelo-3d/src/ScreenShake.ts
+@@ -0,0 +1,47 @@
++/**
++ * ScreenShake.ts
++ * Camera shake for dramatic impact moments — boss death, wall destruction, life lost.
++ * Mobile-friendly: uses gentle pulses, not violent shaking.
++ */
++import * as THREE from 'three';
++
++export class ScreenShake {
++  private _intensity = 0;
++  private _duration = 0;
++  private _elapsed = 0;
++  private _basePos = new THREE.Vector3();
++
++  /** Trigger a shake. intensity 0–1, duration in seconds. */
++  trigger(intensity: number, duration: number): void {
++    // Only override if new shake is stronger
++    if (intensity > this._intensity) {
++      this._intensity = intensity;
++      this._duration = duration;
++      this._elapsed = 0;
++    }
++  }
++
++  /** Call each frame. Returns offset to add to camera position. */
++  update(dt: number): THREE.Vector3 {
++    if (this._elapsed >= this._duration) {
++      this._intensity = 0;
++      return new THREE.Vector3();
++    }
++
++    this._elapsed += dt;
++    const t = 1 - (this._elapsed / this._duration); // Fade out over time
++    const currentIntensity = this._intensity * t * t; // Quadratic falloff
++
++    // Subtle XY offset, no Z (no zoom jumping)
++    const offsetX = (Math.random() - 0.5) * 2 * currentIntensity * 0.3;
++    const offsetY = (Math.random() - 0.5) * 2 * currentIntensity * 0.15;
++
++    return new THREE.Vector3(offsetX, offsetY, 0);
++  }
++
++  get active(): boolean {
++    return this._elapsed < this._duration;
++  }
++}
++
++export const screenShake = new ScreenShake();
+diff --git a/hermes/development/sakartvelo-3d/src/Tower.ts b/hermes/development/sakartvelo-3d/src/Tower.ts
+index 0ad9cd6..841d721 100644
+--- a/hermes/development/sakartvelo-3d/src/Tower.ts
++++ b/hermes/development/sakartvelo-3d/src/Tower.ts
+@@ -252,9 +252,9 @@ export class Tower {
+       const archerWallBonus = this.type === 'archer' && wallSynergy && blockedTarget;
+       const catapultWallBonus = this.type === 'catapult' && wallSynergy && blockedTarget;
+       const commandLinked = commandLinkTower === this;
+-      const effectiveSpeed = this.effectiveSpeed * this.speedBoost * (archerWallBonus ? 1.2 : 1);
++      const effectiveSpeed = this.effectiveSpeed * this.speedBoost * (archerWallBonus ? 1.3 : 1);
+       this.cooldown = 1 / effectiveSpeed;
+-      let dmg = this.effectiveDamage * this.dmgBoost * (catapultWallBonus ? 1.15 : 1);
++      let dmg = this.effectiveDamage * this.dmgBoost * (catapultWallBonus ? 1.25 : 1);
+       let isCrit = false;
+       if (this.type === 'archer' && this.level >= 3) {
+         if (Math.random() < TOWER_LEVEL_MULTS.archer.crit[2]) {
+diff --git a/hermes/development/sakartvelo-3d/src/main.ts b/hermes/development/sakartvelo-3d/src/main.ts
+index f3173ba..65d2c1e 100644
+--- a/hermes/development/sakartvelo-3d/src/main.ts
++++ b/hermes/development/sakartvelo-3d/src/main.ts
+@@ -164,6 +164,9 @@ function startLevel(era: number, level: number): void {
+   const lvl = gs.allLevels.find(l => l.era === era && l.level === level);
+   if (!lvl) return;
+ 
++  // Clean up previous level's resources
++  loop.cleanup();
++
+   audio.stopNarration();
+   audio.hardStopEraNarration();
+   if (era === 0 && level >= 1 && level <= 20) {
+diff --git a/hermes/development/sakartvelo-3d/src/ComboIndicator.ts b/hermes/development/sakartvelo-3d/src/ComboIndicator.ts
+new file mode 100644
+index 0000000..ab76072
+--- /dev/null
++++ b/hermes/development/sakartvelo-3d/src/ComboIndicator.ts
+@@ -0,0 +1,127 @@
++/**
++ * ComboIndicator.ts
++ * Shows a combo counter when enemies are killed in rapid succession.
++ * Viral moment: "5x COMBO!" with Georgian text creates shareable moments.
++ */
++import { audio } from './AudioManager';
++
++const COMBO_WINDOW = 2.5; // seconds between kills to maintain combo
++
++// Georgian combo labels for viral recognition
++const KA_COMBO: Record<number, string> = {
++  2: 'ორმაგი!',
++  3: 'სამმაგი!',
++  4: 'ოთხმაგი!',
++  5: '5x შეუჩერებელი!',
++  6: '6x გამარჯვება!',
++  7: '7x გმირი!',
++};
++
++const EN_COMBO: Record<number, string> = {
++  2: 'DOUBLE!',
++  3: 'TRIPLE!',
++  4: 'QUAD!',
++  5: '5x UNSTOPPABLE!',
++  6: '6x VICTORIOUS!',
++  7: '7x HEROIC!',
++};
++
++export class ComboIndicator {
++  private _count = 0;
++  private _timer = 0;
++  private _el: HTMLDivElement | null = null;
++  private _subEl: HTMLDivElement | null = null;
++
++  constructor() {
++    this._ensureDOM();
++  }
++
++  private _ensureDOM(): void {
++    if (this._el) return;
++    let el = document.getElementById('combo-indicator');
++    if (!el) {
++      el = document.createElement('div');
++      el.id = 'combo-indicator';
++      el.style.cssText = `
++        position: fixed; top: 18%; left: 50%; transform: translate(-50%, -50%);
++        z-index: 200; pointer-events: none; text-align: center;
++        opacity: 0; transition: opacity 0.2s, transform 0.2s;
++      `;
++
++      const main = document.createElement('div');
++      main.id = 'combo-main';
++      main.style.cssText = `
++        font-family: Georgia, serif; font-size: clamp(28px, 6vw, 52px);
++        font-weight: bold; color: #d4a017;
++        text-shadow: 0 0 20px rgba(212,160,23,0.6), 0 2px 8px rgba(0,0,0,0.9);
++        letter-spacing: 3px; text-transform: uppercase;
++      `;
++      el.appendChild(main);
++
++      const sub = document.createElement('div');
++      sub.id = 'combo-sub';
++      sub.style.cssText = `
++        font-family: Georgia, serif; font-size: clamp(16px, 3vw, 24px);
++        color: #c0a860; margin-top: 4px;
++        text-shadow: 0 1px 4px rgba(0,0,0,0.8);
++      `;
++      el.appendChild(sub);
++
++      document.body.appendChild(el);
++    }
++    this._el = el as HTMLDivElement;
++    this._mainEl = this._el.querySelector('#combo-main') as HTMLDivElement;
++    this._subEl = this._el.querySelector('#combo-sub') as HTMLDivElement;
++  }
++
++  private _mainEl: HTMLDivElement | null = null;
++
++  /** Call when an enemy is killed. */
++  onKill(): void {
++    this._ensureDOM();
++    this._count++;
++    this._timer = COMBO_WINDOW;
++
++    if (this._count < 2) return; // No combo for single kills
++
++    const label = this._count <= 7 ? EN_COMBO[this._count] : `${this._count}x COMBO!`;
++    const kaLabel = this._count <= 7 ? KA_COMBO[this._count] : `${this._count}x!`;
++
++    if (this._mainEl) this._mainEl.textContent = label;
++    if (this._subEl) this._subEl.textContent = kaLabel;
++
++    if (this._el) {
++      this._el.style.opacity = '1';
++      this._el.style.transform = 'translate(-50%, -50%) scale(1.15)';
++      window.setTimeout(() => {
++        if (this._el) this._el.style.transform = 'translate(-50%, -50%) scale(1)';
++      }, 100);
++    }
++
++    // Play a rising tone for combos
++    if (this._count >= 3) {
++      audio.playComboHit(this._count);
++    }
++  }
++
++  /** Call each frame with delta time. */
++  update(dt: number): void {
++    if (this._timer <= 0) return;
++    this._timer -= dt;
++
++    if (this._timer <= 0) {
++      // Combo ended
++      this._count = 0;
++      if (this._el) this._el.style.opacity = '0';
++    }
++  }
++
++  /** Reset on level start. */
++  reset(): void {
++    this._count = 0;
++    this._timer = 0;
++    if (this._el) this._el.style.opacity = '0';
++  }
++}
++
++export const comboIndicator = new ComboIndicator();
+diff --git a/hermes/development/sakartvelo-3d/src/ScreenShake.ts b/hermes/development/sakartvelo-3d/src/ScreenShake.ts
+new file mode 100644
+index 0000000..aeae2fc
+--- /dev/null
++++ b/hermes/development/sakartvelo-3d/src/ScreenShake.ts
+@@ -0,0 +1,47 @@
++/**
++ * ScreenShake.ts
++ * Camera shake for dramatic impact moments — boss death, wall destruction, life lost.
++ * Mobile-friendly: uses gentle pulses, not violent shaking.
++ */
++import * as THREE from 'three';
++
++export class ScreenShake {
++  private _intensity = 0;
++  private _duration = 0;
++  private _elapsed = 0;
++  private _basePos = new THREE.Vector3();
++
++  /** Trigger a shake. intensity 0–1, duration in seconds. */
++  trigger(intensity: number, duration: number): void {
++    // Only override if new shake is stronger
++    if (intensity > this._intensity) {
++      this._intensity = intensity;
++      this._duration = duration;
++      this._elapsed = 0;
++    }
++  }
++
++  /** Call each frame. Returns offset to add to camera position. */
++  update(dt: number): THREE.Vector3 {
++    if (this._elapsed >= this._duration) {
++      this._intensity = 0;
++      return new THREE.Vector3();
++    }
++
++    this._elapsed += dt;
++    const t = 1 - (this._elapsed / this._duration); // Fade out over time
++    const currentIntensity = this._intensity * t * t; // Quadratic falloff
++
++    // Subtle XY offset, no Z (no zoom jumping)
++    const offsetX = (Math.random() - 0.5) * 2 * currentIntensity * 0.3;
++    const offsetY = (Math.random() - 0.5) * 2 * currentIntensity * 0.15;
++
++    return new THREE.Vector3(offsetX, offsetY, 0);
++  }
++
++  get active(): boolean {
++    return this._elapsed < this._duration;
++  }
++}
++
++export const screenShake = new ScreenShake();

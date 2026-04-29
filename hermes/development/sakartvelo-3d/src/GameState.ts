@@ -13,6 +13,7 @@ import { WaveManager } from './WaveManager';
 import { Hero } from './Hero';
 import { SaveManager } from './SaveManager';
 import { FriendlyInfantry } from './FriendlyInfantry';
+import { comboIndicator } from './ComboIndicator';
 
 export class GameState {
   // ─── Entities ───────────────────────────────────────────
@@ -103,6 +104,7 @@ export class GameState {
     this.bossKilled = false;
     this.infantryCooldown = 0;
     this.levelElapsedTime = 0;
+    comboIndicator.reset();
 
     this.grid = new Grid(lvl);
     scene.add(this.grid.group);

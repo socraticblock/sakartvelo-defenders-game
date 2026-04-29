@@ -6,6 +6,8 @@ import { type EnemyRig } from './EnemyBuilders';
 import { gs } from './GameState';
 
 export class Enemy {
+  private static _tmpDir = new THREE.Vector3();
+
   group: THREE.Group;
   rig: EnemyRig;
   healthBg: THREE.Mesh;
@@ -139,8 +141,8 @@ export class Enemy {
       if (rem <= this.segmentLengths[i]) {
         const t = rem / this.segmentLengths[i];
         this.group.position.lerpVectors(this.worldPath[i], this.worldPath[i + 1], t);
-        // Face direction
-        const dir = new THREE.Vector3().subVectors(this.worldPath[i + 1], this.worldPath[i]);
+        // Face direction — reuse a cached vector to avoid per-frame allocation
+        const dir = Enemy._tmpDir.subVectors(this.worldPath[i + 1], this.worldPath[i]);
         if (dir.length() > 0.01) {
           this.rig.root.rotation.y = Math.atan2(dir.x, dir.z);
         }

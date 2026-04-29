@@ -16,6 +16,9 @@ const heroMagicGeo = new THREE.IcosahedronGeometry(0.09, 1);
 const heroMagicMat = new THREE.MeshBasicMaterial({ color: 0x55ffaa });
 const heroMagicGlowGeo = new THREE.SphereGeometry(0.18, 8, 8);
 const heroMagicGlowMat = new THREE.MeshBasicMaterial({ color: 0x66ff99, transparent: true, opacity: 0.32 });
+// Command-linked hero bolt is gold-tinted
+const heroMagicLinkedMat = new THREE.MeshBasicMaterial({ color: 0xddcc44 });
+const heroMagicLinkedGlowMat = new THREE.MeshBasicMaterial({ color: 0xffdd66, transparent: true, opacity: 0.38 });
 
 // Reusable vectors (zero allocations in update loop)
 const _v1 = new THREE.Vector3();

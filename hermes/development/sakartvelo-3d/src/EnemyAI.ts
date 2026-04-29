@@ -9,6 +9,9 @@ import { ENEMY_CONFIGS } from './types';
 import { spawnFloatingGold, spawnHitFlash } from './Effects';
 import { Enemy } from './Enemy';
 import { audio } from './AudioManager';
+import { screenShake } from './ScreenShake';
+import { comboIndicator } from './ComboIndicator';
+import { magicParticles } from './MagicalParticles';
 
 const SLOW_RANGE_SQ = 2.0 * 2.0;
 const ATTACK_RANGE_SQ = 0.64;
@@ -86,12 +89,14 @@ export function updateEnemyWallAttacks(scene: THREE.Scene, camera: THREE.Camera,
           const dmg = ENEMY_CONFIGS[enemy.type]?.wallDmg ?? 10;
           const destroyed = t.takeWallDamage(dmg);
           t.billboardHp(camera);
+          audio.playWallHit();
 
           const reflect = t.getWallReflect();
           if (reflect > 0) enemy.takeDamage(reflect);
 
           if (destroyed) {
             audio.playWallDestruction();
+            screenShake.trigger(0.3, 0.3);
             gs.grid!.free(t.gx, t.gy);
             scene.remove(t.group);
             gs.towers = gs.towers.filter(tw => tw !== t);
@@ -131,10 +136,19 @@ export function updateEnemyDeaths(scene: THREE.Scene, camera: THREE.Camera): voi
     if (!enemy.alive) {
       if (enemy.reachedEnd) {
         gs.loseLife(enemy.livesCost);
+        screenShake.trigger(0.25, 0.25);
       } else {
         gs.addGold(enemy.reward);
         spawnFloatingGold(scene, enemy.getPos(), enemy.reward, camera);
-        if (enemy.type === 'boss') gs.bossKilled = true;
+        comboIndicator.onKill();
+        if (enemy.type === 'boss') {
+          gs.bossKilled = true;
+          // Boss death explosion
+          audio.playBossDeathExplosion();
+          screenShake.trigger(0.6, 0.8);
+          // Spawn massive gold particle burst
+          magicParticles?.spawnBurst(enemy.getPos().clone().add(new THREE.Vector3(0, 0.5, 0)), 0xd4a017, 40);
+        }
       }
       gs.removeEnemy(enemy, scene);
     }

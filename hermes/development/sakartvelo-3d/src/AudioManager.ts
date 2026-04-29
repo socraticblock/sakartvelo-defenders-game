@@ -315,6 +315,69 @@ export class AudioManager {
   playBuildHammering(): void { this._playSweep('square', 3000, 2600, 0.04, 0.035); }
   playLowHealthPulse(): void { this._playSweep('sine', 60, 55, 0.18, 0.08); }
 
+  playComboHit(comboCount: number): void {
+    const ctx = this._getCtx();
+    const t = ctx.currentTime;
+    const baseFreq = 600 + Math.min(comboCount, 8) * 80;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(baseFreq, t);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(1, baseFreq * 1.4), t + 0.08);
+    g.gain.setValueAtTime(0.12, t);
+    g.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+    osc.connect(g);
+    g.connect(this._masterGain!);
+    osc.start(t);
+    osc.stop(t + 0.16);
+  }
+
+  playWallHit(): void {
+    const ctx = this._getCtx();
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(200, t);
+    osc.frequency.exponentialRampToValueAtTime(80, t + 0.08);
+    g.gain.setValueAtTime(0.06, t);
+    g.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+    osc.connect(g);
+    g.connect(this._masterGain!);
+    osc.start(t);
+    osc.stop(t + 0.11);
+  }
+
+  playBossDeathExplosion(): void {
+    const ctx = this._getCtx();
+    const t = ctx.currentTime;
+    // Deep rumble
+    const rumble = ctx.createOscillator();
+    const rg = ctx.createGain();
+    rumble.type = 'sawtooth';
+    rumble.frequency.setValueAtTime(60, t);
+    rumble.frequency.exponentialRampToValueAtTime(20, t + 1.5);
+    rg.gain.setValueAtTime(0.3, t);
+    rg.gain.exponentialRampToValueAtTime(0.01, t + 1.8);
+    rumble.connect(rg);
+    rg.connect(this._masterGain!);
+    rumble.start(t);
+    rumble.stop(t + 1.85);
+
+    // High shatter
+    const shatter = ctx.createOscillator();
+    const sg = ctx.createGain();
+    shatter.type = 'sine';
+    shatter.frequency.setValueAtTime(1200, t);
+    shatter.frequency.exponentialRampToValueAtTime(200, t + 0.5);
+    sg.gain.setValueAtTime(0.15, t);
+    sg.gain.exponentialRampToValueAtTime(0.01, t + 0.6);
+    shatter.connect(sg);
+    sg.connect(this._masterGain!);
+    shatter.start(t);
+    shatter.stop(t + 0.65);
+  }
+
   playVictory(): void {
     const ctx = this._getCtx();
     const notes = [440, 554.37, 659.25, 880, 1108.73]; // A Major 9

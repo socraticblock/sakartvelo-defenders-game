@@ -252,9 +252,9 @@ export class Tower {
       const archerWallBonus = this.type === 'archer' && wallSynergy && blockedTarget;
       const catapultWallBonus = this.type === 'catapult' && wallSynergy && blockedTarget;
       const commandLinked = commandLinkTower === this;
-      const effectiveSpeed = this.effectiveSpeed * this.speedBoost * (archerWallBonus ? 1.2 : 1);
+      const effectiveSpeed = this.effectiveSpeed * this.speedBoost * (archerWallBonus ? 1.3 : 1);
       this.cooldown = 1 / effectiveSpeed;
-      let dmg = this.effectiveDamage * this.dmgBoost * (catapultWallBonus ? 1.15 : 1);
+      let dmg = this.effectiveDamage * this.dmgBoost * (catapultWallBonus ? 1.25 : 1);
       let isCrit = false;
       if (this.type === 'archer' && this.level >= 3) {
         if (Math.random() < TOWER_LEVEL_MULTS.archer.crit[2]) {
