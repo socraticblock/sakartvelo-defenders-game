@@ -38,10 +38,17 @@ const ERA_YEARS = [
 const CHAPTER_NAMES_ERA0 = [
   { label: 'Chapter I', name: 'Bronze Age', years: '~1500 BC – ~600 BC' },
   { label: 'Chapter II', name: 'Kingdom of Colchis', years: '~600 BC – ~100 BC' },
+  { label: 'Chapter III', name: 'The Argonaut\'s Trail', years: '~100 BC – ~50 BC' },
+  { label: 'Chapter IV', name: 'Heart of the Kingdom', years: '~50 BC – ~10 BC' },
 ];
 
 function getChapterForLevel(era: number, level: number): number {
-  if (era === 0) return level <= 5 ? 0 : 1;
+  if (era === 0) {
+    if (level <= 5) return 0;
+    if (level <= 10) return 1;
+    if (level <= 15) return 2;
+    return 3;
+  }
   return 0;
 }
 
@@ -85,7 +92,7 @@ function render(era: number) {
   `;
 
   if (era === 0) {
-    for (let ch = 0; ch < 2; ch++) {
+    for (let ch = 0; ch < 4; ch++) {
       const chLevels = eraLevels.filter(l => getChapterForLevel(era, l.level) === ch);
       if (chLevels.length === 0) continue;
 

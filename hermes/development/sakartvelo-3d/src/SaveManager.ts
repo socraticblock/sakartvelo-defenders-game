@@ -183,8 +183,10 @@ export const SaveManager = {
    */
   isChapterUnlocked(era: number, chapter: number): boolean {
     if (chapter === 0) return true;
-    if (era === 0 && chapter === 1) {
-      return this.getStars('era0_level5') > 0;
+    if (era === 0) {
+      if (chapter === 1) return this.getStars('era0_level5') > 0;
+      if (chapter === 2) return this.getStars('era0_level10') > 0;
+      if (chapter === 3) return this.getStars('era0_level15') > 0;
     }
     return this.isEraUnlocked(era);
   },
