@@ -164,7 +164,7 @@ export class InputManager {
     if (type === 'archer') {
       buildArcherMesh(group, 1, 1, color);
     } else if (type === 'catapult') {
-      buildCatapultMesh(group, 1, 1);
+      buildCatapultMesh(group, 1, 1, color);
     } else if (type === 'wall') {
       // Provide dummy meshes for wall HP bar components to avoid crashes
       const dummyBg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1));

@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "hermes/development/sakartvelo-3d",
+			"name": "Codebase (Sakartvelo 3D)"
+		},
+		{
+			"path": "sakartvelo",
+			"name": "Wiki & Docs"
+		},
+		{
+			"path": "hermes/docs",
+			"name": "Design PDF Bibles"
+		}
+	],
+	"settings": {
+		"editor.formatOnSave": true,
+		"typescript.tsdk": "node_modules/typescript/lib"
+	}
+}

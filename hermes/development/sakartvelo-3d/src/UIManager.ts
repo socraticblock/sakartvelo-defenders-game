@@ -46,6 +46,9 @@ export class UIManager {
   private $bossName = document.getElementById('boss-name');
   private $bossHpFill = document.getElementById('boss-hp-fill');
   private $heroBar = document.getElementById('hero-bar');
+  private $bottomBar = document.getElementById('bottom-bar');
+  private $buildStartBtn = document.getElementById('build-start-btn') as HTMLButtonElement | null;
+  private $waveBtn = document.getElementById('wave-btn') as HTMLButtonElement | null;
   private dockResizeObserver: ResizeObserver | null = null;
   private dockViewportMode: 'compact' | 'full' | null = null;
   private buildCircleCell: { gx: number; gy: number } | null = null;
@@ -536,10 +539,9 @@ export class UIManager {
     const preview = gs.waveMgr.getNextWavePreview();
     if (this.$bpEnemyList) this.$bpEnemyList.textContent = preview.types.join(' · ') || 'Unknown wave';
     if (this.$buildTimer) this.$buildTimer.textContent = String(Math.ceil(gs.waveMgr.buildPhaseTimer));
-    this.$buildStartBtn.textContent = `▶ Start Wave Now (+${gs.getBuildPhaseBonus()}g)`;
+    if (this.$buildStartBtn) this.$buildStartBtn.textContent = `▶ Start Wave Now (+${gs.getBuildPhaseBonus()}g)`;
     this.$buildOverlay?.classList.add('visible');
-    this.$waveBtn.disabled = true;
-    this.$waveBtn.textContent = '⚒ Build Phase...';
+    if (this.$waveBtn) { this.$waveBtn.disabled = true; this.$waveBtn.textContent = '⚒ Build Phase...'; }
   }
 
   hideBuildPhase(): void {
