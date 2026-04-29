@@ -6,11 +6,21 @@
 import * as THREE from 'three';
 import { gs } from './GameState';
 import { ENEMY_CONFIGS } from './types';
-import { spawnFloatingGold } from './Effects';
+import { spawnFloatingGold, spawnHitFlash } from './Effects';
+import { Enemy } from './Enemy';
+import { audio } from './AudioManager';
 
-const SLOW_RANGE_SQ = 1.5 * 1.5;
+const SLOW_RANGE_SQ = 2.0 * 2.0;
 const ATTACK_RANGE_SQ = 0.64;
+const HERO_ATTACK_RANGE_SQ = 0.9 * 0.9;
+const HERO_DPS: Record<string, number> = {
+  infantry: 8,
+  cavalry: 12,
+  siege: 15,
+  boss: 25,
+};
 const _enemyPos = new THREE.Vector3();
+const _heroAttackCd = new WeakMap<Enemy, number>();
 
 export function updateEnemySlow(): void {
   for (const enemy of gs.enemies) {
@@ -34,6 +44,8 @@ export function updateEnemySlow(): void {
       enemy.speed = 0;
       continue;
     }
+
+    totalSlow = Math.max(totalSlow, enemy.temporarySlowAmount);
     
     for (const t of gs.towers) {
       if (t.type === 'wall' && t.getWallHp() > 0) {
@@ -55,7 +67,7 @@ export function updateEnemySlow(): void {
   }
 }
 
-export function updateEnemyWallAttacks(scene: THREE.Scene, camera: THREE.Camera): void {
+export function updateEnemyWallAttacks(scene: THREE.Scene, camera: THREE.Camera, dt: number): void {
   for (const enemy of gs.enemies) {
     if (!enemy.alive) continue;
     enemy.isBlocked = false; // Reset each frame; re-set below if still hitting a wall
@@ -79,6 +91,7 @@ export function updateEnemyWallAttacks(scene: THREE.Scene, camera: THREE.Camera)
           if (reflect > 0) enemy.takeDamage(reflect);
 
           if (destroyed) {
+            audio.playWallDestruction();
             gs.grid!.free(t.gx, t.gy);
             scene.remove(t.group);
             gs.towers = gs.towers.filter(tw => tw !== t);
@@ -86,6 +99,27 @@ export function updateEnemyWallAttacks(scene: THREE.Scene, camera: THREE.Camera)
           }
           break; // Stop checking walls for this enemy
         }
+      }
+    }
+
+    if (enemy.isBlocked || !gs.hero?.alive) continue;
+
+    const dx = _enemyPos.x - gs.hero.group.position.x;
+    const dz = _enemyPos.z - gs.hero.group.position.z;
+    if (dx * dx + dz * dz <= HERO_ATTACK_RANGE_SQ) {
+      enemy.isBlocked = true;
+      enemy.speed = 0;
+      const heroPos = gs.hero.group.position;
+      enemy.rig.root.rotation.y = Math.atan2(heroPos.x - _enemyPos.x, heroPos.z - _enemyPos.z);
+
+      const cd = Math.max(0, (_heroAttackCd.get(enemy) ?? 0) - dt);
+      if (cd <= 0) {
+        gs.hero.takeDamage(HERO_DPS[enemy.type] ?? 8);
+        const hitPos = _enemyPos.clone().lerp(heroPos, 0.5);
+        spawnHitFlash(scene, hitPos);
+        _heroAttackCd.set(enemy, 1.0);
+      } else {
+        _heroAttackCd.set(enemy, cd);
       }
     }
   }

@@ -10,6 +10,14 @@ import { makePart } from './EnemyModels';
 import { outlineGroup } from './CelShader';
 import { HeroAbilities } from './HeroAbilities';
 import { gs } from './GameState';
+import { audio } from './AudioManager';
+
+export interface HeroProjectileSpawn {
+  origin: THREE.Vector3;
+  target: Enemy;
+  damage: number;
+  speed: number;
+}
 
 export class Hero {
   group: THREE.Group;
@@ -36,6 +44,7 @@ export class Hero {
   attackDamage = 14;
   attackInterval = 1.0;
   private attackCd = 0;
+  private attackGlow = 0;
 
   // Vitals
   hp = 250;
@@ -163,7 +172,7 @@ export class Hero {
 
   // ─── Update ────────────────────────────────────────────────────────────────
 
-  update(dt: number, camera: THREE.Camera, enemies: Enemy[]) {
+  update(dt: number, camera: THREE.Camera, enemies: Enemy[]): HeroProjectileSpawn | null {
     if (!this.alive) {
       this.respawnTimer -= dt;
       if (this.respawnTimer <= 0) {
@@ -177,18 +186,20 @@ export class Hero {
         this.hpFill.scale.x = 1;
         this.hpFill.position.x = 0;
         (this.hpFill.material as THREE.MeshBasicMaterial).color.setHex(0x44dd44);
+        audio.playHeroRespawn();
       }
-      return;
+      return null;
     }
 
     const time = gs.gameTime;
     const isMoving = this.moveTarget !== null;
+    this.attackGlow = Math.max(0, this.attackGlow - dt * 6);
 
     // Idle float vs grounded while moving
     this.rootGroup.position.y = isMoving ? 0 : Math.sin(time * 1.5) * 0.04;
     this.leftArm.rotation.x = Math.sin(time * 2) * 0.15;
     this.rightArm.rotation.x = Math.sin(time * 2 + 0.5) * 0.2;
-    this.staffOrb.scale.setScalar(0.8 + Math.sin(time * 3) * 0.2);
+    this.staffOrb.scale.setScalar(0.8 + Math.sin(time * 3) * 0.2 + this.attackGlow * 0.55);
     (this.auraMesh.material as THREE.MeshBasicMaterial).opacity = 0.03 + Math.sin(time * 2) * 0.015;
 
     // Selection ring
@@ -243,17 +254,24 @@ export class Hero {
 
     // Auto-attack
     this.attackCd -= dt;
+    let projectile: HeroProjectileSpawn | null = null;
     if (this.attackCd <= 0) {
       const target = this._findTarget(enemies);
       if (target) {
         this.attackCd = 1 / this.attackInterval;
-        target.takeDamage(this.attackDamage);
         const tPos = target.getPos();
         this.rootGroup.rotation.y = Math.atan2(
           tPos.x - this.group.position.x,
           tPos.z - this.group.position.z
         );
         this.rightArm.rotation.x = -0.8;
+        this.attackGlow = 1;
+        projectile = {
+          origin: new THREE.Vector3(this.group.position.x, 1.25, this.group.position.z),
+          target,
+          damage: this.attackDamage,
+          speed: 15,
+        };
       }
     }
 
@@ -277,6 +295,7 @@ export class Hero {
     this.hpFill.quaternion.copy(camera.quaternion);
     this.buildBg.quaternion.copy(camera.quaternion);
     this.buildFill.quaternion.copy(camera.quaternion);
+    return projectile;
   }
 
   // ─── Model ────────────────────────────────────────────────────────────────
@@ -375,6 +394,7 @@ export class Hero {
   takeDamage(amount: number) {
     if (!this.alive) return;
     this.hp -= amount;
+    audio.playHeroHit();
     const ratio = Math.max(0, this.hp / this.maxHp);
     this.hpFill.scale.x = Math.max(0.001, ratio);
     this.hpFill.position.x = -0.49 * (1 - ratio);
@@ -385,6 +405,7 @@ export class Hero {
     if (this.hp <= 0) {
       this.alive = false;
       this.respawnTimer = this.RESPAWN_TIME;
+      audio.playHeroDeath();
       this.rootGroup.visible = false;
       this.hpBg.visible = false;
       this.hpFill.visible = false;

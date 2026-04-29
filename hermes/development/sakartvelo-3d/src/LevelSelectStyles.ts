@@ -73,6 +73,7 @@ export const LEVEL_SELECT_CSS = `
   .ls-stars-completed { color: #d4a017; }
   .ls-stars-empty { color: #444; }
   .ls-name { font-size: 10px; color: #8a7a5a; margin-top: 3px; line-height: 1.3; }
+  .ls-best-time { font-size: 9px; color: #9a8a68; margin-top: 4px; }
   .ls-chapter-bronze .ls-card {
     background: rgba(100, 65, 20, 0.2); border-color: #5a4020;
   }

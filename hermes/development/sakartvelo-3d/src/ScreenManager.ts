@@ -7,13 +7,23 @@ import { LevelSelect } from './LevelSelect';
 import { audio } from './AudioManager';
 import { culturalFacts } from './CulturalFacts';
 import { Hero } from './Hero';
+import { SaveManager } from './SaveManager';
 
 type OnLevelSelect = (era: number, level: number) => void;
 type OnEscape = () => void;
+type TutorialStep = {
+  title: string;
+  text: string;
+  selector?: string;
+  done?: () => boolean;
+};
 
 export class ScreenManager {
   private _onLevelSelect: OnLevelSelect | null = null;
   private _onEscape: OnEscape | null = null;
+  private _tutorialStep = 0;
+  private _tutorialTimer: number | null = null;
+  private _tutorialStartPos: string | null = null;
 
   init(onLevelSelect: OnLevelSelect, onEscape: OnEscape): void {
     this._onLevelSelect = onLevelSelect;
@@ -119,27 +129,15 @@ export class ScreenManager {
   }
 
   showTutorial(levelNum: number): void {
-    if (levelNum === 1) {
-      const text = document.getElementById('tutorial-text');
-      if (text) {
-        text.innerHTML = `
-          <div class="tutorial-title">Hero Abilities</div>
-          Meet <b>Medea</b>, your hero. She can move and attack automatically, but her real power lies in her <b>Abilities</b> (Q, W, E).<br><br>
-          <div class="tutorial-box">
-            <div class="ability-info">
-              <b class="ability-name-poison">[Q] Colchian Poison:</b> Deals <b>8 DPS</b> to all enemies within <b>4.2m</b> for 5 seconds. Great for thinning out crowds.
-            </div>
-            <div class="ability-info">
-              <b class="ability-name-chant">[W] War Chant:</b> Boosts towers within <b>4m</b> for 8 seconds: <b>+50% Damage</b> and <b>+30% Attack Speed</b>.
-            </div>
-            <div>
-              <b class="ability-name-fire">[E] Colchian Fire:</b> Supercharges towers within <b>5m</b> for 10 seconds: <b>+100% Damage</b>, <b>+50% Attack Speed</b>, and <b>+30% Range</b>.
-            </div>
-          </div>
-        `;
-      }
-      document.getElementById('tutorial-overlay')?.classList.add('visible');
-    }
+    if (levelNum !== 1 || localStorage.getItem('sakartvelo_tutorial_complete')) return;
+    const hero = gs.hero?.group.position;
+    this._tutorialStartPos = hero ? `${hero.x.toFixed(2)},${hero.z.toFixed(2)}` : null;
+    this._tutorialStep = 0;
+    this._renderTutorialStep();
+    document.getElementById('tutorial-overlay')?.classList.add('visible');
+    gs.paused = false;
+    if (this._tutorialTimer !== null) window.clearInterval(this._tutorialTimer);
+    this._tutorialTimer = window.setInterval(() => this._checkTutorialStep(), 350);
   }
 
   startCulturalFacts(): void {
@@ -161,11 +159,42 @@ export class ScreenManager {
   }
 
   showLevelComplete(message: string, stars: number): void {
+    const title = document.getElementById('lc-title')!;
     const msg = document.getElementById('lc-msg')!;
     const starsEl = document.getElementById('lc-stars')!;
-    msg.textContent = message;
-    starsEl.textContent = '⭐'.repeat(stars);
+    const level = gs.currentLevel;
+    const levelId = level ? SaveManager.levelId(level.era, level.level) : '';
+    const best = levelId ? SaveManager.getBestTime(levelId) : undefined;
+    const elapsed = gs.levelElapsedTime;
+    const newRecord = best !== undefined && Math.abs(best - elapsed) < 0.2;
+
+    title.textContent = 'VICTORY';
+    starsEl.innerHTML = '☆'.repeat(3);
+    msg.innerHTML = `
+      <div class="chronicle-kicker">${message}</div>
+      <div class="chronicle-target">You defended ${level?.defense_target || level?.name || 'Sakartvelo'}.</div>
+      <div class="chronicle-stats">
+        <span>Lives Saved: ${gs.lives}/${gs.startingLives}</span>
+        <span>Time: ${this._formatTime(elapsed)}${newRecord ? ' <b>NEW RECORD</b>' : ''}</span>
+        <span>Best: ${best !== undefined ? this._formatTime(best) : this._formatTime(elapsed)}</span>
+      </div>
+      <div class="chronicle-fact">${level?.historical_fact || ''}</div>
+    `;
     this._showScreen('screen-level-complete');
+
+    for (let i = 1; i <= 3; i++) {
+      window.setTimeout(() => {
+        starsEl.textContent = '★'.repeat(Math.min(i, stars)) + '☆'.repeat(3 - Math.min(i, stars));
+        if (i <= stars) audio.playStarReveal(i);
+      }, i * 450);
+    }
+  }
+
+  private _formatTime(totalSeconds: number): string {
+    const safe = Math.max(0, Math.floor(totalSeconds));
+    const m = Math.floor(safe / 60);
+    const s = safe % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
   }
 
   // ─── Binding ──────────────────────────────────────────────────────────
@@ -261,14 +290,113 @@ export class ScreenManager {
     const overlay = document.getElementById('tutorial-overlay');
     if (!overlay) return;
 
-    const dismiss = () => overlay.classList.remove('visible');
-
-    overlay.addEventListener('click', dismiss);
-    addEventListener('keydown', (e) => {
-      if (overlay.classList.contains('visible')) {
-        dismiss();
-      }
+    overlay.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (target.id === 'tutorial-next') this._advanceTutorial();
+      if (target.id === 'tutorial-skip') this._finishTutorial();
     });
+  }
+
+  private _tutorialSteps(): TutorialStep[] {
+    return [
+      { title: 'This is Medea', text: 'Medea is your mobile hero. She moves, builds, casts, and now fires visible magic.' },
+      {
+        title: 'Move Medea',
+        text: 'Tap or click the ground to move Medea toward a safer build position.',
+        done: () => {
+          const hero = gs.hero?.group.position;
+          if (!hero || !this._tutorialStartPos) return false;
+          return `${hero.x.toFixed(2)},${hero.z.toFixed(2)}` !== this._tutorialStartPos;
+        },
+      },
+      {
+        title: 'Build An Archer',
+        text: 'Tap a build node and choose Archer. Medea must walk close enough before construction completes.',
+        selector: '#build-circle-archer',
+        done: () => gs.towers.some(t => t.type === 'archer'),
+      },
+      {
+        title: 'Walk To Build',
+        text: 'Distant nodes take time because Medea physically reaches the site. Protect her route and plan ahead.',
+        done: () => gs.towers.length > 0,
+      },
+      {
+        title: 'The Enemy Path',
+        text: 'Enemies follow the road. Towers prefer enemies farthest along the path and in range.',
+        selector: '#wave',
+      },
+      {
+        title: 'Walls Block Enemies',
+        text: 'Use the wall button to place a wall on the path. Enemies stop and attack walls until they break.',
+        selector: '#wall-mode-btn',
+        done: () => gs.towers.some(t => t.type === 'wall'),
+      },
+      {
+        title: 'Tower Behind Wall',
+        text: 'Archers near walls fire faster at blocked enemies. Catapults hit blocked enemies harder.',
+        done: () => gs.towers.some(t => t.type === 'wall') && gs.towers.some(t => t.type === 'archer'),
+      },
+      {
+        title: 'Your Abilities',
+        text: 'Q poisons crowds, W buffs towers, and E supercharges your strongest defense for boss moments.',
+        selector: '#hero-bar',
+        done: () => Boolean(gs.hero?.abilities.abilities.some(a => a.cooldown > 0)),
+      },
+      {
+        title: 'Medea Command Link',
+        text: 'Move Medea near an archer or catapult. The golden link enchants one closest offensive tower.',
+        done: () => Boolean(gs.commandLinkTower),
+      },
+      {
+        title: 'Stars And Lives',
+        text: 'Save more lives for more stars. Three stars means you defended Sakartvelo with mastery.',
+        selector: '#lives',
+      },
+    ];
+  }
+
+  private _renderTutorialStep(): void {
+    const text = document.getElementById('tutorial-text');
+    const steps = this._tutorialSteps();
+    const step = steps[this._tutorialStep];
+    document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
+    if (step.selector) document.querySelector(step.selector)?.classList.add('tutorial-highlight');
+    if (!text) return;
+    text.innerHTML = `
+      <div class="tutorial-title">${step.title}</div>
+      <div>${step.text}</div>
+      <div class="tutorial-progress">Step ${this._tutorialStep + 1}/${steps.length}</div>
+      <div class="tutorial-actions">
+        <button id="tutorial-next" class="tutorial-btn">${step.done ? 'Continue When Done' : 'Next'}</button>
+        <button id="tutorial-skip" class="tutorial-btn tutorial-skip">Skip Tutorial</button>
+      </div>
+    `;
+  }
+
+  private _checkTutorialStep(): void {
+    const overlay = document.getElementById('tutorial-overlay');
+    if (!overlay?.classList.contains('visible')) return;
+    const step = this._tutorialSteps()[this._tutorialStep];
+    if (step?.done?.()) this._advanceTutorial();
+  }
+
+  private _advanceTutorial(): void {
+    const step = this._tutorialSteps()[this._tutorialStep];
+    if (step?.done && !step.done()) return;
+    this._tutorialStep++;
+    if (this._tutorialStep >= this._tutorialSteps().length) {
+      this._finishTutorial();
+    } else {
+      this._renderTutorialStep();
+    }
+  }
+
+  private _finishTutorial(): void {
+    document.getElementById('tutorial-overlay')?.classList.remove('visible');
+    document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
+    localStorage.setItem('sakartvelo_tutorial_complete', '1');
+    if (this._tutorialTimer !== null) window.clearInterval(this._tutorialTimer);
+    this._tutorialTimer = null;
   }
 }
 

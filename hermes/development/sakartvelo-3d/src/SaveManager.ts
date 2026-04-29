@@ -4,7 +4,7 @@
  */
 
 const SAVE_KEY = 'sakartvelo_defenders_v1';
-const DEBUG_UNLOCK_ALL_LEVELS = true;
+const DEBUG_UNLOCK_ALL_LEVELS = false;
 
 export interface SaveData {
   version: number;
@@ -123,6 +123,11 @@ export const SaveManager = {
   getStars(levelId: string): number {
     const s = loadRaw().starsPerLevel[levelId];
     return (typeof s === 'number' && !isNaN(s)) ? s : 0;
+  },
+
+  getBestTime(levelId: string): number | undefined {
+    const t = loadRaw().bestTimes[levelId];
+    return typeof t === 'number' && Number.isFinite(t) ? t : undefined;
   },
 
   /** Get total stars */

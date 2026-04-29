@@ -164,7 +164,7 @@ export class InputManager {
     if (type === 'archer') {
       buildArcherMesh(group, 1, 1, color);
     } else if (type === 'catapult') {
-      buildCatapultMesh(group, 1, 1);
+      buildCatapultMesh(group, 1, 1, color);
     } else if (type === 'wall') {
       // Provide dummy meshes for wall HP bar components to avoid crashes
       const dummyBg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1));
@@ -491,6 +491,8 @@ export class InputManager {
   private _isBlockedByUi(clientX: number, clientY: number): boolean {
     if (document.getElementById('game-info-modal')?.classList.contains('visible')) return true;
     if (document.getElementById('game-settings-modal')?.classList.contains('visible')) return true;
+    if (document.getElementById('pause-menu-modal')?.classList.contains('visible')) return true;
+    if (document.getElementById('bestiary-modal')?.classList.contains('visible')) return true;
     if (document.getElementById('enemy-intro-modal')?.classList.contains('visible')) return true;
     const topElement = document.elementFromPoint(Math.max(0, clientX), Math.max(0, clientY));
     if (topElement?.closest('.game-ui') && !topElement.closest('canvas')) return true;

@@ -67,6 +67,12 @@ function starsHtml(stars: number): string {
   return `<span class="ls-stars-empty">☆☆☆</span>`;
 }
 
+function formatTime(totalSeconds: number | undefined): string {
+  if (totalSeconds === undefined) return '';
+  const safe = Math.max(0, Math.floor(totalSeconds));
+  return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, '0')}`;
+}
+
 function render(era: number) {
   if (!container) return;
   currentEra = era;
@@ -113,6 +119,7 @@ function render(era: number) {
       for (const lvl of chLevels) {
         const id = SaveManager.levelId(era, lvl.level);
         const stars = SaveManager.getStars(id);
+        const bestTime = SaveManager.getBestTime(id);
         const isUnlocked = SaveManager.isLevelUnlocked(era, lvl.level);
         const isCompleted = stars > 0;
         const isLocked = !isUnlocked;
@@ -126,6 +133,7 @@ function render(era: number) {
             <div class="ls-num">${lvl.level}</div>
             <div class="ls-stars">${starsHtml(stars)}</div>
             <div class="ls-name">${lvl.name}</div>
+            ${bestTime !== undefined ? `<div class="ls-best-time">Best ${formatTime(bestTime)}</div>` : ''}
           </div>
         `;
       }
@@ -138,6 +146,7 @@ function render(era: number) {
     for (const lvl of eraLevels) {
       const id = SaveManager.levelId(era, lvl.level);
       const stars = SaveManager.getStars(id);
+      const bestTime = SaveManager.getBestTime(id);
       const isUnlocked = SaveManager.isLevelUnlocked(era, lvl.level);
       const isCompleted = stars > 0;
       const isLocked = !isUnlocked;
@@ -150,6 +159,7 @@ function render(era: number) {
           <div class="ls-num">${lvl.level}</div>
           <div class="ls-stars">${starsHtml(stars)}</div>
           <div class="ls-name">${lvl.name}</div>
+          ${bestTime !== undefined ? `<div class="ls-best-time">Best ${formatTime(bestTime)}</div>` : ''}
         </div>
       `;
     }

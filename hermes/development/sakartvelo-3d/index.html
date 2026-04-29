@@ -30,6 +30,7 @@
     </div>
     <div>
       <span class="hud-item">Wave <span id="wave">0</span>/<span id="total-waves">5</span></span>
+      <button id="btn-pause" class="hud-pause-btn" aria-label="Pause game">Pause</button>
     </div>
   </div>
 
@@ -159,11 +160,51 @@
             <option value="top">Abilities Top</option>
           </select>
         </div>
+        <div class="game-info-row">
+          <span class="vol-icon">🎞</span>
+          <select id="visual-quality-game" class="game-info-select">
+            <option value="low">Visuals Low</option>
+            <option value="medium">Visuals Medium</option>
+            <option value="high">Visuals High</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="game-info-section">
+        <div class="game-info-section-title">Progress Helpers</div>
+        <button id="btn-reset-tutorial-intros" class="game-info-nav-btn">Reset Tutorial and Intros</button>
       </div>
 
       <div class="game-info-section">
         <button id="btn-game-level-select" class="game-info-nav-btn">← Level Select</button>
       </div>
+    </div>
+  </div>
+
+  <div id="pause-menu-modal" class="game-ui">
+    <div class="game-info-card pause-menu-card">
+      <div class="game-info-header">
+        <div class="game-info-title">Paused</div>
+        <button id="btn-pause-close" class="game-info-close" aria-label="Resume">✕</button>
+      </div>
+      <div class="pause-menu-actions">
+        <button id="btn-pause-resume" class="game-info-nav-btn pause-primary">Resume</button>
+        <button id="btn-pause-restart" class="game-info-nav-btn">Restart Level</button>
+        <button id="btn-pause-level-select" class="game-info-nav-btn">Quit to Level Select</button>
+        <button id="btn-pause-settings" class="game-info-nav-btn">Settings</button>
+        <button id="btn-pause-bestiary" class="game-info-nav-btn">Bestiary</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="bestiary-modal" class="game-ui">
+    <div class="game-info-card bestiary-card">
+      <div class="game-info-header">
+        <div class="game-info-title">Bestiary</div>
+        <button id="btn-bestiary-close" class="game-info-close" aria-label="Close">✕</button>
+      </div>
+      <div id="bestiary-tabs" class="bestiary-tabs"></div>
+      <div id="bestiary-content" class="bestiary-content"></div>
     </div>
   </div>
 

@@ -18,6 +18,7 @@ const _origColorMap = new Map<THREE.Mesh, number>();
 export interface ProjectileSpawn {
   origin: THREE.Vector3; target: Enemy; damage: number;
   speed: number; towerType: string; isCrit: boolean; splashRadius: number;
+  commandLinked?: boolean;
 }
 
 export class Tower {
@@ -43,8 +44,11 @@ export class Tower {
 
   private wallHp = 0;
   private wallMaxHp = 0;
+  private wallBaseMaxHp = 0;
+  private bastionActive = false;
   private hpBg: THREE.Mesh | null = null;
   private hpFill: THREE.Mesh | null = null;
+  private synergyRing: THREE.Mesh | null = null;
 
   constructor(type: string, gx: number, gy: number, isOnPath = false) {
     this.type = type;
@@ -65,6 +69,7 @@ export class Tower {
       const wc = TOWER_LEVEL_MULTS.wall;
       this.wallHp = wc.hp[0];
       this.wallMaxHp = this.wallHp;
+      this.wallBaseMaxHp = this.wallHp;
     }
   }
 
@@ -108,7 +113,8 @@ export class Tower {
       this.effectiveSplash = m.splash[idx];
     } else if (this.type === 'wall') {
       const m = TOWER_LEVEL_MULTS.wall;
-      this.wallMaxHp = m.hp[this.level - 1];
+      this.wallBaseMaxHp = m.hp[this.level - 1];
+      this.wallMaxHp = this.bastionActive ? this.wallBaseMaxHp * 1.25 : this.wallBaseMaxHp;
       this.wallHp = this.wallMaxHp;
     }
   }
@@ -176,6 +182,17 @@ export class Tower {
 
   getWallHp(): number { return this.wallHp; }
 
+  setBastionActive(active: boolean): void {
+    if (this.type !== 'wall' || this.bastionActive === active) return;
+    const previousMax = Math.max(1, this.wallMaxHp);
+    const ratio = this.wallHp / previousMax;
+    this.bastionActive = active;
+    this.wallMaxHp = this.wallBaseMaxHp * (active ? 1.25 : 1);
+    this.wallHp = Math.min(this.wallMaxHp, Math.max(1, this.wallMaxHp * ratio));
+    this.updateWallHpBar();
+    this.setSynergyActive(active);
+  }
+
   billboardHp(camera: THREE.Camera) {
     if (this.hpBg) this.hpBg.quaternion.copy(camera.quaternion);
     if (this.hpFill) this.hpFill.quaternion.copy(camera.quaternion);
@@ -201,7 +218,7 @@ export class Tower {
     return this.effectiveRange * this.rangeBoost;
   }
 
-  update(dt: number, enemies: Enemy[]): ProjectileSpawn | null {
+  update(dt: number, enemies: Enemy[], allTowers: Tower[] = [], commandLinkTower: Tower | null = null): ProjectileSpawn | null {
     if (this.config.damage === 0) return null;
 
     if (this.boostTimer > 0) {
@@ -210,6 +227,7 @@ export class Tower {
         this.dmgBoost = 1.0;
         this.rangeBoost = 1.0;
         this.speedBoost = 1.0;
+        this.setSynergyActive(false);
       }
     }
 
@@ -229,15 +247,21 @@ export class Tower {
     }
 
     if (this.target && this.cooldown <= 0) {
-      const effectiveSpeed = this.effectiveSpeed * this.speedBoost;
+      const wallSynergy = this._hasNearbyWall(allTowers, 2.0);
+      const blockedTarget = this.target.isBlocked;
+      const archerWallBonus = this.type === 'archer' && wallSynergy && blockedTarget;
+      const catapultWallBonus = this.type === 'catapult' && wallSynergy && blockedTarget;
+      const commandLinked = commandLinkTower === this;
+      const effectiveSpeed = this.effectiveSpeed * this.speedBoost * (archerWallBonus ? 1.2 : 1);
       this.cooldown = 1 / effectiveSpeed;
-      let dmg = this.effectiveDamage * this.dmgBoost;
+      let dmg = this.effectiveDamage * this.dmgBoost * (catapultWallBonus ? 1.15 : 1);
       let isCrit = false;
       if (this.type === 'archer' && this.level >= 3) {
         if (Math.random() < TOWER_LEVEL_MULTS.archer.crit[2]) {
           dmg *= 2; isCrit = true;
         }
       }
+      this.setSynergyActive(archerWallBonus || catapultWallBonus || commandLinked);
       return {
         origin: new THREE.Vector3(myPos.x, myPos.y + 0.8, myPos.z),
         target: this.target,
@@ -245,9 +269,11 @@ export class Tower {
         speed: this.config.projectileSpeed,
         towerType: this.type,
         isCrit,
-        splashRadius: this.effectiveSplash,
+        splashRadius: commandLinked && this.type === 'archer' ? 0.8 : this.effectiveSplash,
+        commandLinked,
       };
     }
+    if (this.boostTimer <= 0) this.setSynergyActive(false);
     return null;
   }
 
@@ -256,7 +282,38 @@ export class Tower {
     this.rangeBoost = rangeMult;
     this.speedBoost = spdMult;
     this.boostTimer = duration;
+    this.setSynergyActive(true);
   }
 
   showRange(v: boolean) { this.rangeRing.visible = v; }
+
+  private _hasNearbyWall(towers: Tower[], range: number): boolean {
+    const rSq = range * range;
+    for (const tower of towers) {
+      if (tower === this || tower.type !== 'wall' || tower.getWallHp() <= 0) continue;
+      const dx = tower.group.position.x - this.group.position.x;
+      const dz = tower.group.position.z - this.group.position.z;
+      if (dx * dx + dz * dz <= rSq) return true;
+    }
+    return false;
+  }
+
+  setSynergyActive(active: boolean): void {
+    if (!active) {
+      if (this.synergyRing) this.synergyRing.visible = false;
+      return;
+    }
+    if (!this.synergyRing) {
+      this.synergyRing = new THREE.Mesh(
+        new THREE.RingGeometry(0.42, 0.5, 24),
+        new THREE.MeshBasicMaterial({ color: 0xd4a017, transparent: true, opacity: 0.42, side: THREE.DoubleSide }),
+      );
+      this.synergyRing.rotation.x = -Math.PI / 2;
+      this.synergyRing.position.y = 0.04;
+      this.synergyRing.userData.ignoreTowerPick = true;
+      this.group.add(this.synergyRing);
+    }
+    this.synergyRing.visible = true;
+    this.synergyRing.rotation.z += 0.035;
+  }
 }

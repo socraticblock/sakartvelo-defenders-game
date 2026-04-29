@@ -189,6 +189,11 @@ function startLevel(era: number, level: number): void {
   }, 100);
 }
 
+(window as any).__restartCurrentLevel = () => {
+  if (!gs.currentLevel) return;
+  startLevel(gs.currentLevel.era, gs.currentLevel.level);
+};
+
 // ─── Init ────────────────────────────────────────────────────────────────
 
 ui.init(

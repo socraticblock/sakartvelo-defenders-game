@@ -25,8 +25,8 @@ Quick reference: file → responsibility → lines. All files ≤300 lines.
 ## Hero
 | File | Responsibility | Lines |
 |------|---------------|-------|
-| `Hero.ts` | Hero entity — movement, combat, vitals, HP bar, Jaq'eli the Bronze model | 287 |
-| `HeroAbilities.ts` | 3 abilities — Lightning Strike (DoT), Stone Shield, Battle Cry | 166 |
+| `Hero.ts` | Hero entity — movement, combat, vitals, HP bar, Medea model | 287 |
+| `HeroAbilities.ts` | 3 abilities — Colchian Poison, War Chant, Colchian Fire | 166 |
 
 ## Towers
 | File | Responsibility | Lines |

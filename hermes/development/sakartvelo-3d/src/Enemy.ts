@@ -11,6 +11,8 @@ export class Enemy {
   healthBg: THREE.Mesh;
   healthFill: THREE.Mesh;
   shadow: THREE.Mesh;
+  poisonRing: THREE.Mesh;
+  slowRing: THREE.Mesh;
 
   hp: number;
   maxHp: number;
@@ -29,6 +31,9 @@ export class Enemy {
   alive = true;
   reachedEnd = false;
   isBlocked = false;
+  temporarySlowTimer = 0;
+  temporarySlowAmount = 0;
+  poisonVisualTimer = 0;
   private flashMat: THREE.MeshStandardMaterial[] = [];
   private flashTime = 0;
 
@@ -66,6 +71,24 @@ export class Enemy {
     this.shadow.position.y = 0.01;
     this.group.add(this.shadow);
 
+    this.poisonRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.36, 0.44, 18),
+      new THREE.MeshBasicMaterial({ color: 0x44ff88, transparent: true, opacity: 0.45, side: THREE.DoubleSide }),
+    );
+    this.poisonRing.rotation.x = -Math.PI / 2;
+    this.poisonRing.position.y = 0.04;
+    this.poisonRing.visible = false;
+    this.group.add(this.poisonRing);
+
+    this.slowRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.46, 0.52, 18),
+      new THREE.MeshBasicMaterial({ color: 0x88ccff, transparent: true, opacity: 0.38, side: THREE.DoubleSide }),
+    );
+    this.slowRing.rotation.x = -Math.PI / 2;
+    this.slowRing.position.y = 0.055;
+    this.slowRing.visible = false;
+    this.group.add(this.slowRing);
+
     // Health bar (billboard)
     const hbW = 0.8;
     this.healthBg = new THREE.Mesh(
@@ -96,6 +119,11 @@ export class Enemy {
 
   update(dt: number, camera: THREE.Camera): void {
     if (!this.alive) return;
+    if (this.temporarySlowTimer > 0) {
+      this.temporarySlowTimer = Math.max(0, this.temporarySlowTimer - dt);
+      if (this.temporarySlowTimer === 0) this.temporarySlowAmount = 0;
+    }
+    this.poisonVisualTimer = Math.max(0, this.poisonVisualTimer - dt);
 
     // Move
     this.distanceTraveled += this.speed * dt;
@@ -127,6 +155,10 @@ export class Enemy {
 
     // Vertical bob
     this.rig.root.position.y = Math.sin(time * this.rig.bobSpeed) * this.rig.bobAmp;
+    this.poisonRing.visible = this.poisonVisualTimer > 0;
+    this.slowRing.visible = this.temporarySlowTimer > 0 || this.isBlocked;
+    if (this.poisonRing.visible) this.poisonRing.rotation.z += dt * 1.8;
+    if (this.slowRing.visible) this.slowRing.rotation.z -= dt * 1.2;
 
     // Billboard health bar
     this.healthBg.quaternion.copy(camera.quaternion);
@@ -166,5 +198,14 @@ export class Enemy {
 
   getPos(): THREE.Vector3 {
     return this.group.position;
+  }
+
+  applyTemporarySlow(amount: number, duration: number): void {
+    this.temporarySlowAmount = Math.max(this.temporarySlowAmount, amount);
+    this.temporarySlowTimer = Math.max(this.temporarySlowTimer, duration);
+  }
+
+  setPoisoned(duration: number): void {
+    this.poisonVisualTimer = Math.max(this.poisonVisualTimer, duration);
   }
 }

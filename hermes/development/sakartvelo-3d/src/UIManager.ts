@@ -10,6 +10,8 @@ import { TowerPanel } from './TowerPanel';
 import { screenMgr } from './ScreenManager';
 import { audio } from './AudioManager';
 import { TOWER_CONFIGS } from './types';
+import { BESTIARY_ENTRIES } from './BestiaryData';
+import { visuals } from './VisualsManager';
 
 type OnLevelSelect = (era: number, level: number) => void;
 type OnEscape = () => void;
@@ -32,6 +34,9 @@ export class UIManager {
   private $buildOverlay = document.getElementById('build-overlay');
   private $buildTimer = document.getElementById('build-timer');
   private $bpEnemyList = document.getElementById('bp-enemy-list');
+  private $bottomBar = document.getElementById('bottom-bar');
+  private $buildStartBtn = document.getElementById('build-start-btn') as HTMLButtonElement | null;
+  private $waveBtn = document.getElementById('wave-btn') as HTMLButtonElement | null;
   private $levelName = document.getElementById('level-name');
   private $heroHp = document.getElementById('hero-hp');
   private $heroStatus = document.getElementById('hero-status');
@@ -42,10 +47,13 @@ export class UIManager {
   private $buildCircleCatapult = document.getElementById('build-circle-catapult') as HTMLButtonElement | null;
   private $gameInfoModal = document.getElementById('game-info-modal');
   private $gameSettingsModal = document.getElementById('game-settings-modal');
+  private $pauseMenuModal = document.getElementById('pause-menu-modal');
+  private $bestiaryModal = document.getElementById('bestiary-modal');
   private $bossHpContainer = document.getElementById('boss-hp-container');
   private $bossName = document.getElementById('boss-name');
   private $bossHpFill = document.getElementById('boss-hp-fill');
   private $heroBar = document.getElementById('hero-bar');
+  private $lifeFlash: HTMLElement | null = null;
   private dockResizeObserver: ResizeObserver | null = null;
   private dockViewportMode: 'compact' | 'full' | null = null;
   private buildCircleCell: { gx: number; gy: number } | null = null;
@@ -71,6 +79,7 @@ export class UIManager {
     this._bindBuildCircle();
     this._bindWallAndInfantryButtons();
     this._bindInfoModal();
+    this._bindPauseMenu();
     this._bindEscape();
     setInterval(() => this.update(), 100);
   }
@@ -83,6 +92,7 @@ export class UIManager {
 
     this.setText(this.$gold, String(gs.gold));
     this.setText(this.$lives, String(gs.lives));
+    document.body.classList.toggle('low-lives-warning', gs.lives / Math.max(1, gs.startingLives) < 0.3);
 
     if (wm) {
       this.setText(this.$wave, String(wm.waveNum));
@@ -154,14 +164,27 @@ export class UIManager {
   private _bindEscape(): void {
     addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
+        if (this.$pauseMenuModal?.classList.contains('visible')) {
+          this.closePauseMenu();
+          return;
+        }
         if (this.$gameInfoModal?.classList.contains('visible')) {
           this.$gameInfoModal.classList.remove('visible');
-          if (!document.hidden) gs.paused = false;
+          this._resumeIfNoBlockingModal();
           return;
         }
         if (this.$gameSettingsModal?.classList.contains('visible')) {
           this.$gameSettingsModal.classList.remove('visible');
-          if (!document.hidden) gs.paused = false;
+          this._resumeIfNoBlockingModal();
+          return;
+        }
+        if (this.$bestiaryModal?.classList.contains('visible')) {
+          this.$bestiaryModal.classList.remove('visible');
+          this._resumeIfNoBlockingModal();
+          return;
+        }
+        if (gs.currentLevel && !gs.gameOver && !document.getElementById('tutorial-overlay')?.classList.contains('visible')) {
+          this.openPauseMenu();
           return;
         }
         gs.selectedType = null;
@@ -282,9 +305,11 @@ export class UIManager {
     const settingsBtn = document.getElementById('btn-game-settings');
     const settingsCloseBtn = document.getElementById('btn-game-settings-close');
     const levelSelectBtn = document.getElementById('btn-game-level-select');
+    const resetTutorialBtn = document.getElementById('btn-reset-tutorial-intros');
     if (!openBtn || !this.$gameInfoModal || !closeBtn || !settingsBtn || !this.$gameSettingsModal || !settingsCloseBtn) return;
     this._bindCameraZoomControl();
     this._bindDockLayoutControls();
+    this._bindVisualQualityControl();
 
     openBtn.addEventListener('click', () => {
       this.$gameInfoModal?.classList.add('visible');
@@ -292,12 +317,12 @@ export class UIManager {
     });
     closeBtn.addEventListener('click', () => {
       this.$gameInfoModal?.classList.remove('visible');
-      if (!document.hidden) gs.paused = false;
+      this._resumeIfNoBlockingModal();
     });
     this.$gameInfoModal.addEventListener('click', (e) => {
       if (e.target === this.$gameInfoModal) {
         this.$gameInfoModal?.classList.remove('visible');
-        if (!document.hidden) gs.paused = false;
+        this._resumeIfNoBlockingModal();
       }
     });
 
@@ -310,12 +335,12 @@ export class UIManager {
     });
     settingsCloseBtn.addEventListener('click', () => {
       this.$gameSettingsModal?.classList.remove('visible');
-      if (!document.hidden) gs.paused = false;
+      this._resumeIfNoBlockingModal();
     });
     this.$gameSettingsModal.addEventListener('click', (e) => {
       if (e.target === this.$gameSettingsModal) {
         this.$gameSettingsModal?.classList.remove('visible');
-        if (!document.hidden) gs.paused = false;
+        this._resumeIfNoBlockingModal();
       }
     });
 
@@ -323,6 +348,84 @@ export class UIManager {
       this.$gameSettingsModal?.classList.remove('visible');
       this.screens.showLevelSelect(gs.currentLevel?.era ?? 0);
     });
+    resetTutorialBtn?.addEventListener('click', () => this.resetTutorialAndIntros());
+  }
+
+  private _bindPauseMenu(): void {
+    const pauseBtn = document.getElementById('btn-pause');
+    const closeBtn = document.getElementById('btn-pause-close');
+    const resumeBtn = document.getElementById('btn-pause-resume');
+    const restartBtn = document.getElementById('btn-pause-restart');
+    const levelSelectBtn = document.getElementById('btn-pause-level-select');
+    const settingsBtn = document.getElementById('btn-pause-settings');
+    const bestiaryBtn = document.getElementById('btn-pause-bestiary');
+    const bestiaryCloseBtn = document.getElementById('btn-bestiary-close');
+
+    pauseBtn?.addEventListener('click', () => this.openPauseMenu());
+    closeBtn?.addEventListener('click', () => this.closePauseMenu());
+    resumeBtn?.addEventListener('click', () => this.closePauseMenu());
+    restartBtn?.addEventListener('click', () => {
+      this.closePauseMenu(false);
+      if (gs.currentLevel) this.screens.showGameUI();
+      if (gs.currentLevel) (window as any).__restartCurrentLevel?.();
+    });
+    levelSelectBtn?.addEventListener('click', () => {
+      this.closePauseMenu(false);
+      this.screens.showLevelSelect(gs.currentLevel?.era ?? 0);
+    });
+    settingsBtn?.addEventListener('click', () => {
+      this.$gameSettingsModal?.classList.add('visible');
+      audio.bindVolumeControls();
+      this._syncCameraZoomUi();
+      this._syncDockLayoutUi();
+    });
+    bestiaryBtn?.addEventListener('click', () => {
+      this.showBestiary();
+    });
+    bestiaryCloseBtn?.addEventListener('click', () => {
+      this.$bestiaryModal?.classList.remove('visible');
+      this._resumeIfNoBlockingModal();
+    });
+    this.$bestiaryModal?.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (target === this.$bestiaryModal) {
+        this.$bestiaryModal.classList.remove('visible');
+        this._resumeIfNoBlockingModal();
+      }
+      const tab = target.closest<HTMLElement>('[data-bestiary-type]');
+      if (tab) this.showBestiary(tab.dataset.bestiaryType || 'infantry');
+    });
+    this.$pauseMenuModal?.addEventListener('click', (e) => {
+      if (e.target === this.$pauseMenuModal) this.closePauseMenu();
+    });
+  }
+
+  openPauseMenu(): void {
+    if (!gs.currentLevel || gs.gameOver) return;
+    this.$pauseMenuModal?.classList.add('visible');
+    gs.paused = true;
+  }
+
+  closePauseMenu(resume = true): void {
+    this.$pauseMenuModal?.classList.remove('visible');
+    if (resume) this._resumeIfNoBlockingModal();
+  }
+
+  isBlockingModalOpen(): boolean {
+    return Boolean(
+      this.$pauseMenuModal?.classList.contains('visible') ||
+      this.$gameInfoModal?.classList.contains('visible') ||
+      this.$gameSettingsModal?.classList.contains('visible') ||
+      this.$bestiaryModal?.classList.contains('visible') ||
+      document.getElementById('enemy-intro-modal')?.classList.contains('visible') ||
+      document.getElementById('tutorial-overlay')?.classList.contains('visible'),
+    );
+  }
+
+  private _resumeIfNoBlockingModal(): void {
+    if (!document.hidden && !this.isBlockingModalOpen() && gs.currentLevel && !gs.gameOver) {
+      gs.paused = false;
+    }
   }
 
   private _syncCameraZoomUi(): void {
@@ -348,6 +451,17 @@ export class UIManager {
       slider.style.setProperty('--pct', `${((zoom - 80) / 40) * 100}%`);
       const setZoom = (window as any).__setCameraZoom as ((v: number) => void) | undefined;
       setZoom?.(zoom);
+    });
+  }
+
+  private _bindVisualQualityControl(): void {
+    const select = document.getElementById('visual-quality-game') as HTMLSelectElement | null;
+    if (!select || select.dataset.bound === '1') return;
+    select.dataset.bound = '1';
+    select.value = visuals.getQuality();
+    select.addEventListener('change', () => {
+      const value = select.value;
+      if (value === 'low' || value === 'medium' || value === 'high') visuals.setQuality(value);
     });
   }
 
@@ -534,12 +648,53 @@ export class UIManager {
   showBuildPhase(): void {
     if (!gs.waveMgr) return;
     const preview = gs.waveMgr.getNextWavePreview();
-    if (this.$bpEnemyList) this.$bpEnemyList.textContent = preview.types.join(' · ') || 'Unknown wave';
+    if (this.$bpEnemyList) {
+      this.$bpEnemyList.innerHTML = preview.entries.length
+        ? `<div class="wave-preview-list">${preview.entries.map(entry => {
+          const data = BESTIARY_ENTRIES[entry.type] || BESTIARY_ENTRIES.infantry;
+          return `<button class="wave-preview-enemy" data-bestiary-type="${entry.type}">${data.icon} ${entry.count}</button>`;
+        }).join('')}</div>`
+        : 'Unknown wave';
+      this.$bpEnemyList.querySelectorAll<HTMLElement>('[data-bestiary-type]').forEach(btn => {
+        btn.addEventListener('click', () => this.showBestiary(btn.dataset.bestiaryType || 'infantry'));
+      });
+    }
     if (this.$buildTimer) this.$buildTimer.textContent = String(Math.ceil(gs.waveMgr.buildPhaseTimer));
-    this.$buildStartBtn.textContent = `▶ Start Wave Now (+${gs.getBuildPhaseBonus()}g)`;
+    audio.playBuildPhaseStart();
+    if (this.$buildStartBtn) {
+      this.$buildStartBtn.textContent = `▶ Start Wave Now (+${gs.getBuildPhaseBonus()}g)`;
+    }
     this.$buildOverlay?.classList.add('visible');
-    this.$waveBtn.disabled = true;
-    this.$waveBtn.textContent = '⚒ Build Phase...';
+    if (this.$waveBtn) {
+      this.$waveBtn.disabled = true;
+      this.$waveBtn.textContent = '⚒ Build Phase...';
+    }
+  }
+
+  showBestiary(type = 'infantry'): void {
+    const entry = BESTIARY_ENTRIES[type] || BESTIARY_ENTRIES.infantry;
+    const tabs = document.getElementById('bestiary-tabs');
+    const content = document.getElementById('bestiary-content');
+    if (!tabs || !content) return;
+
+    tabs.innerHTML = Object.values(BESTIARY_ENTRIES).map(item =>
+      `<button class="bestiary-tab ${item.id === entry.id ? 'active' : ''}" data-bestiary-type="${item.id}">${item.icon} ${item.name}</button>`
+    ).join('');
+    content.innerHTML = `
+      <div class="bestiary-entry-name">${entry.icon} ${entry.name}</div>
+      <div><b>Stats:</b> ${entry.stats}</div>
+      <div><b>First Seen:</b> ${entry.firstEncounter}</div>
+      <p>${entry.lore}</p>
+      <p><b>Counter:</b> ${entry.tips}</p>
+    `;
+    this.$bestiaryModal?.classList.add('visible');
+    gs.paused = true;
+  }
+
+  resetTutorialAndIntros(): void {
+    if (!confirm('Reset all tutorial and enemy intro popups? They will appear again on next encounter.')) return;
+    localStorage.removeItem('sakartvelo_tutorial_complete');
+    Object.keys(BESTIARY_ENTRIES).forEach(type => localStorage.removeItem(`sakartvelo_enemy_intro_${type}`));
   }
 
   hideBuildPhase(): void {
@@ -567,6 +722,28 @@ export class UIManager {
     this.$bossName.textContent = name;
     const ratio = Math.max(0, Math.min(1, hp / maxHp));
     this.$bossHpFill.style.width = `${ratio * 100}%`;
+    this.$bossHpContainer?.classList.toggle('boss-critical', ratio < 0.25);
+  }
+
+  showLifeLostFeedback(): void {
+    if (!this.$lifeFlash) {
+      this.$lifeFlash = document.createElement('div');
+      this.$lifeFlash.id = 'life-lost-flash';
+      document.body.appendChild(this.$lifeFlash);
+    }
+
+    this.$lifeFlash.classList.remove('active');
+    document.body.classList.remove('life-shake');
+    this.$lives?.classList.remove('life-counter-hit');
+
+    requestAnimationFrame(() => {
+      this.$lifeFlash?.classList.add('active');
+      document.body.classList.add('life-shake');
+      this.$lives?.classList.add('life-counter-hit');
+      window.setTimeout(() => document.body.classList.remove('life-shake'), 160);
+      window.setTimeout(() => this.$lifeFlash?.classList.remove('active'), 320);
+      window.setTimeout(() => this.$lives?.classList.remove('life-counter-hit'), 430);
+    });
   }
 
   showEnemyIntro(type: string): void {

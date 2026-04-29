@@ -29,9 +29,9 @@ Era 0: Ancient Colchis — Georgian tower defense game built with Three.js.
 
 ## Quick Facts
 - **200 levels**, 1,340 waves per level, 2,247 enemy entries per wave
-- **Tower types:** Archer, Catapult, Ballista, Wall, Boost (5 tower configs)
+- **Tower types:** Archer, Catapult, Wall
 - **Enemy archetypes:** Infantry, Cavalry, Wolf, Siege Ram, Boss
-- **Hero:** Jaq'eli the Bronze — 3 abilities (Lightning Strike, Stone Shield, Battle Cry)
+- **Hero:** Medea — 3 abilities (Colchian Poison, War Chant, Colchian Fire)
 - **4,329 lines TypeScript** written (as of Phase 2 refactor)
 - **Zero files over 300 lines** — enforced by pre-commit hook
 - **No Godot** — game is Three.js, not Godot

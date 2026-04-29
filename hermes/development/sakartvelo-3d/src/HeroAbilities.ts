@@ -76,6 +76,7 @@ export class HeroAbilities {
       if (!e.alive) continue;
       if (heroPos.distanceTo(e.getPos()) <= range) {
         this.dots.push({ enemy: e, ticksLeft: 5, interval: 1.0, elapsed: 0, dps: 8 });
+        e.setPoisoned(5);
         hit++;
       }
     }

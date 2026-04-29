@@ -56,9 +56,9 @@ export class WaveManager {
   }
 
   /** Get description of the NEXT wave (for build phase preview). */
-  getNextWavePreview(): { types: string[]; totalCount: number; waveNum: number } {
+  getNextWavePreview(): { types: string[]; entries: { type: string; count: number }[]; totalCount: number; waveNum: number } {
     const nextIdx = this.currentWave + 1;
-    if (nextIdx >= this.waves.length) return { types: [], totalCount: 0, waveNum: nextIdx + 1 };
+    if (nextIdx >= this.waves.length) return { types: [], entries: [], totalCount: 0, waveNum: nextIdx + 1 };
     const nextWave = this.waves[nextIdx];
     const typeCount: Record<string, number> = {};
     for (const group of nextWave.enemies) {
@@ -66,8 +66,9 @@ export class WaveManager {
       typeCount[key] = (typeCount[key] || 0) + group.count;
     }
     const types = Object.entries(typeCount).map(([t, c]) => `${c}×${t}`);
+    const entries = Object.entries(typeCount).map(([t, c]) => ({ type: t.toLowerCase(), count: c }));
     const totalCount = nextWave.enemies.reduce((s, g) => s + g.count, 0);
-    return { types, totalCount, waveNum: nextIdx + 1 };
+    return { types, entries, totalCount, waveNum: nextIdx + 1 };
   }
 
   startNext(): boolean {

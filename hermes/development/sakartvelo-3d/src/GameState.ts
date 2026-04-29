@@ -34,6 +34,7 @@ export class GameState {
   selectedType: string | null = null;   // tower type being placed
   selectedTower: Tower | null = null;   // existing tower clicked
   pendingUpgradeTower: Tower | null = null; // tower to upgrade once hero reaches it
+  commandLinkTower: Tower | null = null; // Medea's closest offensive tower link
 
   // ─── Level ──────────────────────────────────────────────
   currentLevel: LevelData | null = null;
@@ -46,6 +47,7 @@ export class GameState {
   targetTimeScale = 1.0;
   currentTimeScale = 1.0;
   gameTime = 0; // Scaled time for synchronized slow-mo animations
+  levelElapsedTime = 0;
   waveCountdown = 0;
   waveCountdownActive = false;
   waveCompleteProcessed = false;
@@ -94,11 +96,13 @@ export class GameState {
     this.selectedTower = null;
     this.selectedType = null;
     this.pendingUpgradeTower = null;
+    this.commandLinkTower = null;
     this.waveCountdownActive = false;
     this.waveCompleteProcessed = false;
     this.popupDismissed = false;
     this.bossKilled = false;
     this.infantryCooldown = 0;
+    this.levelElapsedTime = 0;
 
     this.grid = new Grid(lvl);
     scene.add(this.grid.group);
@@ -114,8 +118,7 @@ export class GameState {
   }
 
   private computeUnlocks(level: number): Set<string> {
-    if (level >= 3) return new Set(['archer', 'catapult', 'wall']);
-    if (level === 2) return new Set(['archer', 'wall']);
+    if (level >= 1) return new Set(['archer', 'catapult', 'wall']);
     return new Set(['archer']);
   }
 
@@ -237,7 +240,7 @@ export class GameState {
     const level = Number(this.currentLevel.level);
     const levelId = SaveManager.levelId(era, level);
 
-    SaveManager.completeLevel(levelId, this.getStars());
+    SaveManager.completeLevel(levelId, this.getStars(), this.levelElapsedTime);
   }
 
   // ─── Wave bonus ──────────────────────────────────────────

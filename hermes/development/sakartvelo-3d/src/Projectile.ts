@@ -12,6 +12,10 @@ const boulderGeo = new THREE.SphereGeometry(0.08, 6, 6);
 const boulderMat = new THREE.MeshBasicMaterial({ color: 0x666666 });
 const boulderGlowGeo = new THREE.SphereGeometry(0.15, 6, 6);
 const boulderGlowMat = new THREE.MeshBasicMaterial({ color: 0xff6633, transparent: true, opacity: 0.25 });
+const heroMagicGeo = new THREE.IcosahedronGeometry(0.09, 1);
+const heroMagicMat = new THREE.MeshBasicMaterial({ color: 0x55ffaa });
+const heroMagicGlowGeo = new THREE.SphereGeometry(0.18, 8, 8);
+const heroMagicGlowMat = new THREE.MeshBasicMaterial({ color: 0x66ff99, transparent: true, opacity: 0.32 });
 
 // Reusable vectors (zero allocations in update loop)
 const _v1 = new THREE.Vector3();
@@ -27,22 +31,24 @@ export class Projectile {
   lifetime = 4;
   splashRadius: number;
   isCrit: boolean;
+  commandLinked: boolean;
 
   private startPos: THREE.Vector3;
   private progress = 0;
   private totalDist: number;
   private arcHeight: number;
-  private towerType: string;
+  towerType: string;
 
   constructor(
     origin: THREE.Vector3, target: Enemy, damage: number, speed: number,
-    towerType: string, isCrit: boolean = false, splashRadius: number = 0
+    towerType: string, isCrit: boolean = false, splashRadius: number = 0, commandLinked = false
   ) {
     this.target = target;
     this.damage = damage;
     this.speed = speed;
     this.isCrit = isCrit;
     this.splashRadius = splashRadius;
+    this.commandLinked = commandLinked;
     this.towerType = towerType;
 
     this.startPos = _v1.set(origin.x, origin.y, origin.z);
@@ -55,6 +61,9 @@ export class Projectile {
         const glow = new THREE.Mesh(arrowCritGlowGeo, arrowCritGlowMat);
         this.mesh.add(glow);
       }
+    } else if (towerType === 'heroMagic') {
+      this.mesh = new THREE.Mesh(heroMagicGeo, heroMagicMat);
+      this.mesh.add(new THREE.Mesh(heroMagicGlowGeo, heroMagicGlowMat));
     } else {
       this.mesh = new THREE.Mesh(boulderGeo, boulderMat);
       const glow = new THREE.Mesh(boulderGlowGeo, boulderGlowMat);
@@ -67,13 +76,14 @@ export class Projectile {
   /** Re-init for pool reuse — avoids constructor + geometry alloc */
   reset(
     origin: THREE.Vector3, target: Enemy, damage: number, speed: number,
-    towerType: string, isCrit: boolean, splashRadius: number
+    towerType: string, isCrit: boolean, splashRadius: number, commandLinked = false
   ) {
     this.target = target;
     this.damage = damage;
     this.speed = speed;
     this.isCrit = isCrit;
     this.splashRadius = splashRadius;
+    this.commandLinked = commandLinked;
     this.towerType = towerType;
     this.alive = true;
     this.lifetime = 4;
@@ -98,6 +108,10 @@ export class Projectile {
       this.mesh.geometry = arrowGeo;
       this.mesh.material = isCrit ? arrowCritMat : arrowMat;
       if (isCrit) this.mesh.add(new THREE.Mesh(arrowCritGlowGeo, arrowCritGlowMat));
+    } else if (towerType === 'heroMagic') {
+      this.mesh.geometry = heroMagicGeo;
+      this.mesh.material = heroMagicMat;
+      this.mesh.add(new THREE.Mesh(heroMagicGlowGeo, heroMagicGlowMat));
     } else {
       this.mesh.geometry = boulderGeo;
       this.mesh.material = boulderMat;
@@ -139,6 +153,8 @@ export class Projectile {
     // God-Tier Trails
     if (this.towerType === 'archer') {
       magicParticles?.spawn(this.mesh.position.clone(), new THREE.Vector3(0, 0, 0), this.isCrit ? 0xffcc44 : 0x8b6914, 0.04, 0.2);
+    } else if (this.towerType === 'heroMagic') {
+      magicParticles?.spawn(this.mesh.position.clone(), new THREE.Vector3(0, 0.06, 0), 0x55ffaa, 0.055, 0.28);
     } else {
       magicParticles?.spawn(this.mesh.position.clone(), new THREE.Vector3(0, 0.1, 0), 0xff6633, 0.08, 0.4);
     }
@@ -167,18 +183,18 @@ export class ProjectilePool {
 
   acquire(
     origin: THREE.Vector3, target: Enemy, damage: number, speed: number,
-    towerType: string, isCrit: boolean, splashRadius: number
+    towerType: string, isCrit: boolean, splashRadius: number, commandLinked = false
   ): Projectile {
     // Find dead projectile to reuse
     for (const p of this.pool) {
       if (!p.alive) {
-        p.reset(origin, target, damage, speed, towerType, isCrit, splashRadius);
+        p.reset(origin, target, damage, speed, towerType, isCrit, splashRadius, commandLinked);
         this.scene.add(p.mesh);
         return p;
       }
     }
     // Pool empty — create new
-    const p = new Projectile(origin, target, damage, speed, towerType, isCrit, splashRadius);
+    const p = new Projectile(origin, target, damage, speed, towerType, isCrit, splashRadius, commandLinked);
     this.pool.push(p);
     this.scene.add(p.mesh);
     return p;

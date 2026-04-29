@@ -22,6 +22,14 @@ import { magicParticles } from './MagicalParticles';
 import { ambientDust } from './AmbientDust';
 import { warHorn } from './WarHorn';
 
+const BOSS_NAMES: Record<string, string> = {
+  devi: 'Devi, Terror of the Mountains',
+  devi_chief: 'Devi Chief, Breaker of Gates',
+  colchian_dragon: 'Colchian Dragon, Guardian of the Fleece',
+  sassanid_general: 'Sassanid General, Fire of the East',
+  roman_centurion: 'Roman Centurion, Eagle of Empire',
+};
+
 export class GameLoop {
   private readonly _UPGRADE_RANGE = 1.6;
   private _renderer!: THREE.WebGLRenderer;
@@ -38,6 +46,10 @@ export class GameLoop {
   private _wallDistTimer = 0;
   private _cachedWallDistances: number[] = [];
   private _occlusionTimer = 0;
+  private _lastLives = -1;
+  private _lastLevelKey = '';
+  private _commandLinkLine: THREE.Line | null = null;
+  private _defeatShown = false;
 
   init(
     renderer: THREE.WebGLRenderer,
@@ -60,7 +72,7 @@ export class GameLoop {
   }
 
   start(): void {
-    const isModalOpen = () => document.getElementById('game-info-modal')?.classList.contains('visible') ?? false;
+    const isModalOpen = () => this._ui?.isBlockingModalOpen?.() ?? false;
 
     document.addEventListener('visibilitychange', () => {
       gs.paused = document.hidden || isModalOpen();
@@ -94,6 +106,7 @@ export class GameLoop {
     gs.gameTime += dt;
 
     if (!gs.gameOver && !gs.paused && gs.waveMgr && gs.grid) {
+      gs.levelElapsedTime += dt;
       this._updateBuildPhase(dt);
       this._updateWaveCountdown(dt);
       this._updateSpawn(dt);
@@ -101,13 +114,16 @@ export class GameLoop {
       updateEnemySlow();
       this._updateEnemies(dt);
       this._updateFriendlies(dt);
-      updateEnemyWallAttacks(this._scene, this._camera);
+      updateEnemyWallAttacks(this._scene, this._camera, dt);
+      this._updateCommandLink(dt);
+      this._updateWallSynergies();
       this._updateTowers(dt);
       this._updateProjectiles(dt);
       this._updateHero(dt);
       this._updateHeroUpgrades();
       this._updateHeroBuilding(dt);
       updateEnemyDeaths(this._scene, this._camera);
+      this._updateLifeLossFeedback();
       updateEffects(dt, this._camera);
       magicParticles?.update(dt);
       this._updateWallHpBillboards();
@@ -187,7 +203,7 @@ export class GameLoop {
 
     if (boss) {
       this._ui.showBossHp(true);
-      this._ui.updateBossHp(boss.hp, boss.maxHp, 'Ancient Devi');
+      this._ui.updateBossHp(boss.hp, boss.maxHp, this._getBossDisplayName());
     } else {
       this._ui.showBossHp(false);
     }
@@ -259,14 +275,18 @@ export class GameLoop {
 
   private _updateTowers(dt: number): void {
     for (const tower of gs.towers) {
-      const spawn = tower.update(dt, gs.enemies);
+      const spawn = tower.update(dt, gs.enemies, gs.towers, gs.commandLinkTower);
       if (spawn) {
         gs.projectilePool.acquire(
           spawn.origin, spawn.target, spawn.damage, spawn.speed,
           spawn.towerType, spawn.isCrit, spawn.splashRadius,
+          spawn.commandLinked ?? false,
         );
         if (spawn.towerType === 'archer') {
           this._audio.playArrow();
+          if (spawn.isCrit) this._audio.playCriticalHit();
+        } else if (spawn.towerType === 'catapult') {
+          this._audio.playCatapultLaunch();
         }
       }
     }
@@ -331,12 +351,20 @@ export class GameLoop {
       proj.update(dt);
       if (!proj.alive) {
         const hitPos = proj.mesh.position.clone();
+        if (proj.towerType === 'heroMagic') {
+          this._audio.playHeroMagicImpact();
+        } else if (proj.towerType === 'catapult') {
+          this._audio.playCatapultImpact();
+        }
         if (proj.splashRadius > 0) {
           spawnSplashRing(this._scene, hitPos, proj.splashRadius);
           for (const enemy of gs.enemies) {
             if (!enemy.alive) continue;
             if (enemy.getPos().distanceTo(hitPos) <= proj.splashRadius) {
               enemy.takeDamage(proj.damage * 0.5);
+              if (proj.commandLinked && proj.towerType === 'catapult') {
+                enemy.applyTemporarySlow(0.35, 1.0);
+              }
             }
           }
         } else {
@@ -372,7 +400,20 @@ export class GameLoop {
 
   private _updateHero(dt: number): void {
     if (!gs.hero) return;
-    gs.hero.update(dt, this._camera, gs.enemies);
+    const spawn = gs.hero.update(dt, this._camera, gs.enemies);
+    if (spawn) {
+      gs.projectilePool.acquire(
+        spawn.origin,
+        spawn.target,
+        spawn.damage,
+        spawn.speed,
+        'heroMagic',
+        false,
+        0,
+        false,
+      );
+      this._audio.playHeroMagicAttack();
+    }
 
     const mt = gs.hero.getMoveTarget();
     if (mt) {
@@ -399,9 +440,86 @@ export class GameLoop {
     const dist = gs.hero.getPos().distanceTo(targetPos);
     if (dist > this._UPGRADE_RANGE) return;
 
-    gs.upgradeTower(t);
+    if (gs.upgradeTower(t)) this._audio.playTowerUpgrade();
     gs.pendingUpgradeTower = null;
     this._ui.update();
+  }
+
+  private _updateCommandLink(dt: number): void {
+    const hero = gs.hero;
+    if (!hero?.alive) {
+      gs.commandLinkTower?.setSynergyActive(false);
+      gs.commandLinkTower = null;
+      this._setCommandLinkVisible(false);
+      return;
+    }
+
+    let best = null as typeof gs.commandLinkTower;
+    let bestDistSq = 2.5 * 2.5;
+    for (const tower of gs.towers) {
+      if (tower.type !== 'archer' && tower.type !== 'catapult') continue;
+      const dx = tower.group.position.x - hero.group.position.x;
+      const dz = tower.group.position.z - hero.group.position.z;
+      const distSq = dx * dx + dz * dz;
+      if (
+        distSq < bestDistSq ||
+        (Math.abs(distSq - bestDistSq) < 0.0001 && best?.type === 'catapult' && tower.type === 'archer')
+      ) {
+        bestDistSq = distSq;
+        best = tower;
+      }
+    }
+
+    if (gs.commandLinkTower && gs.commandLinkTower !== best) {
+      gs.commandLinkTower.setSynergyActive(false);
+    }
+    gs.commandLinkTower = best;
+    if (best) {
+      best.setSynergyActive(true);
+      this._updateCommandLinkLine(hero.group.position, best.group.position, dt);
+    } else {
+      this._setCommandLinkVisible(false);
+    }
+  }
+
+  private _updateCommandLinkLine(from: THREE.Vector3, to: THREE.Vector3, dt: number): void {
+    if (!this._commandLinkLine) {
+      const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+      const material = new THREE.LineBasicMaterial({ color: 0xd4a017, transparent: true, opacity: 0.42 });
+      this._commandLinkLine = new THREE.Line(geometry, material);
+      this._scene.add(this._commandLinkLine);
+    }
+
+    const positions = this._commandLinkLine.geometry.attributes.position as THREE.BufferAttribute;
+    positions.setXYZ(0, from.x, from.y + 1.2, from.z);
+    positions.setXYZ(1, to.x, to.y + 0.9, to.z);
+    positions.needsUpdate = true;
+    this._commandLinkLine.visible = true;
+
+    const pulse = Math.sin(gs.gameTime * 8) * 0.5 + 0.5;
+    const mat = this._commandLinkLine.material as THREE.LineBasicMaterial;
+    mat.opacity = 0.28 + pulse * 0.18;
+
+    const particlePos = new THREE.Vector3().lerpVectors(from, to, (gs.gameTime * 0.8) % 1);
+    particlePos.y += 1.05;
+    magicParticles?.spawn(particlePos, new THREE.Vector3(0, 0.08 + dt, 0), 0xd4a017, 0.05, 0.25);
+  }
+
+  private _setCommandLinkVisible(visible: boolean): void {
+    if (this._commandLinkLine) this._commandLinkLine.visible = visible;
+  }
+
+  private _updateWallSynergies(): void {
+    const walls = gs.towers.filter(t => t.type === 'wall' && t.getWallHp() > 0);
+    for (const wall of walls) {
+      const hasNeighbor = walls.some(other => {
+        if (other === wall) return false;
+        const dx = other.group.position.x - wall.group.position.x;
+        const dz = other.group.position.z - wall.group.position.z;
+        return dx * dx + dz * dz <= 1.5 * 1.5;
+      });
+      wall.setBastionActive(hasNeighbor);
+    }
   }
 
   private _updateWallHpBillboards(): void {
@@ -442,6 +560,53 @@ export class GameLoop {
     return `You defeated the enemy champion and held the line. Sakartvelo endures.`;
   }
 
+  private _getBossDisplayName(): string {
+    const rawBoss = gs.currentLevel?.boss;
+    const id = typeof rawBoss === 'string' ? rawBoss : rawBoss?.id || rawBoss?.type;
+    if (id && BOSS_NAMES[id]) return BOSS_NAMES[id];
+    if (id) {
+      return id
+        .split('_')
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+    }
+    return 'Enemy Champion';
+  }
+
+  private _updateLifeLossFeedback(): void {
+    const level = gs.currentLevel;
+    if (!level) {
+      this._lastLives = -1;
+      this._lastLevelKey = '';
+      return;
+    }
+
+    const levelKey = `${level.era}-${level.level}`;
+    if (this._lastLevelKey !== levelKey) {
+      this._lastLevelKey = levelKey;
+      this._lastLives = gs.lives;
+      this._defeatShown = false;
+      return;
+    }
+
+    if (this._lastLives >= 0 && gs.lives < this._lastLives) {
+      this._audio.playLifeLost();
+      this._ui.showLifeLostFeedback();
+    }
+    this._lastLives = gs.lives;
+
+    if (gs.gameOver && gs.lives <= 0 && !this._defeatShown) {
+      this._defeatShown = true;
+      this._audio.playGameOver();
+      this._ui.screens.showGameOver(false, this._getDefeatText(), 0);
+    }
+  }
+
+  private _getDefeatText(): string {
+    const target = gs.currentLevel?.defense_target || gs.currentLevel?.name || 'Sakartvelo';
+    return `${target} has fallen for now. Regroup, rebuild the chokepoints, and let Medea lead the next defense.`;
+  }
+
   private _checkWaveComplete(): void {
     if (!gs.waveMgr?.active || !gs.waveMgr.isWaveDone()) {
       this._waveCompleteProcessed = false;
@@ -471,6 +636,7 @@ export class GameLoop {
 
       const finishVictoryFlow = () => {
         this._audio.playVictory();
+        this._audio.playVictoryMelody(stars);
         this._ui.screens.showLevelComplete('Level Complete', stars);
       };
 

@@ -11,6 +11,7 @@ export class AudioManager {
   private _sfxVolume = 1.0;
   private _ctx: AudioContext | null = null;
   private _masterGain: GainNode | null = null;
+  private _bgmFadeTimer: number | null = null;
 
   private _narrationAudio: HTMLAudioElement | null = null;
   private _eraAudioEl: HTMLAudioElement | null = null;
@@ -19,6 +20,7 @@ export class AudioManager {
   _eraPlaying = false;
 
   private _arrowBuffer: AudioBuffer | null = null;
+  private _lastLifeLostAt = 0;
 
   init(): void {
     this.bindVolumeControls();
@@ -174,6 +176,22 @@ export class AudioManager {
     return this._ctx;
   }
 
+  private _playSweep(type: OscillatorType, from: number, to: number, duration: number, gain = 0.15): void {
+    const ctx = this._getCtx();
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(from, t);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(1, to), t + duration);
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.01, t + duration);
+    osc.connect(g);
+    g.connect(this._masterGain!);
+    osc.start(t);
+    osc.stop(t + duration + 0.02);
+  }
+
   private async _loadArrowSound(): Promise<void> {
     try {
       const response = await fetch('/audio/arrow.mp3');
@@ -187,18 +205,40 @@ export class AudioManager {
 
   // ─── Background Music ────────────────────────────────
   
-  playBGM(src: string): void {
+  playBGM(src: string, fadeMs = 2000): void {
     if (this._bgm) {
       if (this._bgm.src.includes(src.replace('./', ''))) return;
-      this._bgm.pause();
+      const old = this._bgm;
+      const startVolume = old.volume;
+      if (this._bgmFadeTimer !== null) window.clearInterval(this._bgmFadeTimer);
+      const startedAt = performance.now();
+      this._bgmFadeTimer = window.setInterval(() => {
+        const t = Math.min(1, (performance.now() - startedAt) / fadeMs);
+        old.volume = startVolume * (1 - t);
+        if (t >= 1) {
+          old.pause();
+          old.currentTime = 0;
+          if (this._bgmFadeTimer !== null) window.clearInterval(this._bgmFadeTimer);
+          this._bgmFadeTimer = null;
+        }
+      }, 50);
     }
     this._bgm = new Audio(src);
     this._bgm.loop = true;
-    this._bgm.volume = this._bgmVolume; // Default mix
+    this._bgm.volume = fadeMs > 0 ? 0 : this._bgmVolume;
     this._bgm.play().catch(() => {
       // Auto-play might be blocked until first interaction
       document.addEventListener('click', () => this._bgm?.play(), { once: true });
     });
+    if (fadeMs > 0) {
+      const next = this._bgm;
+      const startedAt = performance.now();
+      const fadeIn = window.setInterval(() => {
+        const t = Math.min(1, (performance.now() - startedAt) / fadeMs);
+        next.volume = this._bgmVolume * t;
+        if (t >= 1) window.clearInterval(fadeIn);
+      }, 50);
+    }
   }
 
   stopBGM(): void {
@@ -254,6 +294,27 @@ export class AudioManager {
     osc.stop(ctx.currentTime + 0.3);
   }
 
+  playCatapultLaunch(): void { this._playSweep('triangle', 100, 55, 0.16, 0.22); }
+  playCatapultImpact(): void { this._playSweep('sine', 80, 45, 0.32, 0.3); }
+  playWallDestruction(): void { this._playSweep('sawtooth', 120, 45, 0.55, 0.28); }
+  playCriticalHit(): void { this._playSweep('sine', 1800, 2400, 0.1, 0.11); }
+  playBossEntrance(): void { this._playSweep('sawtooth', 55, 95, 1.8, 0.22); }
+  playBossRoar(): void { this._playSweep('sawtooth', 100, 70, 0.9, 0.2); }
+  playBossDeath(): void { this._playSweep('sawtooth', 160, 35, 2.0, 0.28); }
+  playGameOver(): void { this._playSweep('sine', 440, 110, 1.4, 0.22); }
+  playScreenTransition(): void { this._playSweep('triangle', 2000, 500, 0.2, 0.1); }
+  playBuildPhaseStart(): void { this._playSweep('sine', 660, 660, 0.5, 0.14); }
+  playBuildPhaseWarning(): void { this._playSweep('sine', 1000, 900, 0.05, 0.08); }
+  playTowerUpgrade(): void {
+    [400, 600, 800, 1200].forEach((freq, i) => {
+      window.setTimeout(() => this._playSweep('sine', freq, freq, 0.12, 0.09), i * 55);
+    });
+  }
+  playTowerSell(): void { this._playSweep('triangle', 300, 100, 0.3, 0.12); }
+  playCooldownReady(): void { this._playSweep('sine', 700, 1200, 0.18, 0.09); }
+  playBuildHammering(): void { this._playSweep('square', 3000, 2600, 0.04, 0.035); }
+  playLowHealthPulse(): void { this._playSweep('sine', 60, 55, 0.18, 0.08); }
+
   playVictory(): void {
     const ctx = this._getCtx();
     const notes = [440, 554.37, 659.25, 880, 1108.73]; // A Major 9
@@ -273,6 +334,199 @@ export class AudioManager {
       g.connect(this._masterGain!);
       osc.start(t);
       osc.stop(t + 1.0);
+    });
+  }
+
+  playLifeLost(): void {
+    const now = performance.now();
+    if (now - this._lastLifeLostAt < 500) return;
+    this._lastLifeLostAt = now;
+
+    const ctx = this._getCtx();
+    const t = ctx.currentTime;
+    const drone = ctx.createOscillator();
+    const fall = ctx.createOscillator();
+    const g = ctx.createGain();
+
+    drone.type = 'sine';
+    drone.frequency.setValueAtTime(150, t);
+    fall.type = 'sine';
+    fall.frequency.setValueAtTime(150, t);
+    fall.frequency.exponentialRampToValueAtTime(120, t + 0.5);
+
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.28, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.01, t + 0.55);
+
+    drone.connect(g);
+    fall.connect(g);
+    g.connect(this._masterGain!);
+    drone.start(t);
+    fall.start(t + 0.08);
+    drone.stop(t + 0.55);
+    fall.stop(t + 0.55);
+  }
+
+  playStarReveal(starNumber: number): void {
+    const ctx = this._getCtx();
+    const baseTime = ctx.currentTime;
+    const tones = [880, 1100, 1320].slice(0, Math.max(1, Math.min(3, starNumber)));
+
+    tones.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      const t = baseTime + i * 0.08;
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.18, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.01, t + 0.28 + starNumber * 0.06);
+      osc.connect(g);
+      g.connect(this._masterGain!);
+      osc.start(t);
+      osc.stop(t + 0.55);
+    });
+
+    if (starNumber >= 3) {
+      const shimmer = ctx.createOscillator();
+      const g = ctx.createGain();
+      shimmer.type = 'triangle';
+      shimmer.frequency.setValueAtTime(1760, baseTime + 0.2);
+      g.gain.setValueAtTime(0.08, baseTime + 0.2);
+      g.gain.exponentialRampToValueAtTime(0.01, baseTime + 0.9);
+      shimmer.connect(g);
+      g.connect(this._masterGain!);
+      shimmer.start(baseTime + 0.2);
+      shimmer.stop(baseTime + 0.9);
+    }
+  }
+
+  playVictoryMelody(starCount: number): void {
+    const ctx = this._getCtx();
+    const t0 = ctx.currentTime;
+    const notes = [440, 493.88, 523.25, 659.25, 880]; // A harmonic-minor flavored ascent.
+    const clampedStars = Math.max(1, Math.min(3, starCount));
+
+    const playVoice = (type: OscillatorType, gain: number, offset: number, ratio = 1) => {
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        const t = t0 + i * 0.2 + offset;
+        const duration = i === notes.length - 1 ? 0.65 : 0.24;
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq * ratio, t);
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(gain, t + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.01, t + duration);
+        osc.connect(g);
+        g.connect(this._masterGain!);
+        osc.start(t);
+        osc.stop(t + duration + 0.05);
+      });
+    };
+
+    playVoice('sine', 0.18, 0);
+    if (clampedStars >= 2) playVoice('triangle', 0.1, 0.04, 1.5);
+    if (clampedStars >= 3) {
+      playVoice('square', 0.045, 0, 0.5);
+      [0.995, 1.005, 1.5].forEach((ratio, i) => {
+        const pad = ctx.createOscillator();
+        const g = ctx.createGain();
+        pad.type = 'sine';
+        pad.frequency.setValueAtTime(220 * ratio, t0);
+        g.gain.setValueAtTime(0, t0);
+        g.gain.linearRampToValueAtTime(0.035, t0 + 0.25 + i * 0.03);
+        g.gain.exponentialRampToValueAtTime(0.01, t0 + 1.8);
+        pad.connect(g);
+        g.connect(this._masterGain!);
+        pad.start(t0);
+        pad.stop(t0 + 1.9);
+      });
+    }
+  }
+
+  playHeroMagicAttack(): void {
+    const ctx = this._getCtx();
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(400, t);
+    osc.frequency.exponentialRampToValueAtTime(800, t + 0.08);
+    g.gain.setValueAtTime(0.16, t);
+    g.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+    osc.connect(g);
+    g.connect(this._masterGain!);
+    osc.start(t);
+    osc.stop(t + 0.12);
+  }
+
+  playHeroMagicImpact(): void {
+    const ctx = this._getCtx();
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(720, t);
+    osc.frequency.exponentialRampToValueAtTime(260, t + 0.16);
+    g.gain.setValueAtTime(0.11, t);
+    g.gain.exponentialRampToValueAtTime(0.01, t + 0.18);
+    osc.connect(g);
+    g.connect(this._masterGain!);
+    osc.start(t);
+    osc.stop(t + 0.18);
+  }
+
+  playHeroHit(): void {
+    const ctx = this._getCtx();
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600, t);
+    osc.frequency.exponentialRampToValueAtTime(400, t + 0.12);
+    g.gain.setValueAtTime(0.15, t);
+    g.gain.exponentialRampToValueAtTime(0.01, t + 0.16);
+    osc.connect(g);
+    g.connect(this._masterGain!);
+    osc.start(t);
+    osc.stop(t + 0.16);
+  }
+
+  playHeroDeath(): void {
+    const ctx = this._getCtx();
+    const t = ctx.currentTime;
+    [220, 261.63, 329.63].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, t);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.45, t + 1.0);
+      g.gain.setValueAtTime(0.08, t + i * 0.02);
+      g.gain.exponentialRampToValueAtTime(0.01, t + 1.1);
+      osc.connect(g);
+      g.connect(this._masterGain!);
+      osc.start(t);
+      osc.stop(t + 1.1);
+    });
+  }
+
+  playHeroRespawn(): void {
+    const ctx = this._getCtx();
+    const t = ctx.currentTime;
+    [440, 523.25, 659.25].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq * 0.5, t);
+      osc.frequency.exponentialRampToValueAtTime(freq, t + 1.3);
+      g.gain.setValueAtTime(0, t + i * 0.08);
+      g.gain.linearRampToValueAtTime(0.08, t + 0.35 + i * 0.08);
+      g.gain.exponentialRampToValueAtTime(0.01, t + 1.55);
+      osc.connect(g);
+      g.connect(this._masterGain!);
+      osc.start(t);
+      osc.stop(t + 1.6);
     });
   }
 
