@@ -10,7 +10,7 @@
   justify-content: center;
   background: rgba(8, 14, 8, 0.97);
   color: #f0e6d2;
-  font-family: 'Georgia', serif;
+  font-family: 'Noto Serif Georgian', 'Georgia', serif;
   text-align: center;
 }
 
@@ -120,7 +120,7 @@
   background: rgba(212, 160, 23, 0.15);
   color: #f0e6d2;
   cursor: pointer;
-  font-family: 'Georgia', serif;
+  font-family: 'Noto Serif Georgian', 'Georgia', serif;
   font-size: 16px;
   letter-spacing: 2px;
   text-transform: uppercase;
@@ -210,7 +210,7 @@
 #era-controls { display: flex; gap: 14px; align-items: center; margin-bottom: 24px; }
 
 .era-play-btn, .era-nav-btn {
-  border-radius: 8px; cursor: pointer; font-family: 'Georgia', serif; transition: all 0.25s;
+  border-radius: 8px; cursor: pointer; font-family: 'Noto Serif Georgian', 'Georgia', serif; transition: all 0.25s;
 }
 
 .era-play-btn {

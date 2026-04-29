@@ -173,7 +173,7 @@ body.low-lives-warning::after {
   background: rgba(0, 0, 0, 0.5);
   color: #f0e6d2;
   padding: 7px 12px;
-  font-family: Georgia, serif;
+  font-family: 'Noto Serif Georgian', Georgia, serif;
   font-weight: bold;
 }
 
@@ -232,7 +232,7 @@ body.low-lives-warning::after {
   background: rgba(0, 0, 0, 0.35);
   color: #f0e6d2;
   padding: 6px 10px;
-  font-family: Georgia, serif;
+  font-family: 'Noto Serif Georgian', Georgia, serif;
 }
 
 .bestiary-tab.active {
@@ -365,13 +365,18 @@ body.build-layout-right .wave-btn {
   background: rgba(139, 105, 20, 0.3);
   color: #f0e6d2;
   cursor: pointer;
-  font-family: 'Georgia', serif;
+  font-family: 'Noto Serif Georgian', 'Georgia', serif;
   font-size: 13px;
   transition: all 0.2s;
 }
 
 .tower-btn:hover:not(:disabled) {
   background: rgba(139, 105, 20, 0.6);
+}
+
+.tower-btn:active:not(:disabled) {
+  background: rgba(139, 105, 20, 0.7);
+  transform: scale(0.96);
 }
 
 .tower-btn.selected {
@@ -392,7 +397,7 @@ body.build-layout-right .wave-btn {
   background: rgba(192, 57, 43, 0.4);
   color: #f0e6d2;
   cursor: pointer;
-  font-family: 'Georgia', serif;
+  font-family: 'Noto Serif Georgian', 'Georgia', serif;
   font-size: 14px;
   font-weight: bold;
   transition: all 0.2s;
@@ -400,6 +405,11 @@ body.build-layout-right .wave-btn {
 
 .wave-btn:hover {
   background: rgba(192, 57, 43, 0.7);
+}
+
+.wave-btn:active:not(:disabled) {
+  background: rgba(192, 57, 43, 0.85);
+  transform: scale(0.96);
 }
 
 .wave-btn:disabled {
@@ -518,7 +528,7 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
   background: rgba(139, 105, 20, 0.25);
   color: #f0e6d2;
   cursor: pointer;
-  font-family: 'Georgia', serif;
+  font-family: 'Noto Serif Georgian', 'Georgia', serif;
   font-size: 18px;
   font-weight: bold;
 }
@@ -531,7 +541,7 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
   background: rgba(139, 105, 20, 0.25);
   color: #f0e6d2;
   cursor: pointer;
-  font-family: 'Georgia', serif;
+  font-family: 'Noto Serif Georgian', 'Georgia', serif;
   font-size: 20px;
 }
 
@@ -552,7 +562,7 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
   border-radius: 10px;
   background: rgba(8, 14, 8, 0.88);
   color: #f0e6d2;
-  font-family: 'Georgia', serif;
+  font-family: 'Noto Serif Georgian', 'Georgia', serif;
   font-size: 12px;
 }
 
@@ -579,14 +589,20 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
 .build-circle-btn {
   position: absolute;
   min-width: 104px;
-  min-height: 34px;
+  min-height: 44px;
   border: 1px solid #8b6914;
   border-radius: 18px;
   background: rgba(139, 105, 20, 0.35);
   color: #f0e6d2;
-  font-family: 'Georgia', serif;
+  font-family: 'Noto Serif Georgian', 'Georgia', serif;
   font-size: 12px;
   transform: translate(-50%, -50%);
+  transition: all 0.15s;
+}
+
+.build-circle-btn:active {
+  background: rgba(139, 105, 20, 0.7);
+  transform: translate(-50%, -50%) scale(0.96);
 }
 
 #build-circle-archer {
@@ -764,7 +780,7 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
   border-radius: 8px;
   background: rgba(139, 105, 20, 0.2);
   color: #f0e6d2;
-  font-family: 'Georgia', serif;
+  font-family: 'Noto Serif Georgian', 'Georgia', serif;
   padding: 6px 8px;
 }
 
@@ -775,7 +791,7 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
   border-radius: 10px;
   background: rgba(139, 105, 20, 0.25);
   color: #f0e6d2;
-  font-family: 'Georgia', serif;
+  font-family: 'Noto Serif Georgian', 'Georgia', serif;
   font-size: 14px;
 }
 
@@ -896,6 +912,12 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
   transform: translateY(-2px);
 }
 
+.ability-btn:active:not(:disabled) {
+  border-color: #9b59b6;
+  box-shadow: 0 0 8px rgba(155, 89, 182, 0.6);
+  transform: translateY(0) scale(0.95);
+}
+
 .ability-btn:disabled {
   cursor: not-allowed;
   filter: grayscale(0.8);
@@ -945,7 +967,7 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
   border-radius: 16px;
   border: 2px solid #8b6914;
   color: #f0e6d2;
-  font-family: 'Georgia', serif;
+  font-family: 'Noto Serif Georgian', 'Georgia', serif;
   transform: translate(-50%, -50%);
 }
 
@@ -986,7 +1008,7 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
   background: rgba(139, 105, 20, 0.3);
   color: #f0e6d2;
   cursor: pointer;
-  font-family: 'Georgia', serif;
+  font-family: 'Noto Serif Georgian', 'Georgia', serif;
   font-size: 12px;
   transition: all 0.2s;
   text-align: center;
@@ -1144,15 +1166,15 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
   }
 
   .hero-info-btn {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: 10px;
     font-size: 16px;
   }
 
   .hero-wall-btn {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: 10px;
     font-size: 18px;
   }

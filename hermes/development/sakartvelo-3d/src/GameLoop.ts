@@ -454,6 +454,7 @@ export class GameLoop {
     if (!gs.hero) return;
     const spawn = gs.hero.update(dt, this._camera, gs.enemies);
     if (spawn) {
+      const linked = !!gs.commandLinkTower && gs.hero.commandLinked;
       gs.projectilePool.acquire(
         spawn.origin,
         spawn.target,
@@ -462,7 +463,7 @@ export class GameLoop {
         'heroMagic',
         false,
         0,
-        false,
+        linked,
       );
       this._audio.playHeroMagicAttack();
     }

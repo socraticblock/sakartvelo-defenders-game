@@ -1,0 +1,851 @@
+diff --git a/hermes/development/sakartvelo-3d/src/GameLoop.ts b/hermes/development/sakartvelo-3d/src/GameLoop.ts
+index 067ff5c..8c7b534 100644
+--- a/hermes/development/sakartvelo-3d/src/GameLoop.ts
++++ b/hermes/development/sakartvelo-3d/src/GameLoop.ts
+@@ -454,6 +454,7 @@ export class GameLoop {
+     if (!gs.hero) return;
+     const spawn = gs.hero.update(dt, this._camera, gs.enemies);
+     if (spawn) {
++      const linked = !!gs.commandLinkTower && gs.hero.commandLinked;
+       gs.projectilePool.acquire(
+         spawn.origin,
+         spawn.target,
+@@ -462,7 +463,7 @@ export class GameLoop {
+         'heroMagic',
+         false,
+         0,
+-        false,
++        linked,
+       );
+       this._audio.playHeroMagicAttack();
+     }
+diff --git a/hermes/development/sakartvelo-3d/src/GameState.ts b/hermes/development/sakartvelo-3d/src/GameState.ts
+index f4507a7..e893407 100644
+--- a/hermes/development/sakartvelo-3d/src/GameState.ts
++++ b/hermes/development/sakartvelo-3d/src/GameState.ts
+@@ -204,7 +204,7 @@ export class GameState {
+   }
+ 
+   getStarString(n: number): string {
+-    return '⭐'.repeat(n) + '☆'.repeat(3 - n);
++    return '★'.repeat(n) + '☆'.repeat(3 - n);
+   }
+ 
+   // ─── Enemy spawning ──────────────────────────────────────
+diff --git a/hermes/development/sakartvelo-3d/src/Projectile.ts b/hermes/development/sakartvelo-3d/src/Projectile.ts
+index f35cc51..3fd7e94 100644
+--- a/hermes/development/sakartvelo-3d/src/Projectile.ts
++++ b/hermes/development/sakartvelo-3d/src/Projectile.ts
+@@ -65,8 +65,9 @@ export class Projectile {
+         this.mesh.add(glow);
+       }
+     } else if (towerType === 'heroMagic') {
+-      this.mesh = new THREE.Mesh(heroMagicGeo, heroMagicMat);
+-      this.mesh.add(new THREE.Mesh(heroMagicGlowGeo, heroMagicGlowMat));
++      const useLinked = commandLinked;
++      this.mesh = new THREE.Mesh(heroMagicGeo, useLinked ? heroMagicLinkedMat : heroMagicMat);
++      this.mesh.add(new THREE.Mesh(heroMagicGlowGeo, useLinked ? heroMagicLinkedGlowMat : heroMagicGlowMat));
+     } else {
+       this.mesh = new THREE.Mesh(boulderGeo, boulderMat);
+       const glow = new THREE.Mesh(boulderGlowGeo, boulderGlowMat);
+@@ -112,9 +113,10 @@ export class Projectile {
+       this.mesh.material = isCrit ? arrowCritMat : arrowMat;
+       if (isCrit) this.mesh.add(new THREE.Mesh(arrowCritGlowGeo, arrowCritGlowMat));
+     } else if (towerType === 'heroMagic') {
++      const useLinked = commandLinked;
+       this.mesh.geometry = heroMagicGeo;
+-      this.mesh.material = heroMagicMat;
+-      this.mesh.add(new THREE.Mesh(heroMagicGlowGeo, heroMagicGlowMat));
++      this.mesh.material = useLinked ? heroMagicLinkedMat : heroMagicMat;
++      this.mesh.add(new THREE.Mesh(heroMagicGlowGeo, useLinked ? heroMagicLinkedGlowMat : heroMagicGlowMat));
+     } else {
+       this.mesh.geometry = boulderGeo;
+       this.mesh.material = boulderMat;
+@@ -157,7 +159,8 @@ export class Projectile {
+     if (this.towerType === 'archer') {
+       magicParticles?.spawn(this.mesh.position.clone(), new THREE.Vector3(0, 0, 0), this.isCrit ? 0xffcc44 : 0x8b6914, 0.04, 0.2);
+     } else if (this.towerType === 'heroMagic') {
+-      magicParticles?.spawn(this.mesh.position.clone(), new THREE.Vector3(0, 0.06, 0), 0x55ffaa, 0.055, 0.28);
++      const trailColor = this.commandLinked ? 0xddcc44 : 0x55ffaa;
++      magicParticles?.spawn(this.mesh.position.clone(), new THREE.Vector3(0, 0.06, 0), trailColor, 0.055, 0.28);
+     } else {
+       magicParticles?.spawn(this.mesh.position.clone(), new THREE.Vector3(0, 0.1, 0), 0xff6633, 0.08, 0.4);
+     }
+diff --git a/hermes/development/sakartvelo-3d/src/base.css b/hermes/development/sakartvelo-3d/src/base.css
+index f41b161..552cd74 100644
+--- a/hermes/development/sakartvelo-3d/src/base.css
++++ b/hermes/development/sakartvelo-3d/src/base.css
+@@ -1,5 +1,7 @@
+ /* base.css — Global resets and fundamental layout */
+ 
++@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+Georgian:wght@400;700&display=swap');
++
+ * {
+   margin: 0;
+   padding: 0;
+@@ -9,7 +11,7 @@
+ body {
+   overflow: hidden;
+   background: #1a1a2e;
+-  font-family: 'Georgia', serif;
++  font-family: 'Noto Serif Georgian', 'Georgia', serif;
+ }
+ 
+ canvas {
+diff --git a/hermes/development/sakartvelo-3d/src/hud.css b/hermes/development/sakartvelo-3d/src/hud.css
+index 35ab822..54781cb 100644
+--- a/hermes/development/sakartvelo-3d/src/hud.css
++++ b/hermes/development/sakartvelo-3d/src/hud.css
+@@ -173,7 +173,7 @@ body.low-lives-warning::after {
+   background: rgba(0, 0, 0, 0.5);
+   color: #f0e6d2;
+   padding: 7px 12px;
+-  font-family: Georgia, serif;
++  font-family: 'Noto Serif Georgian', Georgia, serif;
+   font-weight: bold;
+ }
+ 
+@@ -232,7 +232,7 @@ body.low-lives-warning::after {
+   background: rgba(0, 0, 0, 0.35);
+   color: #f0e6d2;
+   padding: 6px 10px;
+-  font-family: Georgia, serif;
++  font-family: 'Noto Serif Georgian', Georgia, serif;
+ }
+ 
+ .bestiary-tab.active {
+@@ -365,7 +365,7 @@ body.build-layout-right .wave-btn {
+   background: rgba(139, 105, 20, 0.3);
+   color: #f0e6d2;
+   cursor: pointer;
+-  font-family: 'Georgia', serif;
++  font-family: 'Noto Serif Georgian', 'Georgia', serif;
+   font-size: 13px;
+   transition: all 0.2s;
+ }
+@@ -374,6 +374,11 @@ body.build-layout-right .wave-btn {
+   background: rgba(139, 105, 20, 0.6);
+ }
+ 
++.tower-btn:active:not(:disabled) {
++  background: rgba(139, 105, 20, 0.7);
++  transform: scale(0.96);
++}
++
+ .tower-btn.selected {
+   background: rgba(139, 105, 20, 0.8);
+   border-color: #d4a017;
+@@ -392,7 +397,7 @@ body.build-layout-right .wave-btn {
+   background: rgba(192, 57, 43, 0.4);
+   color: #f0e6d2;
+   cursor: pointer;
+-  font-family: 'Georgia', serif;
++  font-family: 'Noto Serif Georgian', 'Georgia', serif;
+   font-size: 14px;
+   font-weight: bold;
+   transition: all 0.2s;
+@@ -402,6 +407,11 @@ body.build-layout-right .wave-btn {
+   background: rgba(192, 57, 43, 0.7);
+ }
+ 
++.wave-btn:active:not(:disabled) {
++  background: rgba(192, 57, 43, 0.85);
++  transform: scale(0.96);
++}
++
+ .wave-btn:disabled {
+   opacity: 0.4;
+   cursor: not-allowed;
+@@ -518,7 +528,7 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
+   background: rgba(139, 105, 20, 0.25);
+   color: #f0e6d2;
+   cursor: pointer;
+-  font-family: 'Georgia', serif;
++  font-family: 'Noto Serif Georgian', 'Georgia', serif;
+   font-size: 18px;
+   font-weight: bold;
+ }
+@@ -531,7 +541,7 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
+   background: rgba(139, 105, 20, 0.25);
+   color: #f0e6d2;
+   cursor: pointer;
+-  font-family: 'Georgia', serif;
++  font-family: 'Noto Serif Georgian', 'Georgia', serif;
+   font-size: 20px;
+ }
+ 
+@@ -552,7 +562,7 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
+   border-radius: 10px;
+   background: rgba(8, 14, 8, 0.88);
+   color: #f0e6d2;
+-  font-family: 'Georgia', serif;
++  font-family: 'Noto Serif Georgian', 'Georgia', serif;
+   font-size: 12px;
+ }
+ 
+@@ -579,14 +589,20 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
+ .build-circle-btn {
+   position: absolute;
+   min-width: 104px;
+-  min-height: 34px;
++  min-height: 44px;
+   border: 1px solid #8b6914;
+   border-radius: 18px;
+   background: rgba(139, 105, 20, 0.35);
+   color: #f0e6d2;
+-  font-family: 'Georgia', serif;
++  font-family: 'Noto Serif Georgian', 'Georgia', serif;
+   font-size: 12px;
+   transform: translate(-50%, -50%);
++  transition: all 0.15s;
++}
++
++.build-circle-btn:active {
++  background: rgba(139, 105, 20, 0.7);
++  transform: translate(-50%, -50%) scale(0.96);
+ }
+ 
+ #build-circle-archer {
+@@ -764,7 +780,7 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
+   border-radius: 8px;
+   background: rgba(139, 105, 20, 0.2);
+   color: #f0e6d2;
+-  font-family: 'Georgia', serif;
++  font-family: 'Noto Serif Georgian', 'Georgia', serif;
+   padding: 6px 8px;
+ }
+ 
+@@ -775,7 +791,7 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
+   border-radius: 10px;
+   background: rgba(139, 105, 20, 0.25);
+   color: #f0e6d2;
+-  font-family: 'Georgia', serif;
++  font-family: 'Noto Serif Georgian', 'Georgia', serif;
+   font-size: 14px;
+ }
+ 
+@@ -896,6 +912,12 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
+   transform: translateY(-2px);
+ }
+ 
++.ability-btn:active:not(:disabled) {
++  border-color: #9b59b6;
++  box-shadow: 0 0 8px rgba(155, 89, 182, 0.6);
++  transform: translateY(0) scale(0.95);
++}
++
+ .ability-btn:disabled {
+   cursor: not-allowed;
+   filter: grayscale(0.8);
+@@ -945,7 +967,7 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
+   border-radius: 16px;
+   border: 2px solid #8b6914;
+   color: #f0e6d2;
+-  font-family: 'Georgia', serif;
++  font-family: 'Noto Serif Georgian', 'Georgia', serif;
+   transform: translate(-50%, -50%);
+ }
+ 
+@@ -986,7 +1008,7 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
+   background: rgba(139, 105, 20, 0.3);
+   color: #f0e6d2;
+   cursor: pointer;
+-  font-family: 'Georgia', serif;
++  font-family: 'Noto Serif Georgian', 'Georgia', serif;
+   font-size: 12px;
+   transition: all 0.2s;
+   text-align: center;
+@@ -1144,15 +1166,15 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
+   }
+ 
+   .hero-info-btn {
+-    width: 40px;
+-    height: 40px;
++    width: 44px;
++    height: 44px;
+     border-radius: 10px;
+     font-size: 16px;
+   }
+ 
+   .hero-wall-btn {
+-    width: 40px;
+-    height: 40px;
++    width: 44px;
++    height: 44px;
+     border-radius: 10px;
+     font-size: 18px;
+   }
+diff --git a/hermes/development/sakartvelo-3d/src/intro.css b/hermes/development/sakartvelo-3d/src/intro.css
+index 502839e..123096f 100644
+--- a/hermes/development/sakartvelo-3d/src/intro.css
++++ b/hermes/development/sakartvelo-3d/src/intro.css
+@@ -10,7 +10,7 @@
+   justify-content: center;
+   background: rgba(8, 14, 8, 0.97);
+   color: #f0e6d2;
+-  font-family: 'Georgia', serif;
++  font-family: 'Noto Serif Georgian', 'Georgia', serif;
+   text-align: center;
+ }
+ 
+@@ -120,7 +120,7 @@
+   background: rgba(212, 160, 23, 0.15);
+   color: #f0e6d2;
+   cursor: pointer;
+-  font-family: 'Georgia', serif;
++  font-family: 'Noto Serif Georgian', 'Georgia', serif;
+   font-size: 16px;
+   letter-spacing: 2px;
+   text-transform: uppercase;
+@@ -210,7 +210,7 @@
+ #era-controls { display: flex; gap: 14px; align-items: center; margin-bottom: 24px; }
+ 
+ .era-play-btn, .era-nav-btn {
+-  border-radius: 8px; cursor: pointer; font-family: 'Georgia', serif; transition: all 0.25s;
++  border-radius: 8px; cursor: pointer; font-family: 'Noto Serif Georgian', 'Georgia', serif; transition: all 0.25s;
+ }
+ 
+ .era-play-btn {
+diff --git a/hermes/development/sakartvelo-3d/src/screens.css b/hermes/development/sakartvelo-3d/src/screens.css
+index 23cf17c..0640ae0 100644
+--- a/hermes/development/sakartvelo-3d/src/screens.css
++++ b/hermes/development/sakartvelo-3d/src/screens.css
+@@ -13,7 +13,7 @@
+   inset: 0;
+   background: rgba(8, 14, 8, 0.97);
+   color: #f0e6d2;
+-  font-family: 'Georgia', serif;
++  font-family: 'Noto Serif Georgian', 'Georgia', serif;
+   padding: 40px 20px;
+   overflow-y: auto;
+   z-index: 150;
+@@ -30,7 +30,7 @@
+   border-radius: 16px;
+   border: 2px solid #d4a017;
+   color: #f0e6d2;
+-  font-family: 'Georgia', serif;
++  font-family: 'Noto Serif Georgian', 'Georgia', serif;
+   z-index: 200;
+   min-width: 340px;
+   max-width: min(680px, calc(100vw - 28px));
+@@ -99,7 +99,7 @@
+   padding: 11px 22px;
+   border-radius: 8px;
+   cursor: pointer;
+-  font-family: 'Georgia', serif;
++  font-family: 'Noto Serif Georgian', 'Georgia', serif;
+   font-size: 14px;
+   transition: background 0.2s;
+ }
+@@ -148,7 +148,7 @@
+   background: rgba(139, 105, 20, 0.5);
+   color: #f0e6d2;
+   cursor: pointer;
+-  font-family: 'Georgia', serif;
++  font-family: 'Noto Serif Georgian', 'Georgia', serif;
+   font-size: 16px;
+ }
+ 
+diff --git a/hermes/development/sakartvelo-3d/src/tutorial.css b/hermes/development/sakartvelo-3d/src/tutorial.css
+index c04ebd9..db9b3c1 100644
+--- a/hermes/development/sakartvelo-3d/src/tutorial.css
++++ b/hermes/development/sakartvelo-3d/src/tutorial.css
+@@ -52,7 +52,7 @@
+   background: rgba(68, 255, 136, 0.15);
+   color: #44ff88;
+   cursor: pointer;
+-  font-family: 'Georgia', serif;
++  font-family: 'Noto Serif Georgian', 'Georgia', serif;
+   font-size: 15px;
+   letter-spacing: 1px;
+   transition: all 0.2s;
+@@ -127,7 +127,7 @@
+   background: rgba(212, 160, 23, 0.16);
+   color: #f0e6d2;
+   padding: 9px 14px;
+-  font-family: Georgia, serif;
++  font-family: 'Noto Serif Georgian', Georgia, serif;
+   font-weight: bold;
+ }
+ 
+@@ -180,7 +180,7 @@
+   text-align: center;
+   color: #8a7a5a;
+   font-size: 12px;
+-  font-family: 'Georgia', serif;
++  font-family: 'Noto Serif Georgian', 'Georgia', serif;
+   pointer-events: none;
+   z-index: 50;
+   font-style: italic;
+diff --git a/hermes/development/sakartvelo-3d/src/BossCinematic.ts b/hermes/development/sakartvelo-3d/src/BossCinematic.ts
+new file mode 100644
+index 0000000..0cc1335
+--- /dev/null
++++ b/hermes/development/sakartvelo-3d/src/BossCinematic.ts
+@@ -0,0 +1,208 @@
++/**
++ * BossCinematic.ts
++ * 2.5-second boss entrance cinematic.
++ *
++ * Phase 1 (0–0.8s): Warning — BGM dips, drum hit, vignette darkens.
++ * Phase 2 (0.8–2.2s): Name reveal — gold text overlay, boss frozen,
++ *   slow-mo 0.15×, camera lerps toward boss, particle ring.
++ * Phase 3 (2.2–2.5s): Break — unfreeze, time scale back to 1.0,
++ *   vignette fades, text fades out.
++ */
++import * as THREE from 'three';
++import { gs } from './GameState';
++import { audio } from './AudioManager';
++import { magicParticles } from './MagicalParticles';
++
++const CINEMATIC_DURATION = 2.5;
++const PHASE1_END = 0.8;
++const PHASE2_END = 2.2;
++
++export class BossCinematic {
++  private _active = false;
++  private _elapsed = 0;
++  private _bossPos = new THREE.Vector3();
++  private _bossName = '';
++  private _onComplete: (() => void) | null = null;
++
++  // DOM overlays (created lazily)
++  private _vignette: HTMLDivElement | null = null;
++  private _nameOverlay: HTMLDivElement | null = null;
++
++  // Camera lerp
++  private _camStartPos = new THREE.Vector3();
++  private _camTargetPos = new THREE.Vector3();
++
++  // Particle ring state
++  private _ringSpawned = false;
++
++  get active(): boolean { return this._active; }
++
++  /** Trigger the cinematic. bossPos in world space, bossName display string. */
++  trigger(bossPos: THREE.Vector3, bossName: string, onComplete: () => void): void {
++    if (this._active) return;
++    this._active = true;
++    this._elapsed = 0;
++    this._bossPos.copy(bossPos);
++    this._bossName = bossName;
++    this._onComplete = onComplete;
++    this._ringSpawned = false;
++
++    // Store camera start for lerp
++    const cam = (window as any).__camera as THREE.PerspectiveCamera | undefined;
++    if (cam) this._camStartPos.copy(cam.position);
++
++    // Compute camera target: pull slightly toward boss
++    if (cam) {
++      this._camTargetPos.copy(cam.position);
++      const dx = bossPos.x - cam.position.x;
++      const dz = bossPos.z - cam.position.z;
++      // Move camera 15% toward boss on XZ
++      this._camTargetPos.x += dx * 0.15;
++      this._camTargetPos.z += dz * 0.15;
++    }
++
++    // Phase 1: Audio warning
++    audio.playBossEntrance();
++  }
++
++  /** Call from game loop with raw (unscaled) dt. */
++  update(rawDt: number, camera: THREE.PerspectiveCamera): void {
++    if (!this._active) return;
++    this._elapsed += rawDt;
++
++    const t = this._elapsed;
++
++    // ─── Time scale ─────────────────────────────────────────
++    if (t < PHASE1_END) {
++      // Phase 1: ramp down to 0.15×
++      gs.targetTimeScale = 1.0 - (1.0 - 0.15) * (t / PHASE1_END);
++    } else if (t < PHASE2_END) {
++      // Phase 2: hold at 0.15×
++      gs.targetTimeScale = 0.15;
++    } else if (t < CINEMATIC_DURATION) {
++      // Phase 3: ramp back to 1.0
++      const phase3T = (t - PHASE2_END) / (CINEMATIC_DURATION - PHASE2_END);
++      gs.targetTimeScale = 0.15 + 0.85 * phase3T;
++    }
++
++    // ─── Vignette ───────────────────────────────────────────
++    this._ensureVignette();
++    if (this._vignette) {
++      let opacity = 0;
++      if (t < PHASE1_END) {
++        opacity = 0.5 * (t / PHASE1_END);
++      } else if (t < PHASE2_END) {
++        opacity = 0.5;
++      } else {
++        opacity = 0.5 * (1 - (t - PHASE2_END) / (CINEMATIC_DURATION - PHASE2_END));
++      }
++      this._vignette.style.opacity = String(opacity);
++    }
++
++    // ─── Camera lerp ────────────────────────────────────────
++    if (t >= PHASE1_END && t < PHASE2_END) {
++      const lerpT = (t - PHASE1_END) / (PHASE2_END - PHASE1_END);
++      camera.position.lerpVectors(this._camStartPos, this._camTargetPos, lerpT * 0.3);
++    }
++
++    // ─── Name reveal ────────────────────────────────────────
++    this._ensureNameOverlay();
++    if (this._nameOverlay) {
++      if (t >= PHASE1_END && t < PHASE2_END) {
++        this._nameOverlay.style.opacity = '1';
++        this._nameOverlay.textContent = this._bossName;
++      } else if (t >= PHASE2_END) {
++        const fadeT = (t - PHASE2_END) / (CINEMATIC_DURATION - PHASE2_END);
++        this._nameOverlay.style.opacity = String(Math.max(0, 1 - fadeT * 2));
++      }
++    }
++
++    // ─── Particle ring ──────────────────────────────────────
++    if (t >= PHASE1_END + 0.2 && !this._ringSpawned) {
++      this._ringSpawned = true;
++      // Spawn a ring of golden particles around the boss
++      const count = 24;
++      for (let i = 0; i < count; i++) {
++        const angle = (i / count) * Math.PI * 2;
++        const r = 1.2;
++        const px = this._bossPos.x + Math.cos(angle) * r;
++        const pz = this._bossPos.z + Math.sin(angle) * r;
++        magicParticles?.spawn(
++          new THREE.Vector3(px, 0.3, pz),
++          new THREE.Vector3(0, 0.6 + Math.random() * 0.4, 0),
++          0xd4a017, // Gold
++          0.06,
++          0.6 + Math.random() * 0.4,
++        );
++      }
++    }
++
++    // ─── Completion ─────────────────────────────────────────
++    if (t >= CINEMATIC_DURATION) {
++      this._cleanup();
++    }
++  }
++
++  private _cleanup(): void {
++    this._active = false;
++    gs.targetTimeScale = 1.0;
++    gs.currentTimeScale = 1.0;
++
++    if (this._vignette) {
++      this._vignette.style.opacity = '0';
++    }
++    if (this._nameOverlay) {
++      this._nameOverlay.style.opacity = '0';
++    }
++
++    this._onComplete?.();
++    this._onComplete = null;
++  }
++
++  private _ensureVignette(): void {
++    if (this._vignette) return;
++    let el = document.getElementById('boss-cinematic-vignette');
++    if (!el) {
++      el = document.createElement('div');
++      el.id = 'boss-cinematic-vignette';
++      el.style.cssText = `
++        position:fixed; inset:0; z-index:900;
++        pointer-events:none;
++        background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.85) 100%);
++        opacity:0; transition: opacity 0.1s;
++      `;
++      document.body.appendChild(el);
++    }
++    this._vignette = el as HTMLDivElement;
++  }
++
++  private _ensureNameOverlay(): void {
++    if (this._nameOverlay) return;
++    let el = document.getElementById('boss-cinematic-name');
++    if (!el) {
++      el = document.createElement('div');
++      el.id = 'boss-cinematic-name';
++      el.style.cssText = `
++        position:fixed; top:35%; left:50%; transform:translate(-50%,-50%);
++        z-index:910; pointer-events:none;
++        font-family:serif; font-size:clamp(24px,5vw,48px); font-weight:bold;
++        color:#d4a017; text-shadow: 0 0 20px rgba(212,160,23,0.6), 0 2px 8px rgba(0,0,0,0.9);
++        letter-spacing:3px; text-transform:uppercase;
++        opacity:0; transition: opacity 0.3s;
++      `;
++      document.body.appendChild(el);
++    }
++    this._nameOverlay = el as HTMLDivElement;
++  }
++
++  /** Call on level cleanup to remove DOM elements. */
++  dispose(): void {
++    this._vignette?.remove();
++    this._nameOverlay?.remove();
++    this._vignette = null;
++    this._nameOverlay = null;
++    this._active = false;
++  }
++}
++
++export const bossCinematic = new BossCinematic();
+diff --git a/hermes/development/sakartvelo-3d/src/ShareManager.ts b/hermes/development/sakartvelo-3d/src/ShareManager.ts
+new file mode 100644
+index 0000000..6f24ace
+--- /dev/null
++++ b/hermes/development/sakartvelo-3d/src/ShareManager.ts
+@@ -0,0 +1,252 @@
++/**
++ * ShareManager.ts
++ * Shareable victory moments via Canvas2D → navigator.share() / download.
++ *
++ * Three card types:
++ * 1. Victory Card — 3-star result with era/level info (Georgian + English)
++ * 2. Boss Kill — dramatic boss defeat moment
++ * 3. Last Stand — survived with < 30% lives
++ */
++import { gs } from './GameState';
++import { SaveManager } from './SaveManager';
++
++const CARD_W = 1200;
++const CARD_H = 630;
++
++// Georgian text for viral recognition
++const KA_STARS: Record<number, string> = {
++  1: 'ერთი ვარსკვლავი',
++  2: 'ორი ვარსკვლავი',
++  3: 'სამი ვარსკვლავი',
++};
++const KA_VICTORY = 'გამარჯვება!';
++const KA_DEFENDED = 'დაიცვა';
++
++// Historical facts per era for cards
++const ERA_FACTS: Record<number, { en: string; ka: string }> = {
++  0: {
++    en: 'Ancient Colchis — Land of the Golden Fleece',
++    ka: 'ძველი კოლხეთი — ოქროს საწმისის ქვეყანა',
++  },
++  1: {
++    en: 'Medieval Georgia — Fortress of the Caucasus',
++    ka: 'შუა საუკუნეების საქართველო — კავკასიის ციხესიმაგრე',
++  },
++  2: {
++    en: 'Golden Age — Queen Tamar\'s Reign',
++    ka: 'ოქროს ხანა — თამარ მეფის მეფობა',
++  },
++};
++
++export type CardType = 'victory' | 'bossKill' | 'lastStand';
++
++export interface ShareCardData {
++  type: CardType;
++  stars: number;
++  era: number;
++  level: number;
++  levelName: string;
++  livesSaved: number;
++  totalLives: number;
++  bossName?: string;
++  time: string;
++}
++
++export class ShareManager {
++  private _canvas: HTMLCanvasElement | null = null;
++  private _ctx: CanvasRenderingContext2D | null = null;
++
++  /** Pre-render the share card. Returns data URL. */
++  renderCard(data: ShareCardData): string {
++    if (!this._canvas) {
++      this._canvas = document.createElement('canvas');
++      this._canvas.width = CARD_W;
++      this._canvas.height = CARD_H;
++      this._ctx = this._canvas.getContext('2d')!;
++    }
++    const ctx = this._ctx!;
++    const w = CARD_W;
++    const h = CARD_H;
++
++    // ─── Background ─────────────────────────────────────────
++    // Dark gradient background
++    const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
++    bgGrad.addColorStop(0, '#0a0e0a');
++    bgGrad.addColorStop(0.5, '#151d15');
++    bgGrad.addColorStop(1, '#0a0e0a');
++    ctx.fillStyle = bgGrad;
++    ctx.fillRect(0, 0, w, h);
++
++    // ─── Decorative border ──────────────────────────────────
++    ctx.strokeStyle = '#d4a017';
++    ctx.lineWidth = 4;
++    ctx.strokeRect(24, 24, w - 48, h - 48);
++    // Inner border
++    ctx.strokeStyle = 'rgba(212, 160, 23, 0.3)';
++    ctx.lineWidth = 1;
++    ctx.strokeRect(32, 32, w - 64, h - 64);
++
++    // ─── Title based on type ────────────────────────────────
++    ctx.textAlign = 'center';
++    if (data.type === 'victory') {
++      // Victory title
++      ctx.font = 'bold 56px serif';
++      ctx.fillStyle = '#d4a017';
++      ctx.fillText(KA_VICTORY, w / 2, 100);
++      ctx.font = '32px serif';
++      ctx.fillStyle = '#c0a860';
++      ctx.fillText('VICTORY', w / 2, 140);
++    } else if (data.type === 'bossKill') {
++      ctx.font = 'bold 48px serif';
++      ctx.fillStyle = '#ff4444';
++      ctx.fillText('BOSS DEFEATED', w / 2, 100);
++      ctx.font = '36px serif';
++      ctx.fillStyle = '#d4a017';
++      ctx.fillText(data.bossName || 'Unknown Boss', w / 2, 150);
++    } else if (data.type === 'lastStand') {
++      ctx.font = 'bold 48px serif';
++      ctx.fillStyle = '#ff6644';
++      ctx.fillText('LAST STAND', w / 2, 100);
++      ctx.font = '28px serif';
++      ctx.fillStyle = '#c0a860';
++      ctx.fillText('Survived against all odds', w / 2, 140);
++    }
++
++    // ─── Stars ──────────────────────────────────────────────
++    const starY = 210;
++    ctx.font = '48px serif';
++    let starStr = '';
++    for (let i = 0; i < 3; i++) {
++      starStr += i < data.stars ? '★' : '☆';
++    }
++    ctx.fillStyle = data.stars >= 3 ? '#d4a017' : data.stars >= 2 ? '#c0a860' : '#888';
++    ctx.fillText(starStr, w / 2, starY);
++
++    // Georgian star label
++    ctx.font = '24px serif';
++    ctx.fillStyle = '#c0a860';
++    ctx.fillText(KA_STARS[data.stars] || '', w / 2, starY + 40);
++
++    // ─── Level info ─────────────────────────────────────────
++    ctx.font = '28px serif';
++    ctx.fillStyle = '#e0d8c0';
++    ctx.fillText(`${KA_DEFENDED} ${data.levelName}`, w / 2, 310);
++
++    // ─── Stats row ──────────────────────────────────────────
++    const statsY = 380;
++    ctx.font = '22px sans-serif';
++
++    // Lives
++    ctx.fillStyle = '#88aa88';
++    ctx.textAlign = 'left';
++    ctx.fillText(`Lives: ${data.livesSaved}/${data.totalLives}`, 120, statsY);
++
++    // Time
++    ctx.textAlign = 'center';
++    ctx.fillText(`Time: ${data.time}`, w / 2, statsY);
++
++    // Era
++    ctx.textAlign = 'right';
++    ctx.fillText(`Era ${data.era}`, w - 120, statsY);
++
++    // ─── Historical fact ────────────────────────────────────
++    const fact = ERA_FACTS[data.era] || ERA_FACTS[0]!;
++    ctx.textAlign = 'center';
++    ctx.font = 'italic 20px serif';
++    ctx.fillStyle = '#a09060';
++    ctx.fillText(fact.ka, w / 2, 460);
++    ctx.font = '18px serif';
++    ctx.fillStyle = '#807050';
++    ctx.fillText(fact.en, w / 2, 490);
++
++    // ─── Footer ─────────────────────────────────────────────
++    ctx.font = '16px sans-serif';
++    ctx.fillStyle = '#606060';
++    ctx.textAlign = 'center';
++    ctx.fillText('Sakartvelo Defenders — 2,000 years of Georgian history, one tower at a time', w / 2, h - 50);
++
++    // ─── Flag accent ────────────────────────────────────────
++    // Small Georgian flag stripe at bottom
++    const flagY = h - 30;
++    const flagH = 6;
++    const stripeW = (w - 80) / 5;
++    ctx.fillStyle = '#ffffff'; ctx.fillRect(40, flagY, stripeW * 5, flagH);
++    ctx.fillStyle = '#ff0000'; ctx.fillRect(40, flagY, stripeW, flagH);
++    ctx.fillStyle = '#ffffff'; ctx.fillRect(40 + stripeW, flagY, stripeW, flagH);
++    ctx.fillStyle = '#ff0000'; ctx.fillRect(40 + stripeW * 2, flagY, stripeW, flagH);
++    ctx.fillStyle = '#ffffff'; ctx.fillRect(40 + stripeW * 3, flagY, stripeW, flagH);
++    ctx.fillStyle = '#ff0000'; ctx.fillRect(40 + stripeW * 4, flagY, stripeW, flagH);
++
++    return this._canvas.toDataURL('image/png');
++  }
++
++  /** Share via Web Share API (mobile) or download (desktop). */
++  async share(data: ShareCardData): Promise<boolean> {
++    const dataUrl = this.renderCard(data);
++
++    // Try Web Share API first (works on mobile)
++    if (navigator.share && navigator.canShare) {
++      try {
++        const blob = await (await fetch(dataUrl)).blob();
++        const file = new File([blob], 'sakartvelo-victory.png', { type: 'image/png' });
++        const shareData = { files: [file] };
++        if (navigator.canShare(shareData)) {
++          await navigator.share(shareData);
++          return true;
++        }
++      } catch (e: any) {
++        if (e.name === 'AbortError') return false; // User cancelled
++        // Fall through to download
++      }
++    }
++
++    // Desktop fallback: download
++    return this._download(dataUrl);
++  }
++
++  private _download(dataUrl: string): boolean {
++    try {
++      const link = document.createElement('a');
++      link.download = 'sakartvelo-victory.png';
++      link.href = dataUrl;
++      link.click();
++      return true;
++    } catch {
++      return false;
++    }
++  }
++
++  /** Build share card data from current game state. */
++  static fromGameState(bossName?: string): ShareCardData {
++    const level = gs.currentLevel;
++    const era = Number(level?.era ?? 0);
++    const lvlNum = Number(level?.level ?? 1);
++    const stars = gs.getStars();
++    const livesRatio = gs.startingLives > 0 ? gs.lives / gs.startingLives : 0;
++
++    let type: CardType = 'victory';
++    if (bossName && gs.bossKilled) {
++      type = 'bossKill';
++    } else if (livesRatio < 0.3 && livesRatio > 0) {
++      type = 'lastStand';
++    }
++
++    const elapsed = gs.levelElapsedTime;
++    const m = Math.floor(elapsed / 60);
++    const s = Math.floor(elapsed % 60);
++
++    return {
++      type,
++      stars,
++      era,
++      level: lvlNum,
++      levelName: level?.defense_target || level?.name || 'Sakartvelo',
++      livesSaved: gs.lives,
++      totalLives: gs.startingLives,
++      bossName,
++      time: `${m}:${String(s).padStart(2, '0')}`,
++    };
++  }
++}
++
++export const shareManager = new ShareManager();

@@ -52,7 +52,7 @@
   background: rgba(68, 255, 136, 0.15);
   color: #44ff88;
   cursor: pointer;
-  font-family: 'Georgia', serif;
+  font-family: 'Noto Serif Georgian', 'Georgia', serif;
   font-size: 15px;
   letter-spacing: 1px;
   transition: all 0.2s;
@@ -127,7 +127,7 @@
   background: rgba(212, 160, 23, 0.16);
   color: #f0e6d2;
   padding: 9px 14px;
-  font-family: Georgia, serif;
+  font-family: 'Noto Serif Georgian', Georgia, serif;
   font-weight: bold;
 }
 
@@ -180,7 +180,7 @@
   text-align: center;
   color: #8a7a5a;
   font-size: 12px;
-  font-family: 'Georgia', serif;
+  font-family: 'Noto Serif Georgian', 'Georgia', serif;
   pointer-events: none;
   z-index: 50;
   font-style: italic;

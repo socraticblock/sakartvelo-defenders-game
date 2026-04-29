@@ -65,8 +65,9 @@ export class Projectile {
         this.mesh.add(glow);
       }
     } else if (towerType === 'heroMagic') {
-      this.mesh = new THREE.Mesh(heroMagicGeo, heroMagicMat);
-      this.mesh.add(new THREE.Mesh(heroMagicGlowGeo, heroMagicGlowMat));
+      const useLinked = commandLinked;
+      this.mesh = new THREE.Mesh(heroMagicGeo, useLinked ? heroMagicLinkedMat : heroMagicMat);
+      this.mesh.add(new THREE.Mesh(heroMagicGlowGeo, useLinked ? heroMagicLinkedGlowMat : heroMagicGlowMat));
     } else {
       this.mesh = new THREE.Mesh(boulderGeo, boulderMat);
       const glow = new THREE.Mesh(boulderGlowGeo, boulderGlowMat);
@@ -112,9 +113,10 @@ export class Projectile {
       this.mesh.material = isCrit ? arrowCritMat : arrowMat;
       if (isCrit) this.mesh.add(new THREE.Mesh(arrowCritGlowGeo, arrowCritGlowMat));
     } else if (towerType === 'heroMagic') {
+      const useLinked = commandLinked;
       this.mesh.geometry = heroMagicGeo;
-      this.mesh.material = heroMagicMat;
-      this.mesh.add(new THREE.Mesh(heroMagicGlowGeo, heroMagicGlowMat));
+      this.mesh.material = useLinked ? heroMagicLinkedMat : heroMagicMat;
+      this.mesh.add(new THREE.Mesh(heroMagicGlowGeo, useLinked ? heroMagicLinkedGlowMat : heroMagicGlowMat));
     } else {
       this.mesh.geometry = boulderGeo;
       this.mesh.material = boulderMat;
@@ -157,7 +159,8 @@ export class Projectile {
     if (this.towerType === 'archer') {
       magicParticles?.spawn(this.mesh.position.clone(), new THREE.Vector3(0, 0, 0), this.isCrit ? 0xffcc44 : 0x8b6914, 0.04, 0.2);
     } else if (this.towerType === 'heroMagic') {
-      magicParticles?.spawn(this.mesh.position.clone(), new THREE.Vector3(0, 0.06, 0), 0x55ffaa, 0.055, 0.28);
+      const trailColor = this.commandLinked ? 0xddcc44 : 0x55ffaa;
+      magicParticles?.spawn(this.mesh.position.clone(), new THREE.Vector3(0, 0.06, 0), trailColor, 0.055, 0.28);
     } else {
       magicParticles?.spawn(this.mesh.position.clone(), new THREE.Vector3(0, 0.1, 0), 0xff6633, 0.08, 0.4);
     }

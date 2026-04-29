@@ -204,7 +204,7 @@ export class GameState {
   }
 
   getStarString(n: number): string {
-    return '⭐'.repeat(n) + '☆'.repeat(3 - n);
+    return '★'.repeat(n) + '☆'.repeat(3 - n);
   }
 
   // ─── Enemy spawning ──────────────────────────────────────
