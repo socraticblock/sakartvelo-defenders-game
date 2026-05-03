@@ -26,7 +26,12 @@ export class Hero {
 
   private rootGroup!: THREE.Group;
   private medea: MedeaInstance | null = null;
+  /** True only during Q/W/R casts — blocks locomotion blending. */
   private skillAnimPlaying = false;
+  /** Countdown for ability cast end (mixer `finished` unreliable after stop/reset). */
+  private medeaCastTimeRemaining = 0;
+  /** Bolt cast uses same clip but must NOT block walk; timer only fades skill out at end. */
+  private medeaBoltCastFadeT = 0;
   private projectileOriginY = 1.25;
 
   // Procedural rig (only when GLB not used)
@@ -90,12 +95,6 @@ export class Hero {
   private spawnX: number;
   private spawnZ: number;
 
-  private readonly onMedeaSkillFinished = (e: { action: THREE.AnimationAction }) => {
-    if (!this.medea || !this.medea.skillAction || e.action !== this.medea.skillAction) return;
-    this.skillAnimPlaying = false;
-    this.restoreMedeaLocomotion();
-  };
-
   constructor(
     startX: number,
     startZ: number,
@@ -129,7 +128,6 @@ export class Hero {
       this.medea = instantiateMedea(medeaTemplate);
       this.rootGroup.add(this.medea.root);
       this.projectileOriginY = this.medea.projectileY;
-      this.medea.mixer.addEventListener('finished', this.onMedeaSkillFinished);
     } else {
       this.buildProceduralModel();
     }
@@ -292,8 +290,8 @@ export class Hero {
           damage: this.attackDamage,
           speed: 15,
         };
-        // Auto-attack magic bolts use the same cast/skill clip as ability casts
-        if (this.medea) this.playMedeaCastAnim();
+        // Bolts: play cast clip without blocking walk (repeated bolts reset timer; full-body block would freeze locomotion)
+        if (this.medea) this.playMedeaBoltCastAnim();
       }
     }
 
@@ -301,7 +299,21 @@ export class Hero {
     if (this.medea) {
       this.medea.mixer.update(dt);
       if (this.abilities.consumeSkillAnimRequest()) {
-        this.playMedeaCastAnim();
+        this.medeaBoltCastFadeT = 0;
+        this.playMedeaAbilityCastAnim();
+      }
+      if (this.skillAnimPlaying) {
+        this.medeaCastTimeRemaining -= dt;
+        if (this.medeaCastTimeRemaining <= 0) {
+          this.endMedeaAbilityCastAnim();
+        }
+      }
+      if (this.medeaBoltCastFadeT > 0) {
+        this.medeaBoltCastFadeT -= dt;
+        if (this.medeaBoltCastFadeT <= 0) {
+          this.medea.skillAction?.fadeOut(0.12);
+          this.medeaBoltCastFadeT = 0;
+        }
       }
       this.updateMedeaLocomotion();
     } else {
@@ -337,8 +349,8 @@ export class Hero {
     return projectile;
   }
 
-  /** Plays the Meshy “skill/cast” clip — used for both magic bolts (auto-attack) and Q/E/R abilities. */
-  private playMedeaCastAnim() {
+  /** Q/W/R — full-body cast: fades walk/idle until clip ends. */
+  private playMedeaAbilityCastAnim() {
     if (!this.medea?.skillAction) return;
     this.skillAnimPlaying = true;
     this.medea.walkAction?.fadeOut(0.08);
@@ -351,6 +363,32 @@ export class Hero {
     a.enabled = true;
     a.fadeIn(0.1);
     a.play();
+    const clip = a.getClip();
+    const ts = Math.abs(a.getEffectiveTimeScale()) || 1;
+    this.medeaCastTimeRemaining = clip.duration > 0 ? clip.duration / ts : 0;
+  }
+
+  /** Auto-attack bolts — same clip, blended with walk (does not set skillAnimPlaying). */
+  private playMedeaBoltCastAnim() {
+    if (!this.medea?.skillAction) return;
+    const a = this.medea.skillAction;
+    a.stop();
+    a.reset();
+    a.setLoop(THREE.LoopOnce, 1);
+    a.clampWhenFinished = true;
+    a.enabled = true;
+    a.fadeIn(0.08);
+    a.play();
+    const clip = a.getClip();
+    const ts = Math.abs(a.getEffectiveTimeScale()) || 1;
+    this.medeaBoltCastFadeT = clip.duration > 0 ? clip.duration / ts : 0;
+  }
+
+  private endMedeaAbilityCastAnim() {
+    if (!this.skillAnimPlaying) return;
+    this.skillAnimPlaying = false;
+    this.medeaCastTimeRemaining = 0;
+    this.restoreMedeaLocomotion();
   }
 
   private updateMedeaLocomotion() {

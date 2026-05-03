@@ -179,6 +179,9 @@ async function startLevel(era: number, level: number): Promise<void> {
   await loadMedeaTemplate();
   gs.initLevel(lvl, scene, getMedeaTemplate());
   ui.reset();
+  if (gs.waveMgr?.inBuildPhase) {
+    ui.showBuildPhase();
+  }
   ui.screens.showGameUI();
   
   if (gs.grid && gs.grid.worldPath.length > 0) {

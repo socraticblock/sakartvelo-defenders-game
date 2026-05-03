@@ -21,6 +21,7 @@
 
 #build-overlay.visible {
   display: flex;
+  pointer-events: auto;
 }
 
 #build-overlay h2 {

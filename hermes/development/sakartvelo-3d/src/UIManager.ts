@@ -81,7 +81,20 @@ export class UIManager {
     this._bindInfoModal();
     this._bindPauseMenu();
     this._bindEscape();
+    this._bindBuildPhaseStartButton();
     setInterval(() => this.update(), 100);
+  }
+
+  private _bindBuildPhaseStartButton(): void {
+    this.$buildStartBtn = document.getElementById('build-start-btn') as HTMLButtonElement | null;
+    if (!this.$buildStartBtn) return;
+    this.$buildStartBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (gs.paused || gs.gameOver || !gs.waveMgr?.inBuildPhase) return;
+      const bonus = gs.getBuildPhaseBonus();
+      gs.startWave(bonus);
+    });
   }
 
   // ─── Per-frame HUD update (10x/sec) ─────────────────────────────────────
@@ -124,10 +137,19 @@ export class UIManager {
     if (!this.$hornBonus) this.$hornBonus = document.getElementById('horn-bonus');
     if (!this.$hornBonusGold) this.$hornBonusGold = document.getElementById('horn-bonus-gold');
 
+    // Overlay visibility must follow WaveManager (hideBuildPhase was never called when waves auto-started)
+    if (this.$buildOverlay && wm) {
+      this.$buildOverlay.classList.toggle('visible', wm.inBuildPhase);
+    }
+
     if (wm?.inBuildPhase) {
       const remaining = wm.buildPhaseTimer;
       this.setText(this.$buildTimer, String(Math.ceil(remaining)));
       const bonus = Math.ceil(remaining * 2);
+      if (this.$buildStartBtn) {
+        this.$buildStartBtn.textContent = `▶ Start Wave Now (+${bonus}g)`;
+        this.$buildStartBtn.disabled = gs.gameOver || !!gs.paused;
+      }
       if (this.$hornBonus) {
         this.$hornBonus.style.display = 'block';
         this.setText(this.$hornBonusGold, `+${bonus}g`);
@@ -664,7 +686,6 @@ export class UIManager {
     if (this.$buildStartBtn) {
       this.$buildStartBtn.textContent = `▶ Start Wave Now (+${gs.getBuildPhaseBonus()}g)`;
     }
-    this.$buildOverlay?.classList.add('visible');
     if (this.$waveBtn) {
       this.$waveBtn.disabled = true;
       this.$waveBtn.textContent = '⚒ Build Phase...';
