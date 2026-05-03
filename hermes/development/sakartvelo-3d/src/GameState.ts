@@ -29,7 +29,7 @@ export class GameState {
   // ─── Economy ─────────────────────────────────────────────
   gold = 100;
   lives = 20;
-  infantryCost = 35;
+  infantryCost = 45;
   infantryCooldown = 0;
 
   // ─── Selection ───────────────────────────────────────────
@@ -90,7 +90,7 @@ export class GameState {
     this.projectilePool = new ProjectilePool(scene);
 
     this.currentLevel = lvl;
-    this.gold = lvl.starting_gold;
+    this.gold = Math.floor(lvl.starting_gold * 0.85);
     this.lives = lvl.starting_lives;
     this.startingLives = lvl.starting_lives;
     this.gameOver = false;
@@ -249,15 +249,15 @@ export class GameState {
   // ─── Wave bonus ──────────────────────────────────────────
 
   getWaveBonus(waveNum: number): number {
-    return 25 + waveNum * 10;
+    return 15 + waveNum * 5;
   }
 
   getCountdownBonus(): number {
-    return Math.ceil(this.waveCountdown * 3);
+    return Math.ceil(this.waveCountdown * 1.5);
   }
 
   getBuildPhaseBonus(): number {
-    return Math.ceil((this.waveMgr?.buildPhaseTimer ?? 0) * 2);
+    return Math.ceil((this.waveMgr?.buildPhaseTimer ?? 0) * 1.0);
   }
 }
 

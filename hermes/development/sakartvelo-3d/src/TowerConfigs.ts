@@ -6,23 +6,23 @@ import type { TowerConfig } from './types';
 
 export const TOWER_CONFIGS: Record<string, TowerConfig> = {
   archer: {
-    damage: 18, range: 3.5, attackSpeed: 1.0,
-    projectileSpeed: 18, cost: 75, color: 0x8b6914, name: 'Archer',
-    upgradeCosts: [80, 160],
+    damage: 15, range: 3.5, attackSpeed: 1.0,
+    projectileSpeed: 18, cost: 85, color: 0x8b6914, name: 'Archer',
+    upgradeCosts: [90, 180],
     splashRadius: 0,
     critChance: 0,
   },
   catapult: {
-    damage: 45, range: 5.0, attackSpeed: 0.4,
-    projectileSpeed: 12, cost: 150, color: 0x666666, name: 'Catapult',
-    upgradeCosts: [120, 220],
+    damage: 40, range: 5.0, attackSpeed: 0.4,
+    projectileSpeed: 12, cost: 175, color: 0x666666, name: 'Catapult',
+    upgradeCosts: [140, 260],
     splashRadius: 0,
     critChance: 0,
   },
   wall: {
     damage: 0, range: 0, attackSpeed: 0,
-    projectileSpeed: 0, cost: 40, color: 0x999999, name: 'Wall',
-    upgradeCosts: [50, 100],
+    projectileSpeed: 0, cost: 50, color: 0x999999, name: 'Wall',
+    upgradeCosts: [60, 120],
     splashRadius: 0,
     critChance: 0,
   },

@@ -44,9 +44,9 @@ export class HeroAbilities {
     this.healVfx = healVfx;
     this.alchemyVfx = alchemyVfx;
     this.abilities = [
-      { name: 'Colchian Poison', icon: '☠️', maxCd: 15, cooldown: 0, active: false, duration: 5, timer: 0 },
-      { name: 'War Chant', icon: '🌿', maxCd: 30, cooldown: 0, active: false, duration: 8, timer: 0 },
-      { name: 'Colchian Fire', icon: '🔥', maxCd: 60, cooldown: 0, active: false, duration: 10, timer: 0 },
+      { name: 'Colchian Poison', icon: '☠️', maxCd: 20, cooldown: 0, active: false, duration: 5, timer: 0 },
+      { name: 'War Chant', icon: '🌿', maxCd: 45, cooldown: 0, active: false, duration: 8, timer: 0 },
+      { name: 'Colchian Fire', icon: '🔥', maxCd: 90, cooldown: 0, active: false, duration: 10, timer: 0 },
     ];
   }
 
@@ -86,7 +86,7 @@ export class HeroAbilities {
     for (const e of enemies) {
       if (!e.alive) continue;
       if (heroPos.distanceTo(e.getPos()) <= range) {
-        this.dots.push({ enemy: e, ticksLeft: 5, interval: 1.0, elapsed: 0, dps: 8 });
+        this.dots.push({ enemy: e, ticksLeft: 5, interval: 1.0, elapsed: 0, dps: 6 });
         e.setPoisoned(5);
         hit++;
       }
@@ -99,7 +99,7 @@ export class HeroAbilities {
     for (const t of towers) {
       const tPos = new THREE.Vector3(t.gx + 0.5, 0, t.gy + 0.5);
       if (heroPos.distanceTo(tPos) <= range) {
-        t.boost(1.5, 1.0, 1.3, this.abilities[1].duration);
+        t.boost(1.3, 1.0, 1.2, this.abilities[1].duration);
       }
     }
     this.createVfxBurst(this.healVfx, 0xffdd44, range);
@@ -110,7 +110,7 @@ export class HeroAbilities {
     for (const t of towers) {
       const tPos = new THREE.Vector3(t.gx + 0.5, 0, t.gy + 0.5);
       if (heroPos.distanceTo(tPos) <= range) {
-        t.boost(2.0, 1.3, 1.5, this.abilities[2].duration);
+        t.boost(1.6, 1.15, 1.3, this.abilities[2].duration);
       }
     }
     this.createVfxBurst(this.alchemyVfx, 0x8844ff, range);

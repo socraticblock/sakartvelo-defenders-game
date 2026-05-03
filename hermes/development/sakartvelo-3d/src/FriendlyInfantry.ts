@@ -3,13 +3,13 @@ import { Enemy } from './Enemy';
 
 export class FriendlyInfantry {
   group: THREE.Group;
-  hp = 120;
-  maxHp = 120;
+  hp = 90;
+  maxHp = 90;
   alive = true;
   reachedEnemySide = false;
   distanceFromHome = 0;
   speed = 1.9;
-  attackDamage = 14;
+  attackDamage = 10;
   attackRange = 0.75;
   attackCooldown = 0;
 
