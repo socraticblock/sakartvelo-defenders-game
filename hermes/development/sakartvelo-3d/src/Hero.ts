@@ -385,7 +385,7 @@ export class Hero {
   }
 
   private endMedeaAbilityCastAnim() {
-    if (!this.skillAnimPlaying) return;
+    if (!this.medea || !this.skillAnimPlaying) return;
     this.skillAnimPlaying = false;
     this.medeaCastTimeRemaining = 0;
     this.medea.skillAction?.fadeOut(0.2);
