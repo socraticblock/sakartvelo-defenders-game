@@ -392,32 +392,36 @@ export class Hero {
     this.restoreMedeaLocomotion();
   }
 
+  private lastMovingState: boolean | null = null;
+
   private updateMedeaLocomotion() {
     if (!this.medea || this.skillAnimPlaying) return;
     const moving = this.moveTarget !== null;
+
+    if (moving === this.lastMovingState) {
+      // Logic for staying in the same state: ensure weights are solid
+      if (moving && this.medea.walkAction) this.medea.walkAction.setEffectiveWeight(1);
+      if (!moving && this.medea.idleAction) this.medea.idleAction.setEffectiveWeight(1);
+      return;
+    }
     
+    this.lastMovingState = moving;
+
     if (moving) {
-      if (this.medea.idleAction?.enabled) this.medea.idleAction.fadeOut(0.2);
+      this.medea.idleAction?.fadeOut(0.15);
       if (this.medea.walkAction) {
-        if (!this.medea.walkAction.isRunning()) {
-          this.medea.walkAction.reset().fadeIn(0.2).play();
-        }
-        this.medea.walkAction.setEffectiveWeight(1);
+        this.medea.walkAction.reset().fadeIn(0.15).play();
       }
     } else {
-      if (this.medea.walkAction?.enabled) this.medea.walkAction.fadeOut(0.2);
+      this.medea.walkAction?.fadeOut(0.15);
       if (this.medea.idleAction) {
-        if (!this.medea.idleAction.isRunning()) {
-          this.medea.idleAction.reset().fadeIn(0.2).play();
-        }
-        this.medea.idleAction.setEffectiveWeight(1);
+        this.medea.idleAction.reset().fadeIn(0.15).play();
       }
     }
   }
 
   private restoreMedeaLocomotion() {
-    // Locomotion weight/play is now handled entirely by updateMedeaLocomotion
-    // to prevent conflicts between one-shot restores and frame-based updates.
+    this.lastMovingState = null; // Force a state change detection
     this.updateMedeaLocomotion();
   }
 
