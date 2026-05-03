@@ -28,8 +28,11 @@ let loadInFlight: Promise<MedeaTemplate | null> | null = null;
 
 function classifyClip(name: string): keyof MedeaClipSet | null {
   const n = name.toLowerCase();
+  // Strictly movement
   if (/walk|run|jog|locomotion|stride|forward/.test(n)) return 'walk';
-  if (/idle|stand|breath|rest|meditate/.test(n) && !/skill/.test(n)) return 'idle';
+  // Strictly idle/static
+  if (/idle|stand|breath|rest|meditate|baselayer/.test(n) && !/skill/.test(n)) return 'idle';
+  // Skills/Emotes
   if (/skill|cast|spell|ability|attack|magic|chant|strike|slash|throw|fire|emote|combo|dance|special/.test(n)) return 'skill';
   return null;
 }
@@ -40,26 +43,32 @@ function pickClips(all: THREE.AnimationClip[]): MedeaClipSet {
 
   for (const clip of all) {
     const kind = classifyClip(clip.name);
-    if (kind && !buckets[kind]) buckets[kind] = clip;
-    else if (!kind) unclassified.push(clip);
+    if (kind && !buckets[kind]) {
+      buckets[kind] = clip;
+    } else {
+      unclassified.push(clip);
+    }
   }
 
-  // If Meshy used generic names, assign by count heuristics
-  if (!buckets.walk && unclassified.length >= 1) {
-    buckets.walk = unclassified.find(c => /walk|run|move|anim|mix|take|track/i.test(c.name)) ?? unclassified[0] ?? null;
-  }
-  if (!buckets.idle && !buckets.walk && unclassified.length >= 1) {
-    buckets.idle = unclassified.find(c => /idle|stand|breath|base/i.test(c.name)) ?? null;
-  }
-  if (!buckets.skill && unclassified.length >= 2) {
-    const rest = unclassified.filter(c => c !== buckets.walk && c !== buckets.idle);
-    buckets.skill = rest[0] ?? null;
-  } else if (!buckets.skill && unclassified.length === 1 && !buckets.walk) {
-    buckets.walk = unclassified[0];
+  // Refined heuristics for Meshy/Generic exports
+  if (!buckets.idle) {
+    // Look for anything static-sounding in unclassified
+    buckets.idle = unclassified.find(c => /base|static|pose/i.test(c.name)) ?? null;
   }
 
-  // Final fallback: if we have NO idle, use walk or first clip
-  if (!buckets.idle) buckets.idle = buckets.walk || all[0] || null;
+  if (!buckets.walk) {
+    // Look for movement in unclassified if not caught by regex
+    buckets.walk = unclassified.find(c => /walk|run|move/i.test(c.name)) ?? null;
+  }
+
+  if (!buckets.skill) {
+    buckets.skill = unclassified.find(c => /skill|cast|attack|dance/i.test(c.name)) ?? null;
+  }
+
+  // Final emergency fallbacks (ordered to avoid swaps)
+  if (!buckets.idle) buckets.idle = unclassified[0] || null;
+  if (!buckets.walk) buckets.walk = buckets.idle; // Last resort: slide if no walk
+  if (!buckets.idle && buckets.walk) buckets.idle = buckets.walk;
 
   if (all.length) {
     console.info(
