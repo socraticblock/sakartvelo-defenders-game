@@ -33,7 +33,7 @@ function classifyClip(name: string): keyof MedeaClipSet | null {
   // Strictly idle/static
   if (/idle|stand|breath|rest|meditate|baselayer/.test(n) && !/skill/.test(n)) return 'idle';
   // Skills/Emotes
-  if (/skill|cast|spell|ability|attack|magic|chant|strike|slash|throw|fire|emote|combo|dance|special/.test(n)) return 'skill';
+  if (/skill|cast|spell|ability|attack|magic|chant|strike|slash|throw|fire|combo|special/.test(n)) return 'skill';
   return null;
 }
 
@@ -62,7 +62,7 @@ function pickClips(all: THREE.AnimationClip[]): MedeaClipSet {
   }
 
   if (!buckets.skill) {
-    buckets.skill = unclassified.find(c => /skill|cast|attack|dance/i.test(c.name)) ?? null;
+    buckets.skill = unclassified.find(c => /skill|cast|attack/i.test(c.name)) ?? null;
   }
 
   // Final emergency fallbacks (ordered to avoid swaps)
