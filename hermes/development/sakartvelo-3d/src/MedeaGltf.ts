@@ -133,8 +133,6 @@ export interface MedeaInstance {
   walkAction: THREE.AnimationAction | null;
   skillAction: THREE.AnimationAction | null;
   idleAction: THREE.AnimationAction | null;
-  /** Orb / gem meshes for command-link tint (optional). */
-  accentMeshes: THREE.Mesh[];
   /** Suggested Y for auto-attack projectile spawn. */
   projectileY: number;
 }
@@ -163,24 +161,6 @@ export function instantiateMedea(template: MedeaTemplate): MedeaInstance {
     idleAction.enabled = true;
   }
 
-  const accentMeshes: THREE.Mesh[] = [];
-  root.traverse((obj: THREE.Object3D) => {
-    if (!(obj instanceof THREE.Mesh)) return;
-    const name = obj.name.toLowerCase();
-    if (/orb|gem|glow|staff|crystal|lantern|emit/.test(name)) accentMeshes.push(obj);
-    const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-    for (const m of mats) {
-      if (
-        m &&
-        'emissive' in m &&
-        (m as THREE.MeshStandardMaterial).emissive &&
-        (m as THREE.MeshStandardMaterial).emissive.getHex() > 0
-      ) {
-        if (!accentMeshes.includes(obj)) accentMeshes.push(obj);
-      }
-    }
-  });
-
   const bbox = new THREE.Box3().setFromObject(root);
   const projectileY = Math.min(2.2, Math.max(1.0, bbox.max.y * 0.85));
 
@@ -190,7 +170,6 @@ export function instantiateMedea(template: MedeaTemplate): MedeaInstance {
     walkAction,
     skillAction,
     idleAction,
-    accentMeshes,
     projectileY,
   };
 }

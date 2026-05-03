@@ -304,7 +304,6 @@ export class Hero {
         this.playMedeaCastAnim();
       }
       this.updateMedeaLocomotion();
-      this.lerpMedeaAccents();
     } else {
       const isMoving = this.moveTarget !== null;
       this.rootGroup.position.y = isMoving ? 0 : Math.sin(time * 1.5) * 0.04;
@@ -314,11 +313,7 @@ export class Hero {
         this.staffOrb.scale.setScalar(0.8 + Math.sin(time * 3) * 0.2 + this.attackGlow * 0.55);
         (this.auraMesh.material as THREE.MeshBasicMaterial).opacity = 0.03 + Math.sin(time * 2) * 0.015;
         const orbMat = this.staffOrb.material as THREE.MeshBasicMaterial;
-        if (this.commandLinked) {
-          orbMat.color.lerp(new THREE.Color(0xd4a017), 0.1);
-        } else {
-          orbMat.color.lerp(new THREE.Color(0x44ff88), 0.1);
-        }
+        orbMat.color.setHex(0x44ff88);
       }
     }
 
@@ -379,23 +374,6 @@ export class Hero {
     } else {
       this.medea.walkAction?.fadeOut(0.2);
       this.medea.idleAction?.reset().fadeIn(0.15).play();
-    }
-  }
-
-  private lerpMedeaAccents() {
-    if (!this.medea?.accentMeshes.length) return;
-    const gold = new THREE.Color(0xd4a017);
-    const green = new THREE.Color(0x44ff88);
-    const target = this.commandLinked ? gold : green;
-    for (const mesh of this.medea.accentMeshes) {
-      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-      for (const raw of mats) {
-        if (!raw) continue;
-        const std = raw as THREE.MeshStandardMaterial;
-        if (std.emissive) {
-          std.emissive.lerp(target, 0.1);
-        }
-      }
     }
   }
 
