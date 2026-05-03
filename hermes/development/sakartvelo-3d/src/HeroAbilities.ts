@@ -31,6 +31,8 @@ export class HeroAbilities {
   abilities: AbilityState[];
   [index: number]: AbilityState;
   private dots: PoisonDot[] = [];
+  /** Set when an ability successfully activates; Hero consumes for GLTF skill animation. */
+  private skillAnimRequest = false;
 
   // VFX groups (owned by Hero, referenced here for visibility control)
   private poisonVfx: THREE.Group;
@@ -55,6 +57,8 @@ export class HeroAbilities {
     ab.active = true;
     ab.timer = ab.duration;
 
+    this.skillAnimRequest = true;
+
     if (index === 0) {
       this.applyPoison(enemies, heroPos);
       magicParticles?.spawnBurst(heroPos.clone().add(new THREE.Vector3(0, 0.5, 0)), 0x44ff44, 25);
@@ -67,6 +71,13 @@ export class HeroAbilities {
     }
 
     return true;
+  }
+
+  /** One-shot: true on the first frame after an ability was activated. */
+  consumeSkillAnimRequest(): boolean {
+    const v = this.skillAnimRequest;
+    this.skillAnimRequest = false;
+    return v;
   }
 
   private applyPoison(enemies: Enemy[], heroPos: THREE.Vector3) {

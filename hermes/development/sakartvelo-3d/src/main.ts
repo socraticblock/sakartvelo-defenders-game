@@ -15,6 +15,7 @@ import { screenMgr } from './ScreenManager';
 import { initMagicParticles } from './MagicalParticles';
 import { initAmbientDust } from './AmbientDust';
 import { warHorn } from './WarHorn';
+import { getMedeaTemplate, loadMedeaTemplate } from './MedeaGltf';
 
 // Use the generated magical sprite
 const MAGIC_SPRITE = '/magic_particle_sprite.png';
@@ -160,7 +161,7 @@ function setupCamera(gw: number, gh: number): void {
   gs.cameraBaseX = cx;
 }
 
-function startLevel(era: number, level: number): void {
+async function startLevel(era: number, level: number): Promise<void> {
   const lvl = gs.allLevels.find(l => l.era === era && l.level === level);
   if (!lvl) return;
 
@@ -175,7 +176,8 @@ function startLevel(era: number, level: number): void {
   } else {
     audio.stopBGM();
   }
-  gs.initLevel(lvl, scene);
+  await loadMedeaTemplate();
+  gs.initLevel(lvl, scene, getMedeaTemplate());
   ui.reset();
   ui.screens.showGameUI();
   
@@ -195,15 +197,17 @@ function startLevel(era: number, level: number): void {
 
 (window as any).__restartCurrentLevel = () => {
   if (!gs.currentLevel) return;
-  startLevel(gs.currentLevel.era, gs.currentLevel.level);
+  void startLevel(gs.currentLevel.era, gs.currentLevel.level);
 };
 
 // ─── Init ────────────────────────────────────────────────────────────────
 
 ui.init(
-  (era, level) => startLevel(era, level),
+  (era, level) => void startLevel(era, level),
   () => { gs.selectedType = null; gs.selectedTower = null; ui.screens.showLevelSelect(); },
 );
+
+void loadMedeaTemplate().catch(() => {});
 
 function issueHeroMoveCommand(x: number, z: number): void {
   if (!gs.hero) return;

@@ -11,6 +11,7 @@ import { outlineGroup } from './CelShader';
 import { HeroAbilities } from './HeroAbilities';
 import { gs } from './GameState';
 import { audio } from './AudioManager';
+import { instantiateMedea, type MedeaInstance, type MedeaTemplate } from './MedeaGltf';
 
 export interface HeroProjectileSpawn {
   origin: THREE.Vector3;
@@ -23,12 +24,16 @@ export class Hero {
   group: THREE.Group;
   abilities: HeroAbilities;
 
-  // Rig parts (set in buildModel)
   private rootGroup!: THREE.Group;
-  private leftArm!: THREE.Group;
-  private rightArm!: THREE.Group;
-  private staffOrb!: THREE.Mesh;
-  private auraMesh!: THREE.Mesh;
+  private medea: MedeaInstance | null = null;
+  private skillAnimPlaying = false;
+  private projectileOriginY = 1.25;
+
+  // Procedural rig (only when GLB not used)
+  private leftArm?: THREE.Group;
+  private rightArm?: THREE.Group;
+  private staffOrb?: THREE.Mesh;
+  private auraMesh?: THREE.Mesh;
 
   // VFX groups (passed to HeroAbilities)
   private poisonVfx: THREE.Group;
@@ -60,7 +65,7 @@ export class Hero {
   get respawnTimeRemaining(): number {
     return this.respawnTimer;
   }
-  
+
   // Building
   pendingBuild: { type: string; gx: number; gy: number; isPath: boolean } | null = null;
   buildTimer = 0;
@@ -74,7 +79,7 @@ export class Hero {
   // Selection ring
   selected = false;
   private ring: THREE.Mesh;
-  
+
   // Build bar
   private buildBg: THREE.Mesh;
   private buildFill: THREE.Mesh;
@@ -85,7 +90,19 @@ export class Hero {
   private spawnX: number;
   private spawnZ: number;
 
-  constructor(startX: number, startZ: number, gridW: number, gridH: number) {
+  private readonly onMedeaSkillFinished = (e: { action: THREE.AnimationAction }) => {
+    if (!this.medea || !this.medea.skillAction || e.action !== this.medea.skillAction) return;
+    this.skillAnimPlaying = false;
+    this.restoreMedeaLocomotion();
+  };
+
+  constructor(
+    startX: number,
+    startZ: number,
+    gridW: number,
+    gridH: number,
+    medeaTemplate: MedeaTemplate | null = null,
+  ) {
     this.gw = gridW;
     this.gh = gridH;
     this.spawnX = startX;
@@ -108,19 +125,26 @@ export class Hero {
 
     this.abilities = new HeroAbilities(this.poisonVfx, this.healVfx, this.alchemyVfx);
 
-    this.buildModel();
+    if (medeaTemplate) {
+      this.medea = instantiateMedea(medeaTemplate);
+      this.rootGroup.add(this.medea.root);
+      this.projectileOriginY = this.medea.projectileY;
+      this.medea.mixer.addEventListener('finished', this.onMedeaSkillFinished);
+    } else {
+      this.buildProceduralModel();
+    }
 
     // HP bar
     const hbW = 1.0;
     this.hpBg = new THREE.Mesh(
       new THREE.BoxGeometry(hbW, 0.06, 0.01),
-      new THREE.MeshBasicMaterial({ color: 0x333333 })
+      new THREE.MeshBasicMaterial({ color: 0x333333 }),
     );
     this.hpBg.position.y = 2.0;
     this.group.add(this.hpBg);
     this.hpFill = new THREE.Mesh(
       new THREE.BoxGeometry(hbW - 0.02, 0.04, 0.02),
-      new THREE.MeshBasicMaterial({ color: 0x44dd44 })
+      new THREE.MeshBasicMaterial({ color: 0x44dd44 }),
     );
     this.hpFill.position.y = 2.0;
     this.group.add(this.hpFill);
@@ -128,7 +152,7 @@ export class Hero {
     // Selection ring
     this.ring = new THREE.Mesh(
       new THREE.RingGeometry(0.45, 0.55, 24),
-      new THREE.MeshBasicMaterial({ color: 0xd4a017, transparent: true, opacity: 0.6, side: THREE.DoubleSide })
+      new THREE.MeshBasicMaterial({ color: 0xd4a017, transparent: true, opacity: 0.6, side: THREE.DoubleSide }),
     );
     this.ring.rotation.x = -Math.PI / 2;
     this.ring.position.y = 0.02;
@@ -138,7 +162,7 @@ export class Hero {
     // Build bar (hidden by default)
     this.buildBg = new THREE.Mesh(
       new THREE.BoxGeometry(0.8, 0.04, 0.01),
-      new THREE.MeshBasicMaterial({ color: 0x222222, transparent: true, opacity: 0.8 })
+      new THREE.MeshBasicMaterial({ color: 0x222222, transparent: true, opacity: 0.8 }),
     );
     this.buildBg.position.y = 1.7;
     this.buildBg.visible = false;
@@ -146,7 +170,7 @@ export class Hero {
 
     this.buildFill = new THREE.Mesh(
       new THREE.BoxGeometry(0.78, 0.03, 0.02),
-      new THREE.MeshBasicMaterial({ color: 0x44ff88, transparent: true, opacity: 0.9 })
+      new THREE.MeshBasicMaterial({ color: 0x44ff88, transparent: true, opacity: 0.9 }),
     );
     this.buildFill.position.y = 1.7;
     this.buildFill.visible = false;
@@ -159,12 +183,14 @@ export class Hero {
     this.moveTarget = new THREE.Vector3(
       Math.max(0.5, Math.min(this.gw - 0.5, worldX)),
       0,
-      Math.max(0.5, Math.min(this.gh - 0.5, worldZ))
+      Math.max(0.5, Math.min(this.gh - 0.5, worldZ)),
     );
     this.selected = true;
   }
 
-  getMoveTarget(): THREE.Vector3 | null { return this.moveTarget; }
+  getMoveTarget(): THREE.Vector3 | null {
+    return this.moveTarget;
+  }
 
   // ─── Abilities ──────────────────────────────────────────────────────────────
 
@@ -185,7 +211,6 @@ export class Hero {
         this.rootGroup.visible = true;
         this.hpBg.visible = true;
         this.hpFill.visible = true;
-        const ratio = 1;
         this.hpFill.scale.x = 1;
         this.hpFill.position.x = 0;
         (this.hpFill.material as THREE.MeshBasicMaterial).color.setHex(0x44dd44);
@@ -195,23 +220,7 @@ export class Hero {
     }
 
     const time = gs.gameTime;
-    const isMoving = this.moveTarget !== null;
     this.attackGlow = Math.max(0, this.attackGlow - dt * 6);
-
-    // Idle float vs grounded while moving
-    this.rootGroup.position.y = isMoving ? 0 : Math.sin(time * 1.5) * 0.04;
-    this.leftArm.rotation.x = Math.sin(time * 2) * 0.15;
-    this.rightArm.rotation.x = Math.sin(time * 2 + 0.5) * 0.2;
-    this.staffOrb.scale.setScalar(0.8 + Math.sin(time * 3) * 0.2 + this.attackGlow * 0.55);
-    (this.auraMesh.material as THREE.MeshBasicMaterial).opacity = 0.03 + Math.sin(time * 2) * 0.015;
-
-    // Command link visual: orb turns gold when linked
-    const orbMat = this.staffOrb.material as THREE.MeshBasicMaterial;
-    if (this.commandLinked) {
-      orbMat.color.lerp(new THREE.Color(0xd4a017), 0.1); // Gradually shift to gold
-    } else {
-      orbMat.color.lerp(new THREE.Color(0x44ff88), 0.1); // Gradually return to green
-    }
 
     // Selection ring
     if (this.selected) {
@@ -226,8 +235,7 @@ export class Hero {
       const dir = this.moveTarget.clone().sub(this.group.position);
       dir.y = 0;
       const dist = dir.length();
-      
-      // If we have a pending build, we stop at BUILD_RANGE
+
       const stopDist = this.pendingBuild ? this.BUILD_RANGE : 0.15;
 
       if (dist < stopDist) {
@@ -245,18 +253,17 @@ export class Hero {
     if (this.pendingBuild && !this.moveTarget) {
       const targetPos = new THREE.Vector3(this.pendingBuild.gx + 0.5, 0, this.pendingBuild.gy + 0.5);
       const dist = this.group.position.distanceTo(targetPos);
-      
+
       if (dist <= this.BUILD_RANGE + 0.1) {
         this.buildTimer += dt;
-        // Face the building site
         this.rootGroup.rotation.y = Math.atan2(
           targetPos.x - this.group.position.x,
-          targetPos.z - this.group.position.z
+          targetPos.z - this.group.position.z,
         );
-        // Hammering animation
-        this.rightArm.rotation.x = -0.5 + Math.sin(time * 15) * 0.4;
+        if (!this.medea && this.rightArm) {
+          this.rightArm.rotation.x = -0.5 + Math.sin(time * 15) * 0.4;
+        }
       } else {
-        // We moved away or aren't there yet
         this.moveTarget = targetPos;
       }
     } else if (!this.pendingBuild) {
@@ -273,23 +280,50 @@ export class Hero {
         const tPos = target.getPos();
         this.rootGroup.rotation.y = Math.atan2(
           tPos.x - this.group.position.x,
-          tPos.z - this.group.position.z
+          tPos.z - this.group.position.z,
         );
-        this.rightArm.rotation.x = -0.8;
+        if (!this.medea && this.rightArm) {
+          this.rightArm.rotation.x = -0.8;
+        }
         this.attackGlow = 1;
         projectile = {
-          origin: new THREE.Vector3(this.group.position.x, 1.25, this.group.position.z),
+          origin: new THREE.Vector3(this.group.position.x, this.projectileOriginY, this.group.position.z),
           target,
           damage: this.attackDamage,
           speed: 15,
         };
+        // Auto-attack magic bolts use the same cast/skill clip as ability casts
+        if (this.medea) this.playMedeaCastAnim();
       }
     }
 
-    // Ability system (DOTs, cooldowns, VFX)
+    // GLTF Medea: mixer + clips after movement so walk/idle matches resolved moveTarget
+    if (this.medea) {
+      this.medea.mixer.update(dt);
+      if (this.abilities.consumeSkillAnimRequest()) {
+        this.playMedeaCastAnim();
+      }
+      this.updateMedeaLocomotion();
+      this.lerpMedeaAccents();
+    } else {
+      const isMoving = this.moveTarget !== null;
+      this.rootGroup.position.y = isMoving ? 0 : Math.sin(time * 1.5) * 0.04;
+      if (this.leftArm && this.rightArm && this.staffOrb && this.auraMesh) {
+        this.leftArm.rotation.x = Math.sin(time * 2) * 0.15;
+        this.rightArm.rotation.x = Math.sin(time * 2 + 0.5) * 0.2;
+        this.staffOrb.scale.setScalar(0.8 + Math.sin(time * 3) * 0.2 + this.attackGlow * 0.55);
+        (this.auraMesh.material as THREE.MeshBasicMaterial).opacity = 0.03 + Math.sin(time * 2) * 0.015;
+        const orbMat = this.staffOrb.material as THREE.MeshBasicMaterial;
+        if (this.commandLinked) {
+          orbMat.color.lerp(new THREE.Color(0xd4a017), 0.1);
+        } else {
+          orbMat.color.lerp(new THREE.Color(0x44ff88), 0.1);
+        }
+      }
+    }
+
     this.abilities.update(dt, this.alive, this.group.position);
 
-    // Update build bar
     if (this.pendingBuild && this.buildTimer > 0) {
       this.buildBg.visible = true;
       this.buildFill.visible = true;
@@ -301,7 +335,6 @@ export class Hero {
       this.buildFill.visible = false;
     }
 
-    // Billboard bars
     this.hpBg.quaternion.copy(camera.quaternion);
     this.hpFill.quaternion.copy(camera.quaternion);
     this.buildBg.quaternion.copy(camera.quaternion);
@@ -309,9 +342,66 @@ export class Hero {
     return projectile;
   }
 
+  /** Plays the Meshy “skill/cast” clip — used for both magic bolts (auto-attack) and Q/E/R abilities. */
+  private playMedeaCastAnim() {
+    if (!this.medea?.skillAction) return;
+    this.skillAnimPlaying = true;
+    this.medea.walkAction?.fadeOut(0.08);
+    this.medea.idleAction?.fadeOut(0.08);
+    const a = this.medea.skillAction;
+    a.stop();
+    a.reset();
+    a.setLoop(THREE.LoopOnce, 1);
+    a.clampWhenFinished = true;
+    a.enabled = true;
+    a.fadeIn(0.1);
+    a.play();
+  }
+
+  private updateMedeaLocomotion() {
+    if (!this.medea || this.skillAnimPlaying) return;
+    const moving = this.moveTarget !== null;
+    if (this.medea.walkAction) {
+      this.medea.walkAction.setEffectiveWeight(moving ? 1 : 0);
+      if (moving) this.medea.walkAction.play();
+    }
+    if (this.medea.idleAction) {
+      this.medea.idleAction.setEffectiveWeight(moving ? 0 : 1);
+      if (!moving) this.medea.idleAction.play();
+    }
+  }
+
+  private restoreMedeaLocomotion() {
+    if (!this.medea) return;
+    const moving = this.moveTarget !== null;
+    if (moving) {
+      this.medea.walkAction?.reset().fadeIn(0.15).play();
+    } else {
+      this.medea.walkAction?.fadeOut(0.2);
+      this.medea.idleAction?.reset().fadeIn(0.15).play();
+    }
+  }
+
+  private lerpMedeaAccents() {
+    if (!this.medea?.accentMeshes.length) return;
+    const gold = new THREE.Color(0xd4a017);
+    const green = new THREE.Color(0x44ff88);
+    const target = this.commandLinked ? gold : green;
+    for (const mesh of this.medea.accentMeshes) {
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      for (const raw of mats) {
+        if (!raw) continue;
+        const std = raw as THREE.MeshStandardMaterial;
+        if (std.emissive) {
+          std.emissive.lerp(target, 0.1);
+        }
+      }
+    }
+  }
+
   // ─── Model ────────────────────────────────────────────────────────────────
 
-  private buildModel() {
+  private buildProceduralModel() {
     const C = {
       robe: 0x4d226f,
       robeDark: 0x25102f,
@@ -425,5 +515,7 @@ export class Hero {
     }
   }
 
-  getPos(): THREE.Vector3 { return this.group.position; }
+  getPos(): THREE.Vector3 {
+    return this.group.position;
+  }
 }

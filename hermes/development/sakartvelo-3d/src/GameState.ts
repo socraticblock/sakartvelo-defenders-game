@@ -11,6 +11,7 @@ import { Tower } from './Tower';
 import { ProjectilePool } from './Projectile';
 import { WaveManager } from './WaveManager';
 import { Hero } from './Hero';
+import type { MedeaTemplate } from './MedeaGltf';
 import { SaveManager } from './SaveManager';
 import { FriendlyInfantry } from './FriendlyInfantry';
 import { comboIndicator } from './ComboIndicator';
@@ -74,7 +75,7 @@ export class GameState {
 
   // ─── Level lifecycle ──────────────────────────────────────
 
-  initLevel(lvl: LevelData, scene: THREE.Scene): void {
+  initLevel(lvl: LevelData, scene: THREE.Scene, medeaTemplate: MedeaTemplate | null = null): void {
     // Clean up old level entities
     this.enemies.forEach(e => scene.remove(e.group));
     this.friendlies.forEach(f => scene.remove(f.group));
@@ -113,7 +114,7 @@ export class GameState {
     this.waveMgr = new WaveManager(lvl, worldPath);
 
     // Create hero at path start
-    this.hero = new Hero(worldPath[0].x, worldPath[0].z, lvl.grid_width, lvl.grid_height);
+    this.hero = new Hero(worldPath[0].x, worldPath[0].z, lvl.grid_width, lvl.grid_height, medeaTemplate);
     scene.add(this.hero.group);
 
     this.unlockedTowers = this.computeUnlocks(lvl.level);
