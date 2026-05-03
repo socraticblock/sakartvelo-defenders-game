@@ -388,31 +388,37 @@ export class Hero {
     if (!this.skillAnimPlaying) return;
     this.skillAnimPlaying = false;
     this.medeaCastTimeRemaining = 0;
+    this.medea.skillAction?.fadeOut(0.2);
     this.restoreMedeaLocomotion();
   }
 
   private updateMedeaLocomotion() {
     if (!this.medea || this.skillAnimPlaying) return;
     const moving = this.moveTarget !== null;
-    if (this.medea.walkAction) {
-      this.medea.walkAction.setEffectiveWeight(moving ? 1 : 0);
-      if (moving) this.medea.walkAction.play();
-    }
-    if (this.medea.idleAction) {
-      this.medea.idleAction.setEffectiveWeight(moving ? 0 : 1);
-      if (!moving) this.medea.idleAction.play();
+    
+    if (moving) {
+      if (this.medea.idleAction?.enabled) this.medea.idleAction.fadeOut(0.2);
+      if (this.medea.walkAction) {
+        if (!this.medea.walkAction.isRunning()) {
+          this.medea.walkAction.reset().fadeIn(0.2).play();
+        }
+        this.medea.walkAction.setEffectiveWeight(1);
+      }
+    } else {
+      if (this.medea.walkAction?.enabled) this.medea.walkAction.fadeOut(0.2);
+      if (this.medea.idleAction) {
+        if (!this.medea.idleAction.isRunning()) {
+          this.medea.idleAction.reset().fadeIn(0.2).play();
+        }
+        this.medea.idleAction.setEffectiveWeight(1);
+      }
     }
   }
 
   private restoreMedeaLocomotion() {
-    if (!this.medea) return;
-    const moving = this.moveTarget !== null;
-    if (moving) {
-      this.medea.walkAction?.reset().fadeIn(0.15).play();
-    } else {
-      this.medea.walkAction?.fadeOut(0.2);
-      this.medea.idleAction?.reset().fadeIn(0.15).play();
-    }
+    // Locomotion weight/play is now handled entirely by updateMedeaLocomotion
+    // to prevent conflicts between one-shot restores and frame-based updates.
+    this.updateMedeaLocomotion();
   }
 
   // ─── Model ────────────────────────────────────────────────────────────────
