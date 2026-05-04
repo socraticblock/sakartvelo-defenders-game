@@ -12,6 +12,7 @@ export class Grid {
   private defenseTarget = 'village_gate';
   worldPath: THREE.Vector3[] = [];
   private pathHighlightMeshes: THREE.Mesh[] = [];
+  private waterMeshes: THREE.Mesh[] = [];
 
   readonly width: number;
   readonly height: number;
@@ -28,8 +29,8 @@ export class Grid {
     this.createPathRibbon(level.path_waypoints);
     this.createHitTestTiles();
     this.createPlinths(level.build_nodes || []);
-    this.createEnvironmentDecorations();
     this.createThemeDecorations();
+    this.createEnvironmentDecorations();
     this.createDefenseObjective();
     this.addDecorations();
   }
@@ -61,6 +62,12 @@ export class Grid {
         mat.emissive.setHex(0x000000);
         mat.emissiveIntensity = 0;
       }
+    }
+
+    for (const mesh of this.waterMeshes) {
+      const mat = mesh.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.62 + Math.sin(time * 1.6 + mesh.position.x * 0.31) * 0.08;
+      mesh.position.y = 0.012 + Math.sin(time * 1.1 + mesh.position.z) * 0.004;
     }
   }
 
@@ -97,10 +104,14 @@ export class Grid {
       const x = posAttr.getX(i);
       const z = posAttr.getZ(i);
       // Procedural color variation using simple noise-like math
-      const noise = Math.sin(x * 2.3) * Math.cos(z * 1.7) * 0.05;
-      const r = 0.29 + noise;
-      const g = 0.49 + noise * 1.5;
-      const b = 0.31 + noise * 0.5;
+      const noise = Math.sin(x * 2.3) * Math.cos(z * 1.7) * 0.045;
+      const ridge = Math.sin((x + z) * 0.65) * 0.018;
+      const riverCool = this.theme.includes('river') || this.theme.includes('rioni') || this.theme.includes('tribes') || this.theme.includes('golden')
+        ? Math.max(0, 1 - Math.abs(z - (this.height - 1.25)) / 2.8) * 0.045
+        : 0;
+      const r = 0.47 + noise + ridge - riverCool * 0.45;
+      const g = 0.61 + noise * 1.25 + ridge + riverCool * 0.4;
+      const b = 0.42 + noise * 0.55 + riverCool;
       colors[i * 3] = r;
       colors[i * 3 + 1] = g;
       colors[i * 3 + 2] = b;
@@ -114,6 +125,32 @@ export class Grid {
     const terrain = new THREE.Mesh(terrainGeo, terrainMat);
     terrain.receiveShadow = true;
     this.group.add(terrain);
+
+    this.createTerrainEdges();
+  }
+
+  private createTerrainEdges(): void {
+    const edgeMat = new THREE.MeshStandardMaterial({ color: 0x5f624f, roughness: 0.96, metalness: 0.02 });
+    const lipMat = new THREE.MeshLambertMaterial({ color: 0x7f9167 });
+    const parts: Array<[number, number, number, number, number]> = [
+      [this.width, 0.26, this.width / 2, -0.2, -0.13],
+      [this.width, 0.32, this.width / 2, this.height + 0.2, -0.16],
+      [0.28, this.height, -0.18, this.height / 2, -0.15],
+      [0.28, this.height, this.width + 0.18, this.height / 2, -0.15],
+    ];
+
+    for (const [w, d, x, z, y] of parts) {
+      const cliff = new THREE.Mesh(new THREE.BoxGeometry(w, 0.42, d), edgeMat);
+      cliff.position.set(x, y, z);
+      cliff.castShadow = true;
+      cliff.receiveShadow = true;
+      this.group.add(cliff);
+    }
+
+    const backLip = new THREE.Mesh(new THREE.BoxGeometry(this.width + 0.15, 0.08, 0.18), lipMat);
+    backLip.position.set(this.width / 2, 0.025, -0.03);
+    backLip.receiveShadow = true;
+    this.group.add(backLip);
   }
 
   // ─── PATH RIBBON (smooth organic winding road) ─────────────────────────
@@ -161,12 +198,11 @@ export class Grid {
     geo.computeVertexNormals();
 
     const pathMat = new THREE.MeshLambertMaterial({ 
-      color: 0xc2a366, 
+      color: 0xd7b968, 
       side: THREE.DoubleSide 
     });
     const pathMesh = new THREE.Mesh(geo, pathMat);
     pathMesh.receiveShadow = true;
-    this.group.add(pathMesh);
     this.pathHighlightMeshes.push(pathMesh);
 
     // 3. Organic Path Border (Jagged dirt edge)
@@ -197,11 +233,59 @@ export class Grid {
     const borderGeo = new THREE.BufferGeometry();
     borderGeo.setAttribute('position', new THREE.Float32BufferAttribute(borderVertices, 3));
     borderGeo.setIndex(borderIndices);
-    const borderMat = new THREE.MeshLambertMaterial({ color: 0x8b7455 });
+    const borderMat = new THREE.MeshLambertMaterial({ color: 0x9b8146, side: THREE.DoubleSide });
     const borderMesh = new THREE.Mesh(borderGeo, borderMat);
     borderMesh.receiveShadow = true;
     this.group.add(borderMesh);
+    this.group.add(pathMesh);
     this.pathHighlightMeshes.push(borderMesh);
+
+    this.createPathDetails(curvePoints, pathWidth);
+  }
+
+  private createPathDetails(curvePoints: THREE.Vector3[], pathWidth: number): void {
+    const rutMat = new THREE.MeshLambertMaterial({ color: 0xaa8845, transparent: true, opacity: 0.52 });
+    const grassMat = new THREE.MeshLambertMaterial({ color: 0x315f34 });
+    const pebbleMat = new THREE.MeshLambertMaterial({ color: 0x8a8062 });
+
+    for (let i = 3; i < curvePoints.length - 3; i += 3) {
+      const p = curvePoints[i];
+      const prev = curvePoints[i - 1];
+      const next = curvePoints[i + 1];
+      const dir = new THREE.Vector3().subVectors(next, prev).normalize();
+      const normal = new THREE.Vector3(-dir.z, 0, dir.x);
+
+      if (i % 6 === 0) {
+        for (const side of [-1, 1]) {
+          const rut = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 0.34), rutMat);
+          rut.rotation.x = -Math.PI / 2;
+          rut.rotation.z = Math.atan2(dir.x, dir.z);
+          rut.position.copy(p).add(normal.clone().multiplyScalar(side * pathWidth * 0.23));
+          rut.position.y = 0.018;
+          this.group.add(rut);
+        }
+      }
+
+      if (i % 5 === 0) {
+        const side = i % 10 === 0 ? 1 : -1;
+        const tuft = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.24, 5), grassMat);
+        tuft.position.copy(p).add(normal.clone().multiplyScalar(side * pathWidth * 0.72));
+        tuft.position.y = 0.14;
+        tuft.rotation.y = i * 0.33;
+        tuft.castShadow = true;
+        this.group.add(tuft);
+      }
+
+      if (i % 8 === 0) {
+        const pebble = new THREE.Mesh(new THREE.DodecahedronGeometry(0.055, 0), pebbleMat);
+        pebble.position.copy(p).add(normal.clone().multiplyScalar((i % 16 === 0 ? 1 : -1) * pathWidth * 0.37));
+        pebble.position.y = 0.045;
+        pebble.scale.set(1.4, 0.45, 1);
+        pebble.rotation.set(0.2, i * 0.24, 0.1);
+        pebble.castShadow = true;
+        this.group.add(pebble);
+      }
+    }
   }
 
   private createPlinths(nodes: number[][]) {
@@ -365,13 +449,113 @@ export class Grid {
     this.group.add(mesh);
   }
 
+  private addPropUnsafe(mesh: THREE.Object3D, x: number, y: number, scale = 1): void {
+    mesh.position.set(x, 0, y);
+    mesh.scale.setScalar(scale);
+    this.group.add(mesh);
+  }
+
   private makeTree(): THREE.Group {
     const g = new THREE.Group();
     const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.45, 5), new THREE.MeshLambertMaterial({ color: 0x5a3418 }));
     trunk.position.y = 0.22;
-    const crown = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.65, 6), new THREE.MeshLambertMaterial({ color: 0x1f5a32 }));
+    const crown = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.65, 6), new THREE.MeshLambertMaterial({ color: 0x15562f }));
     crown.position.y = 0.72;
     g.add(trunk, crown);
+    return g;
+  }
+
+  private makeQvevri(): THREE.Group {
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), new THREE.MeshLambertMaterial({ color: 0xb66b26 }));
+    body.scale.set(0.78, 1.14, 0.78);
+    body.position.y = 0.28;
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 0.18, 10), new THREE.MeshLambertMaterial({ color: 0xd19a45 }));
+    neck.position.y = 0.55;
+    body.castShadow = true;
+    neck.castShadow = true;
+    g.add(body, neck);
+    return g;
+  }
+
+  private makeBanner(color = 0x9b1d20): THREE.Group {
+    const g = new THREE.Group();
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.035, 0.9, 6), new THREE.MeshLambertMaterial({ color: 0x5a3418 }));
+    pole.position.y = 0.45;
+    const cloth = new THREE.Mesh(new THREE.BoxGeometry(0.33, 0.22, 0.025), new THREE.MeshLambertMaterial({ color }));
+    cloth.position.set(0.16, 0.68, 0);
+    pole.castShadow = true;
+    cloth.castShadow = true;
+    g.add(pole, cloth);
+    return g;
+  }
+
+  private makeWatchtower(): THREE.Group {
+    const g = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.4, 1.05, 6), new THREE.MeshLambertMaterial({ color: 0x686856 }));
+    base.position.y = 0.53;
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(0.48, 0.32, 6), new THREE.MeshLambertMaterial({ color: 0x6d4528 }));
+    roof.position.y = 1.22;
+    const slit = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.22, 0.018), new THREE.MeshBasicMaterial({ color: 0xe5d19a }));
+    slit.position.set(0, 0.72, -0.32);
+    base.castShadow = true;
+    roof.castShadow = true;
+    g.add(base, roof, slit);
+    return g;
+  }
+
+  private makeArchRuin(color = 0x777766): THREE.Group {
+    const g = new THREE.Group();
+    const mat = new THREE.MeshLambertMaterial({ color });
+    const left = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.82, 0.24), mat);
+    const right = left.clone();
+    left.position.set(-0.28, 0.41, 0);
+    right.position.set(0.28, 0.41, 0);
+    const top = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.16, 0.24), mat);
+    top.position.y = 0.84;
+    left.castShadow = true;
+    right.castShadow = true;
+    top.castShadow = true;
+    g.add(left, right, top);
+    return g;
+  }
+
+  private makeVineyardRow(length = 5): THREE.Group {
+    const g = new THREE.Group();
+    const wood = new THREE.MeshLambertMaterial({ color: 0x5a3418 });
+    const leaf = new THREE.MeshLambertMaterial({ color: 0x2e6b35 });
+    for (let i = 0; i < length; i++) {
+      const z = i * 0.38;
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.028, 0.34, 5), wood);
+      post.position.set(0, 0.17, z);
+      const vine = new THREE.Mesh(new THREE.SphereGeometry(0.085, 7, 5), leaf);
+      vine.scale.set(1.35, 0.55, 0.85);
+      vine.position.set(0.02 * Math.sin(i), 0.34, z);
+      post.castShadow = true;
+      vine.castShadow = true;
+      g.add(post, vine);
+    }
+    g.position.z = -length * 0.19;
+    return g;
+  }
+
+  private makeBridge(width = 1.4): THREE.Group {
+    const g = new THREE.Group();
+    const wood = new THREE.MeshLambertMaterial({ color: 0x6b4325 });
+    for (let i = 0; i < 7; i++) {
+      const plank = new THREE.Mesh(new THREE.BoxGeometry(width / 7, 0.08, 1.34), wood);
+      plank.position.set((i - 3) * (width / 7), 0.08, 0);
+      plank.rotation.y = Math.sin(i) * 0.035;
+      plank.castShadow = true;
+      plank.receiveShadow = true;
+      g.add(plank);
+    }
+    for (const z of [-0.66, 0.66]) {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(width + 0.22, 0.08, 0.06), wood);
+      rail.position.set(0, 0.28, z);
+      rail.castShadow = true;
+      g.add(rail);
+    }
     return g;
   }
 
@@ -408,6 +592,7 @@ export class Grid {
       new THREE.MeshBasicMaterial({ color: 0x245f73, transparent: true, opacity: 0.75 }),
     );
     m.position.y = 0.015;
+    this.waterMeshes.push(m);
     return m;
   }
 
@@ -513,14 +698,21 @@ export class Grid {
       for (let i = 0; i < n; i++) this.addProp(this.makeStone(color), 0.7 + Math.random() * (this.width - 1.4), 0.7 + Math.random() * (this.height - 1.4), 0.6 + Math.random() * 0.8);
     };
 
+    const isRioniValley = this.theme.includes('river') || this.theme.includes('rioni') || this.theme.includes('tribes') || this.theme.includes('golden');
+
     if (this.theme.includes('river') || this.theme.includes('stream') || this.theme.includes('marsh')) {
       const water = this.makeWaterStrip(this.width, this.theme.includes('marsh') ? 1.5 : 0.75);
       water.position.set(this.width / 2, 0.01, this.height - 0.7);
       this.group.add(water);
       addStones(10, 0xd4a017);
     }
+
+    if (isRioniValley) {
+      this.createRioniValleySet();
+    }
+
     if (this.theme.includes('forest') || this.theme.includes('grove') || this.theme.includes('oak')) addTrees(24);
-    else addTrees(10);
+    else addTrees(isRioniValley ? 7 : 10);
 
     if (this.theme.includes('coast') || this.theme.includes('cliffs')) {
       const sea = this.makeWaterStrip(this.width, 1.2);
@@ -550,6 +742,64 @@ export class Grid {
       }
     }
     if (this.theme.includes('devi') || this.theme.includes('ravine')) addStones(22, 0x4d4a44);
+  }
+
+  private createRioniValleySet(): void {
+    const river = this.makeWaterStrip(this.width + 0.8, 1.0);
+    river.position.set(this.width / 2, 0.008, this.height - 0.55);
+    this.group.add(river);
+
+    const end = this.worldPath[this.worldPath.length - 1];
+    if (end) {
+      const bridge = this.makeBridge(1.55);
+      bridge.rotation.y = Math.PI / 2;
+      this.addPropUnsafe(bridge, THREE.MathUtils.clamp(end.x, 1.2, this.width - 1.2), this.height - 0.58, 1);
+    }
+
+    const vineyardX = 0.9;
+    for (let i = 0; i < 4; i++) {
+      const row = this.makeVineyardRow(7);
+      row.rotation.y = -0.08;
+      this.addProp(row, vineyardX + i * 0.42, 2.2, 0.95);
+    }
+
+    this.addProp(this.makeArchRuin(0x77735f), 1.4, this.height * 0.48, 1.05);
+    this.addProp(this.makeArchRuin(0x827a60), this.width - 1.5, this.height * 0.43, 0.9);
+    this.addProp(this.makeWatchtower(), this.width - 1.15, 1.25, 0.95);
+
+    const bannerA = this.makeBanner(0x9b1d20);
+    bannerA.rotation.y = 0.4;
+    this.addProp(bannerA, 2.1, this.height * 0.78, 1);
+
+    const bannerB = this.makeBanner(0x9b1d20);
+    bannerB.rotation.y = -0.6;
+    this.addProp(bannerB, this.width - 2.1, this.height * 0.62, 1);
+
+    for (const [x, z, s] of [
+      [this.width - 1.55, this.height - 2.2, 0.75],
+      [this.width - 2.05, this.height - 2.05, 0.64],
+      [0.9, this.height - 1.0, 0.66],
+      [1.35, this.height - 0.92, 0.55],
+    ] as Array<[number, number, number]>) {
+      this.addProp(this.makeQvevri(), x, z, s);
+    }
+
+    this.addRockCluster(1.05, this.height * 0.68, 9, 0.9, 0x7f7a64);
+    this.addRockCluster(this.width - 1.25, this.height * 0.72, 8, 0.8, 0x6f705e);
+    this.addRockCluster(this.width * 0.5, this.height * 0.44, 8, 0.95, 0x827d67);
+  }
+
+  private addRockCluster(cx: number, cz: number, count: number, spread: number, color = 0x777766): void {
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = Math.random() * spread;
+      this.addProp(
+        this.makeStone(color),
+        cx + Math.cos(angle) * radius,
+        cz + Math.sin(angle) * radius,
+        0.55 + Math.random() * 0.7,
+      );
+    }
   }
 
   private addDecorations() {
