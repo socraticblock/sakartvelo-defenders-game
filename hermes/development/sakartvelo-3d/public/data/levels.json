@@ -122,20 +122,13 @@
               "hp_mult": 1.01,
               "speed_mult": 1.04,
               "spawn_interval": 1
-            },
-            {
-              "type": "boss",
-              "count": 1,
-              "hp_mult": 4.44,
-              "speed_mult": 0.91,
-              "spawn_interval": 0
             }
           ]
         }
       ],
-      "historical_fact": "TUTORIAL: The Rioni, known in antiquity as the Phasis, carried gold from the mountains toward Colchis. Defend the river villages where the first legends of the Golden Fleece begin.",
-      "boss": "devi",
-      "sub_era": "bronze_age_colchis",
+      "historical_fact": "TUTORIAL: The Rioni, known in antiquity as the Phasis, carried mountain gold toward lowland settlements. Defend the river villages where later Colchian legends took root.",
+      "boss": null,
+      "sub_era": "bronze_roots_rioni",
       "build_nodes": [
         [
           4,
@@ -299,9 +292,9 @@
           ]
         }
       ],
-      "historical_fact": "TUTORIAL: Before great kingdoms, Colchian clans guarded river crossings, forests, and trading paths. Their scattered villages are the first line of Sakartvelo defense.",
+      "historical_fact": "TUTORIAL: Before centralized rule, clan communities guarded crossings, forests, and trade paths. These early defenses shaped the later Colchian world.",
       "boss": null,
-      "sub_era": "bronze_age_colchis",
+      "sub_era": "bronze_roots_rioni",
       "build_nodes": [
         [
           5,
@@ -479,9 +472,9 @@
           ]
         }
       ],
-      "historical_fact": "TUTORIAL: Medea, daughter of King Aeetes, is remembered in Greek myth as a powerful Colchian sorceress. Her sacred grove teaches you to upgrade towers and use timing wisely.",
+      "historical_fact": "TUTORIAL: Medea belongs to mythic tradition, yet sacred groves and ritual spaces were central to early communities. Master upgrades and timing under shrine protection.",
       "boss": null,
-      "sub_era": "bronze_age_colchis",
+      "sub_era": "bronze_roots_rioni",
       "build_nodes": [
         [
           3,
@@ -659,9 +652,9 @@
           ]
         }
       ],
-      "historical_fact": "Greek sailors reached the eastern Black Sea seeking timber, metals, and stories of impossible wealth. Hold the Pontic shore where trade and danger arrive together.",
+      "historical_fact": "Greek sailors reached the eastern Black Sea seeking timber, metals, and exchange. Coastal contact brought wealth and danger in equal measure.",
       "boss": null,
-      "sub_era": "bronze_age_colchis",
+      "sub_era": "bronze_roots_rioni",
       "build_nodes": [
         [
           2,
@@ -702,7 +695,7 @@
     {
       "era": 0,
       "level": 5,
-      "name": "The Bronze Devi",
+      "name": "Dragon of the Fleece",
       "starting_gold": 185,
       "starting_lives": 25,
       "total_waves": 6,
@@ -859,9 +852,9 @@
           ]
         }
       ],
-      "historical_fact": "In Georgian folklore, Devi are giant ogres of the wild places. This boss battle turns myth into a trial at the edge of Bronze Age Colchis.",
+      "historical_fact": "Myth remembers a dragon guarding the Golden Fleece. This battle is myth-framed and marks the end of the earliest chapter.",
       "boss": "colchian_dragon",
-      "sub_era": "bronze_age_colchis",
+      "sub_era": "bronze_roots_rioni",
       "build_nodes": [
         [
           5,
@@ -1052,9 +1045,9 @@
           ]
         }
       ],
-      "historical_fact": "Gold was traditionally gathered from mountain streams with sheep fleeces, a practice linked to the Golden Fleece legend. Protect the upland waterway.",
+      "historical_fact": "Traditions of fleece-based gold collection likely echo real stream mining practices. Hold the mountain channels where wealth was gathered.",
       "boss": null,
-      "sub_era": "kingdom_colchis",
+      "sub_era": "rise_colchian_world",
       "build_nodes": [
         [
           9,
@@ -1237,9 +1230,9 @@
           ]
         }
       ],
-      "historical_fact": "Dense Colchian forests shaped defense as much as walls did. Enemy columns must squeeze through the green passes before reaching the settlements.",
+      "historical_fact": "Forest passes linked upland and river communities long before formal borders. Control these chokepoints to protect the heartland.",
       "boss": null,
-      "sub_era": "kingdom_colchis",
+      "sub_era": "rise_colchian_world",
       "build_nodes": [
         [
           7,
@@ -1280,7 +1273,7 @@
     {
       "era": 0,
       "level": 8,
-      "name": "Bronze Smith Village",
+      "name": "Colchian Forge Village",
       "starting_gold": 215,
       "starting_lives": 20,
       "total_waves": 6,
@@ -1430,9 +1423,9 @@
           ]
         }
       ],
-      "historical_fact": "Colchian metalworkers were famed for bronze and iron craft. This village supplies weapons, tools, and tower fittings for the defense.",
+      "historical_fact": "By the early first millennium BC, bronze and early iron craft supported stronger tools and defenses. Protect the forge settlements.",
       "boss": null,
-      "sub_era": "kingdom_colchis",
+      "sub_era": "rise_colchian_world",
       "build_nodes": [
         [
           3,
@@ -1623,9 +1616,9 @@
           ]
         }
       ],
-      "historical_fact": "Mountain watchfires warned river villages of raids. Keep the signal line alive from ridge to ridge.",
+      "historical_fact": "Watchfires and ridge beacons coordinated warnings across difficult terrain. Preserve the highland line.",
       "boss": null,
-      "sub_era": "kingdom_colchis",
+      "sub_era": "rise_colchian_world",
       "build_nodes": [
         [
           1,
@@ -1835,9 +1828,9 @@
           ]
         }
       ],
-      "historical_fact": "A many-headed Devi chief gathers lesser monsters in the ravines. Defeat him before fear spreads through the Colchian valleys.",
+      "historical_fact": "In Georgian folklore, Devi chiefs command brute force and fear. Defeat this mythic threat at the chapter frontier.",
       "boss": "devi_chief",
-      "sub_era": "kingdom_colchis",
+      "sub_era": "rise_colchian_world",
       "build_nodes": [
         [
           9,
@@ -2061,9 +2054,9 @@
           ]
         }
       ],
-      "historical_fact": "The Phasis route connected inland gold, timber, linen, and coastal trade. Guard the road that makes Colchis wealthy.",
+      "historical_fact": "Phasis became a major exchange corridor in the classical period. Defend caravans that carry timber, metal, and grain.",
       "boss": null,
-      "sub_era": "kingdom_colchis",
+      "sub_era": "phasis_medea_fleece",
       "build_nodes": [
         [
           8,
@@ -2287,9 +2280,9 @@
           ]
         }
       ],
-      "historical_fact": "Sacred groves and old trees belong naturally to Colchian myth. Medea magic is strongest where the forest closes around the path.",
+      "historical_fact": "Pre-Christian ritual groves and oak sanctuaries held social and spiritual weight. Hold the clearing to keep the valley united.",
       "boss": null,
-      "sub_era": "kingdom_colchis",
+      "sub_era": "phasis_medea_fleece",
       "build_nodes": [
         [
           2,
@@ -2513,9 +2506,9 @@
           ]
         }
       ],
-      "historical_fact": "The eastern Black Sea coast made Colchis visible to merchants, raiders, and legends. Defend the cliff road above the waves.",
+      "historical_fact": "Black Sea cliffs and inlets offered both shelter and exposure. Repel coastal raids before they break inland routes.",
       "boss": null,
-      "sub_era": "kingdom_colchis",
+      "sub_era": "phasis_medea_fleece",
       "build_nodes": [
         [
           4,
@@ -2739,9 +2732,9 @@
           ]
         }
       ],
-      "historical_fact": "King Aeetes stands at the heart of the Golden Fleece story. These boundary stones mark lands that must not fall.",
+      "historical_fact": "Boundary stones symbolize royal authority in the traditions around Aeetes. Hold the frontier markers under rising pressure.",
       "boss": null,
-      "sub_era": "kingdom_colchis",
+      "sub_era": "phasis_medea_fleece",
       "build_nodes": [
         [
           6,
@@ -2984,9 +2977,9 @@
           ]
         }
       ],
-      "historical_fact": "The dragon guarding the Golden Fleece is one of Colchis central myths. Hold the shrine before the beast wakes fully.",
+      "historical_fact": "The dragon returns in a stronger mythic rite near sacred ground. Survive this encounter to secure the chapter.",
       "boss": "colchian_dragon",
-      "sub_era": "kingdom_colchis",
+      "sub_era": "phasis_medea_fleece",
       "build_nodes": [
         [
           1,
@@ -3236,9 +3229,9 @@
           ]
         }
       ],
-      "historical_fact": "Young defenders prove themselves in ritual combat before guarding real villages. This battlefield tests speed, placement, and courage.",
+      "historical_fact": "Late Colchian forces relied on disciplined local warriors and fortified movement routes. This trial map tests full tactical control.",
       "boss": null,
-      "sub_era": "kingdom_colchis",
+      "sub_era": "last_heart_colchis",
       "build_nodes": [
         [
           10,
@@ -3488,9 +3481,9 @@
           ]
         }
       ],
-      "historical_fact": "Marsh and riverland slowed invaders but also hid ambushes. Use the wetland bends to control the enemy flow.",
+      "historical_fact": "Rioni marshlands could shield villages but punish poor positioning. Use terrain and pacing to survive converging waves.",
       "boss": null,
-      "sub_era": "kingdom_colchis",
+      "sub_era": "last_heart_colchis",
       "build_nodes": [
         [
           3,
@@ -3740,9 +3733,9 @@
           ]
         }
       ],
-      "historical_fact": "Wooden palisades protected early settlements before stone fortifications dominated the region. Keep the gate standing.",
+      "historical_fact": "Palisade systems and gateworks became crucial as regional pressures intensified. Reinforce the line and deny breakthrough.",
       "boss": null,
-      "sub_era": "kingdom_colchis",
+      "sub_era": "last_heart_colchis",
       "build_nodes": [
         [
           3,
@@ -3992,9 +3985,9 @@
           ]
         }
       ],
-      "historical_fact": "The path to the Fleece is guarded by oath, tower, and legend. Every enemy now presses toward the sacred gate.",
+      "historical_fact": "The Golden Fleece gate is a ceremonial and strategic threshold in campaign lore. Hold the approach before the final stand.",
       "boss": null,
-      "sub_era": "kingdom_colchis",
+      "sub_era": "last_heart_colchis",
       "build_nodes": [
         [
           1,
@@ -4278,9 +4271,9 @@
           ]
         }
       ],
-      "historical_fact": "The final Era 0 defense gathers river, forest, fleece, Medea, Aeetes, and monster myth into one battle for ancient Colchis.",
+      "historical_fact": "By 83 BC, Colchis fell under Pontic domination, but its people endured. Defend the Heart of Colchis in this mythic-historical finale.",
       "boss": "devi_chief",
-      "sub_era": "kingdom_colchis",
+      "sub_era": "last_heart_colchis",
       "build_nodes": [
         [
           2,

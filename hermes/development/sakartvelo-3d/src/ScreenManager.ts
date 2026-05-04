@@ -257,6 +257,12 @@ export class ScreenManager {
 
   updateAbilities(hero: Hero): void {
     const abs = hero.abilities.abilities;
+    const qBtn = document.getElementById('ability-q') as HTMLButtonElement | null;
+    const wBtn = document.getElementById('ability-w') as HTMLButtonElement | null;
+    const eBtn = document.getElementById('ability-e') as HTMLButtonElement | null;
+    if (qBtn && abs[0]) qBtn.title = abs[0].name;
+    if (wBtn && abs[1]) wBtn.title = abs[1].name;
+    if (eBtn && abs[2]) eBtn.title = abs[2].name;
     this._updateAbility('ability-q', abs[0]?.cooldown ?? 0, abs[0]?.maxCd ?? 1, abs[0]?.active ?? false);
     this._updateAbility('ability-w', abs[1]?.cooldown ?? 0, abs[1]?.maxCd ?? 1, abs[1]?.active ?? false);
     this._updateAbility('ability-e', abs[2]?.cooldown ?? 0, abs[2]?.maxCd ?? 1, abs[2]?.active ?? false);
@@ -338,7 +344,7 @@ export class ScreenManager {
       },
       {
         title: 'Your Abilities',
-        text: 'Q poisons crowds, W buffs towers, and E supercharges your strongest defense for boss moments.',
+        text: 'Q applies poison pressure, W is area slow control, and E combines control pressure with a short power window.',
         selector: '#hero-bar',
         done: () => Boolean(gs.hero?.abilities.abilities.some(a => a.cooldown > 0)),
       },

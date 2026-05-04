@@ -36,13 +36,13 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.12;
+renderer.toneMappingExposure = 0.96;
 document.body.appendChild(renderer.domElement);
 
 // Lighting - warmer key + cooler fill for richer terrain readability.
 scene.add(new THREE.AmbientLight(0xfff3d8, 0.96));
-scene.add(new THREE.HemisphereLight(0xe9f0ff, 0x2f3727, 0.86));
-const sun = new THREE.DirectionalLight(0xffd08a, 3.0);
+scene.add(new THREE.HemisphereLight(0xe9f0ff, 0x2f3727, 0.72));
+const sun = new THREE.DirectionalLight(0xffd08a, 2.45);
 sun.position.set(-16, 34, 20);
 sun.castShadow = true;
 sun.shadow.camera.left = -30; sun.shadow.camera.right = 30;
@@ -50,7 +50,7 @@ sun.shadow.camera.top = 30; sun.shadow.camera.bottom = -30;
 sun.shadow.mapSize.set(2048, 2048);
 scene.add(sun);
 
-const fillLight = new THREE.DirectionalLight(0x8fc2da, 1.1);
+const fillLight = new THREE.DirectionalLight(0x8fc2da, 0.84);
 fillLight.position.set(20, 14, -20); 
 scene.add(fillLight);
 

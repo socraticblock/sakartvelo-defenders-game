@@ -50,6 +50,12 @@ export class Tower {
   private hpFill: THREE.Mesh | null = null;
   private synergyRing: THREE.Mesh | null = null;
 
+  private safeRing(innerRadius: number, outerRadius: number, segments = 24): THREE.RingGeometry {
+    const inner = Math.max(0.01, Math.min(innerRadius, outerRadius - 0.01));
+    const outer = Math.max(inner + 0.01, outerRadius);
+    return new THREE.RingGeometry(inner, outer, Math.max(3, segments));
+  }
+
   constructor(type: string, gx: number, gy: number, isOnPath = false) {
     this.type = type;
     this.gx = gx;
@@ -203,7 +209,7 @@ export class Tower {
   private createRangeRing(): THREE.Mesh {
     const r = this.getEffectiveRange();
     const ring = new THREE.Mesh(
-      new THREE.RingGeometry(r - 0.05, r, 48),
+      this.safeRing(r - 0.05, r, 48),
       new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.08, side: THREE.DoubleSide })
     );
     ring.rotation.x = -Math.PI / 2;
@@ -305,7 +311,7 @@ export class Tower {
     }
     if (!this.synergyRing) {
       this.synergyRing = new THREE.Mesh(
-        new THREE.RingGeometry(0.42, 0.5, 24),
+        this.safeRing(0.42, 0.5, 24),
         new THREE.MeshBasicMaterial({ color: 0xd4a017, transparent: true, opacity: 0.42, side: THREE.DoubleSide }),
       );
       this.synergyRing.rotation.x = -Math.PI / 2;

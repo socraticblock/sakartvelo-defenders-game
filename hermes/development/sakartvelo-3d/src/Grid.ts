@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+﻿import * as THREE from 'three';
 import { LevelData } from './types';
 
 export class Grid {
@@ -15,6 +15,7 @@ export class Grid {
   worldPath: THREE.Vector3[] = [];
   private pathHighlightMeshes: THREE.Mesh[] = [];
   private waterMeshes: THREE.Mesh[] = [];
+  private rngState = 1;
 
   readonly width: number;
   readonly height: number;
@@ -26,6 +27,7 @@ export class Grid {
     this.defenseTarget = level.defense_target || 'village_gate';
     this.era = level.era ?? 0;
     this.levelNum = level.level ?? 1;
+    this.seedRng();
 
     this.computePathCells(level.path_waypoints);
     this.computeWorldPath(level.path_waypoints);
@@ -41,6 +43,31 @@ export class Grid {
   }
 
   /** Update method for animating pulsing auras and wall-path highlight. */
+  
+  private seedRng(): void {
+    const seed = `${this.era}:${this.levelNum}:${this.theme}:${this.defenseTarget}:${this.width}x${this.height}`;
+    let h = 2166136261;
+    for (let i = 0; i < seed.length; i++) {
+      h ^= seed.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    this.rngState = (h >>> 0) || 1;
+  }
+
+  private rand(): number {
+    let x = this.rngState >>> 0;
+    x ^= x << 13;
+    x ^= x >>> 17;
+    x ^= x << 5;
+    this.rngState = x >>> 0;
+    return this.rngState / 4294967296;
+  }
+
+  private safeRingGeometry(innerRadius: number, outerRadius: number, segments = 32): THREE.RingGeometry {
+    const inner = Math.max(0.01, Math.min(innerRadius, outerRadius - 0.01));
+    const outer = Math.max(inner + 0.01, outerRadius);
+    return new THREE.RingGeometry(inner, outer, Math.max(3, segments));
+  }
   update(time: number, selectedType: string | null) {
     const isWallMode = selectedType === 'wall';
     const isBuildSelecting = selectedType !== null && !isWallMode;
@@ -94,7 +121,7 @@ export class Grid {
     this.worldPath = waypoints.map(([x, y]) => new THREE.Vector3(x + 0.5, 0.25, y + 0.5));
   }
 
-  // ─── ORGANIC GROUND (replaces visible grid tiles) ───────────────────────
+  // â”€â”€â”€ ORGANIC GROUND (replaces visible grid tiles) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   private createOrganicGround() {
     // Single terrain plane covering the entire map
@@ -158,7 +185,7 @@ export class Grid {
     this.group.add(backLip);
   }
 
-  // ─── PATH RIBBON (smooth organic winding road) ─────────────────────────
+  // â”€â”€â”€ PATH RIBBON (smooth organic winding road) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   private createPathRibbon(waypoints: number[][]) {
     if (waypoints.length < 2) return;
@@ -308,7 +335,7 @@ export class Grid {
     });
 
     // Golden glow ring for building "intent"
-    const auraGeo = new THREE.RingGeometry(mobile ? 0.58 : 0.45, mobile ? 0.72 : 0.55, 32);
+    const auraGeo = this.safeRingGeometry(mobile ? 0.58 : 0.45, mobile ? 0.72 : 0.55, 32);
     auraGeo.rotateX(-Math.PI / 2);
 
     const auraMat = new THREE.MeshBasicMaterial({ 
@@ -377,7 +404,7 @@ export class Grid {
     });
   }
 
-  // ─── HIT-TEST TILES (invisible, for raycasting only) ──────────────────
+  // â”€â”€â”€ HIT-TEST TILES (invisible, for raycasting only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   private createHitTestTiles() {
     const tileGeo = new THREE.BoxGeometry(1.0, 0.12, 1.0);
@@ -409,14 +436,14 @@ export class Grid {
 
     const numClusters = Math.floor((this.width * this.height) / 4);
     for (let c = 0; c < numClusters; c++) {
-      const cx = Math.random() * this.width;
-      const cy = Math.random() * this.height;
+      const cx = this.rand() * this.width;
+      const cy = this.rand() * this.height;
       if (this.pathCells.has(`${Math.floor(cx)},${Math.floor(cy)}`)) continue;
 
-      const itemsInCluster = 2 + Math.floor(Math.random() * 3);
+      const itemsInCluster = 2 + Math.floor(this.rand() * 3);
       for (let i = 0; i < itemsInCluster; i++) {
-        const ox = (Math.random() - 0.5) * 1.5;
-        const oy = (Math.random() - 0.5) * 1.5;
+        const ox = (this.rand() - 0.5) * 1.5;
+        const oy = (this.rand() - 0.5) * 1.5;
         const finalX = cx + ox;
         const finalY = cy + oy;
 
@@ -425,8 +452,8 @@ export class Grid {
 
         if (rIdx < rockCount) {
           dummy.position.set(finalX, 0, finalY);
-          dummy.rotation.set(Math.random(), Math.random(), Math.random());
-          dummy.scale.setScalar(0.4 + Math.random() * 0.8);
+          dummy.rotation.set(this.rand(), this.rand(), this.rand());
+          dummy.scale.setScalar(0.4 + this.rand() * 0.8);
           dummy.updateMatrix();
           rockMesh.setMatrixAt(rIdx++, dummy.matrix);
         }
@@ -697,10 +724,10 @@ export class Grid {
 
   private createThemeDecorations(): void {
     const addTrees = (n: number) => {
-      for (let i = 0; i < n; i++) this.addProp(this.makeTree(), 0.8 + Math.random() * (this.width - 1.6), 0.8 + Math.random() * (this.height - 1.6), 0.75 + Math.random() * 0.45);
+      for (let i = 0; i < n; i++) this.addProp(this.makeTree(), 0.8 + this.rand() * (this.width - 1.6), 0.8 + this.rand() * (this.height - 1.6), 0.75 + this.rand() * 0.45);
     };
     const addStones = (n: number, color = 0x777766) => {
-      for (let i = 0; i < n; i++) this.addProp(this.makeStone(color), 0.7 + Math.random() * (this.width - 1.4), 0.7 + Math.random() * (this.height - 1.4), 0.6 + Math.random() * 0.8);
+      for (let i = 0; i < n; i++) this.addProp(this.makeStone(color), 0.7 + this.rand() * (this.width - 1.4), 0.7 + this.rand() * (this.height - 1.4), 0.6 + this.rand() * 0.8);
     };
 
     const isRioniValley = this.theme.includes('river') || this.theme.includes('rioni') || this.theme.includes('tribes') || this.theme.includes('golden');
@@ -842,7 +869,7 @@ export class Grid {
     this.addRockCluster(this.width * 0.55, this.height * 0.35, 9, 1.1, 0x6f6f5c);
     this.addRockCluster(this.width * 0.2, this.height * 0.7, 8, 1.0, 0x777866);
     for (let i = 0; i < 6; i++) {
-      this.addProp(this.makeQvevri(), this.width - 1.8 + Math.random() * 0.7, this.height - 3.2 - i * 0.34, 0.5 + Math.random() * 0.25);
+      this.addProp(this.makeQvevri(), this.width - 1.8 + this.rand() * 0.7, this.height - 3.2 - i * 0.34, 0.5 + this.rand() * 0.25);
     }
   }
 
@@ -901,7 +928,7 @@ export class Grid {
         new THREE.ConeGeometry(0.05, 0.26, 5),
         new THREE.MeshLambertMaterial({ color: 0x5a7a42 }),
       );
-      this.addPropUnsafe(tuft, 0.9 + Math.random() * (this.width - 1.8), this.height - 1.45 + Math.random() * 1.1, 0.9 + Math.random() * 0.35);
+      this.addPropUnsafe(tuft, 0.9 + this.rand() * (this.width - 1.8), this.height - 1.45 + this.rand() * 1.1, 0.9 + this.rand() * 0.35);
     }
     this.addProp(this.makeLandingMarker(), this.width - 1.8, this.height - 1.1, 1.12);
     this.addRockCluster(this.width * 0.4, this.height * 0.62, 11, 1.2, 0x6d6e61);
@@ -1016,13 +1043,13 @@ export class Grid {
 
   private addRockCluster(cx: number, cz: number, count: number, spread: number, color = 0x777766): void {
     for (let i = 0; i < count; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const radius = Math.random() * spread;
+      const angle = this.rand() * Math.PI * 2;
+      const radius = this.rand() * spread;
       this.addProp(
         this.makeStone(color),
         cx + Math.cos(angle) * radius,
         cz + Math.sin(angle) * radius,
-        0.55 + Math.random() * 0.7,
+        0.55 + this.rand() * 0.7,
       );
     }
   }
@@ -1039,7 +1066,7 @@ export class Grid {
     }
   }
 
-  // ─── PUBLIC API (unchanged) ──────────────────────────────────────────
+  // â”€â”€â”€ PUBLIC API (unchanged) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   isBuildable(gx: number, gy: number, isWall: boolean = false): boolean {
     if (gx < 0 || gx >= this.width || gy < 0 || gy >= this.height) return false;
@@ -1099,3 +1126,4 @@ export class Grid {
     return this.plinths.some(p => p.userData.gx === gx && p.userData.gy === gy);
   }
 }
+

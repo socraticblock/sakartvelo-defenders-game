@@ -4,7 +4,7 @@
  */
 
 const SAVE_KEY = 'sakartvelo_defenders_v1';
-const DEBUG_UNLOCK_ALL_LEVELS = false;
+const DEBUG_UNLOCK_ALL_LEVELS = true;
 
 export interface SaveData {
   version: number;
@@ -92,6 +92,7 @@ export const SaveManager = {
    * Era N requires 15+ stars from Era N-1.
    */
   isEraUnlocked(era: number): boolean {
+    if (DEBUG_UNLOCK_ALL_LEVELS) return true;
     if (era === 0) return true;
     const save = loadRaw();
     return save.unlockedEras[`era${era}`] === true;
@@ -187,6 +188,7 @@ export const SaveManager = {
    * Chapter 1 requires Level 5 to have stars.
    */
   isChapterUnlocked(era: number, chapter: number): boolean {
+    if (DEBUG_UNLOCK_ALL_LEVELS) return true;
     if (chapter === 0) return true;
     if (era === 0) {
       if (chapter === 1) return this.getStars('era0_level5') > 0;

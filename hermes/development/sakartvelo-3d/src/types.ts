@@ -21,6 +21,11 @@ export interface LevelData {
   build_nodes?: number[][];
   theme?: string;
   defense_target?: string;
+  sub_era?: string;
+  map_profile?: string;
+  signature_profile?: string;
+  historical_profile?: string;
+  boss_profile?: string;
 }
 
 export interface WaveData {

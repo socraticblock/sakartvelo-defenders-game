@@ -5,11 +5,13 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 
 export class VisualsManager {
   private composer: EffectComposer | null = null;
+  private bloomPass: UnrealBloomPass | null = null;
   private quality: 'low' | 'medium' | 'high' = 'medium';
 
   init(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera): void {
     this.quality = this._loadQuality();
     renderer.setPixelRatio(this.quality === 'high' ? Math.min(devicePixelRatio, 2) : this.quality === 'medium' ? Math.min(devicePixelRatio, 1.5) : 1);
+    renderer.toneMappingExposure = this.quality === 'high' ? 0.96 : this.quality === 'medium' ? 0.93 : 0.9;
 
     // 1. Procedural Environment Map (God-tier reflections)
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
@@ -32,13 +34,14 @@ export class VisualsManager {
     if (this.quality !== 'low') {
       this.composer = new EffectComposer(renderer);
       this.composer.addPass(new RenderPass(scene, camera));
-      
-      this.composer.addPass(new UnrealBloomPass(
+
+      this.bloomPass = new UnrealBloomPass(
         new THREE.Vector2(window.innerWidth, window.innerHeight),
-        this.quality === 'high' ? 0.42 : 0.28,
-        0.4,
-        0.85,
-      ));
+        this.quality === 'high' ? 0.14 : 0.08,
+        this.quality === 'high' ? 0.22 : 0.16,
+        this.quality === 'high' ? 0.96 : 1.0,
+      );
+      this.composer.addPass(this.bloomPass);
     }
 
     window.addEventListener('resize', () => {
@@ -78,7 +81,7 @@ export class VisualsManager {
       position: fixed; inset: 0; z-index: 3; pointer-events: none;
       background:
         radial-gradient(circle at center, transparent 48%, rgba(0,0,0,${this.quality === 'low' ? 0.18 : 0.28}) 100%),
-        linear-gradient(180deg, rgba(212,160,23,0.05), rgba(38,18,60,0.05));
+        linear-gradient(180deg, rgba(212,160,23,0.03), rgba(38,18,60,0.03));
       mix-blend-mode: multiply;
     `;
     document.body.appendChild(overlay);

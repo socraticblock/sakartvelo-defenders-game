@@ -1,5 +1,5 @@
-/**
- * LevelSelect.ts — Level select screen for Sakartvelo Defenders
+﻿/**
+ * LevelSelect.ts â€” Level select screen for Sakartvelo Defenders
  * Era 0: Shows all 20 levels in two chapters.
  * Era 1+: Shows 5 levels per era.
  * CSS lives in LevelSelectStyles.ts.
@@ -8,6 +8,7 @@ import { SaveManager } from './SaveManager';
 import { LevelData } from './types';
 import { LEVEL_SELECT_CSS } from './LevelSelectStyles';
 import { audio } from './AudioManager';
+import { ERA0_CHAPTERS, ERA0_TIMELINE } from './Era0Profiles';
 
 let onSelect: ((era: number, level: number) => void) | null = null;
 let onBack: (() => void) | null = null;
@@ -30,24 +31,19 @@ const ERA_NAMES = [
 ];
 
 const ERA_YEARS = [
-  '~1500 BC – ~100 BC', '~300 BC – 630 AD', '630 – 1089 AD',
+  ERA0_TIMELINE, '~300 BC – 630 AD', '630 – 1089 AD',
   '1089 – 1225 AD', '1225 – 1500 AD', '1500 – 1801 AD',
   '1801 – 1918', '1918 – 1921', '1921 – 1991', '1991 – Present',
 ];
 
-const CHAPTER_NAMES_ERA0 = [
-  { label: 'Chapter I', name: 'Bronze Age', years: '~1500 BC – ~600 BC' },
-  { label: 'Chapter II', name: 'Kingdom of Colchis', years: '~600 BC – ~100 BC' },
-  { label: 'Chapter III', name: 'The Argonaut\'s Trail', years: '~100 BC – ~50 BC' },
-  { label: 'Chapter IV', name: 'Heart of the Kingdom', years: '~50 BC – ~10 BC' },
-];
 
 function getChapterForLevel(era: number, level: number): number {
   if (era === 0) {
-    if (level <= 5) return 0;
-    if (level <= 10) return 1;
-    if (level <= 15) return 2;
-    return 3;
+    for (let i = 0; i < ERA0_CHAPTERS.length; i++) {
+      const ch = ERA0_CHAPTERS[i];
+      if (level >= ch.fromLevel && level <= ch.toLevel) return i;
+    }
+    return 0;
   }
   return 0;
 }
@@ -62,9 +58,9 @@ function cardClass(locked: boolean, completed: boolean, isNext: boolean): string
 
 function starsHtml(stars: number): string {
   if (stars > 0) {
-    return `<span class="ls-stars-completed">${'★'.repeat(stars)}</span><span class="ls-stars-empty">${'☆'.repeat(3 - stars)}</span>`;
+    return `<span class="ls-stars-completed">${'&#9733;'.repeat(stars)}</span><span class="ls-stars-empty">${'&#9734;'.repeat(3 - stars)}</span>`;
   }
-  return `<span class="ls-stars-empty">☆☆☆</span>`;
+  return `<span class="ls-stars-empty">&#9734;&#9734;&#9734;</span>`;
 }
 
 function formatTime(totalSeconds: number | undefined): string {
@@ -84,7 +80,7 @@ function render(era: number) {
     <div class="ls-container">
       <div class="ls-volume-panel">
         <div class="vol-row">
-          <span class="vol-icon">🎵</span>
+          <span class="vol-icon">&#9835;</span>
           <input type="range" id="vol-music-level" min="0" max="100" value="10">
           <span class="vol-val" id="vol-music-level-val">10</span>
         </div>
@@ -102,7 +98,7 @@ function render(era: number) {
       const chLevels = eraLevels.filter(l => getChapterForLevel(era, l.level) === ch);
       if (chLevels.length === 0) continue;
 
-      const chMeta = CHAPTER_NAMES_ERA0[ch];
+      const chMeta = ERA0_CHAPTERS[ch];
       const chapterUnlocked = SaveManager.isChapterUnlocked(era, ch);
       const chClass = ch === 0 ? 'ls-chapter-bronze' : 'ls-chapter-steel';
       const firstUnlocked = ch === 0 ? 1 : 6;
@@ -111,7 +107,7 @@ function render(era: number) {
         <div class="${chClass}">
           <div class="ls-chapter-divider"></div>
           <div class="ls-chapter-header">
-            ${chMeta.label} — ${chMeta.name} &nbsp;·&nbsp; ${chMeta.years}
+            ${chMeta.label} - ${chMeta.name} &nbsp;|&nbsp; ${chMeta.years}
           </div>
           <div class="ls-grid">
       `;
@@ -168,7 +164,7 @@ function render(era: number) {
 
   html += `
       <div class="ls-footer">
-        <button id="ls-back-btn">← Back</button>
+        <button id="ls-back-btn">&#8592; Back</button>
         <button id="ls-reset-btn">Clear Progress</button>
       </div>
     </div>`;
@@ -227,3 +223,4 @@ export const LevelSelect = {
     render(currentEra);
   },
 };
+

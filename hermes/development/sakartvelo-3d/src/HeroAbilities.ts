@@ -1,11 +1,12 @@
-/**
+﻿/**
  * HeroAbilities.ts
- * Hero ability system — activation, DoT tracking, cooldowns, VFX.
+ * Hero ability system - activation, DoT tracking, cooldowns, VFX.
  * Imported and used by Hero.ts.
  */
 import * as THREE from 'three';
 import { Enemy } from './Enemy';
 import { Tower } from './Tower';
+import { magicParticles } from './MagicalParticles';
 
 export interface AbilityState {
   name: string;
@@ -25,28 +26,24 @@ interface PoisonDot {
   dps: number;
 }
 
-import { magicParticles } from './MagicalParticles';
-
 export class HeroAbilities {
   abilities: AbilityState[];
   [index: number]: AbilityState;
   private dots: PoisonDot[] = [];
-  /** Set when an ability successfully activates; Hero consumes for GLTF skill animation. */
   private skillAnimRequest = false;
 
-  // VFX groups (owned by Hero, referenced here for visibility control)
   private poisonVfx: THREE.Group;
-  private healVfx: THREE.Group;
+  private snareVfx: THREE.Group;
   private alchemyVfx: THREE.Group;
 
   constructor(poisonVfx: THREE.Group, healVfx: THREE.Group, alchemyVfx: THREE.Group) {
     this.poisonVfx = poisonVfx;
-    this.healVfx = healVfx;
+    this.snareVfx = healVfx;
     this.alchemyVfx = alchemyVfx;
     this.abilities = [
-      { name: 'Colchian Poison', icon: '☠️', maxCd: 20, cooldown: 0, active: false, duration: 5, timer: 0 },
-      { name: 'War Chant', icon: '🌿', maxCd: 45, cooldown: 0, active: false, duration: 8, timer: 0 },
-      { name: 'Colchian Fire', icon: '🔥', maxCd: 90, cooldown: 0, active: false, duration: 10, timer: 0 },
+      { name: 'Colchian Poison', icon: 'P', maxCd: 20, cooldown: 0, active: false, duration: 5, timer: 0 },
+      { name: 'Ritual Snare', icon: 'S', maxCd: 45, cooldown: 0, active: false, duration: 8, timer: 0 },
+      { name: 'Colchian Alchemy', icon: 'A', maxCd: 90, cooldown: 0, active: false, duration: 10, timer: 0 },
     ];
   }
 
@@ -56,32 +53,30 @@ export class HeroAbilities {
 
     ab.active = true;
     ab.timer = ab.duration;
-
     this.skillAnimRequest = true;
 
     if (index === 0) {
       this.applyPoison(enemies, heroPos);
       magicParticles?.spawnBurst(heroPos.clone().add(new THREE.Vector3(0, 0.5, 0)), 0x44ff44, 25);
     } else if (index === 1) {
-      this.applyHeal(towers, heroPos);
-      magicParticles?.spawnBurst(heroPos.clone().add(new THREE.Vector3(0, 0.5, 0)), 0xffdd44, 40);
+      this.applySnare(enemies, heroPos);
+      magicParticles?.spawnBurst(heroPos.clone().add(new THREE.Vector3(0, 0.5, 0)), 0x88dd66, 40);
     } else if (index === 2) {
-      this.applyAlchemy(towers, heroPos);
-      magicParticles?.spawnBurst(heroPos.clone().add(new THREE.Vector3(0, 0.5, 0)), 0xff4422, 60);
+      this.applyAlchemy(enemies, towers, heroPos);
+      magicParticles?.spawnBurst(heroPos.clone().add(new THREE.Vector3(0, 0.5, 0)), 0xffbb44, 60);
     }
 
     return true;
   }
 
-  /** One-shot: true on the first frame after an ability was activated. */
   consumeSkillAnimRequest(): boolean {
     const v = this.skillAnimRequest;
     this.skillAnimRequest = false;
     return v;
   }
 
-  private applyPoison(enemies: Enemy[], heroPos: THREE.Vector3) {
-    const range = 4.2; // attackRange * 1.5
+  private applyPoison(enemies: Enemy[], heroPos: THREE.Vector3): void {
+    const range = 4.2;
     let hit = 0;
     for (const e of enemies) {
       if (!e.alive) continue;
@@ -94,37 +89,50 @@ export class HeroAbilities {
     if (hit > 0) this.createVfxBurst(this.poisonVfx, 0x44ff44, range);
   }
 
-  private applyHeal(towers: Tower[], heroPos: THREE.Vector3) {
-    const range = 4.0;
-    for (const t of towers) {
-      const tPos = new THREE.Vector3(t.gx + 0.5, 0, t.gy + 0.5);
-      if (heroPos.distanceTo(tPos) <= range) {
-        t.boost(1.3, 1.0, 1.2, this.abilities[1].duration);
+  private applySnare(enemies: Enemy[], heroPos: THREE.Vector3): void {
+    const range = 4.3;
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      if (heroPos.distanceTo(e.getPos()) <= range) {
+        e.applyTemporarySlow(0.45, this.abilities[1].duration);
       }
     }
-    this.createVfxBurst(this.healVfx, 0xffdd44, range);
+    this.createVfxBurst(this.snareVfx, 0x88dd66, range);
   }
 
-  private applyAlchemy(towers: Tower[], heroPos: THREE.Vector3) {
+  private applyAlchemy(enemies: Enemy[], towers: Tower[], heroPos: THREE.Vector3): void {
     const range = 5.0;
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      if (heroPos.distanceTo(e.getPos()) <= range) {
+        e.applyTemporarySlow(0.35, this.abilities[2].duration);
+        e.setPoisoned(this.abilities[2].duration);
+        this.dots.push({ enemy: e, ticksLeft: 10, interval: 1.0, elapsed: 0, dps: 7 });
+      }
+    }
+
     for (const t of towers) {
       const tPos = new THREE.Vector3(t.gx + 0.5, 0, t.gy + 0.5);
       if (heroPos.distanceTo(tPos) <= range) {
-        t.boost(1.6, 1.15, 1.3, this.abilities[2].duration);
+        t.boost(1.35, 1.1, 1.25, this.abilities[2].duration);
       }
     }
-    this.createVfxBurst(this.alchemyVfx, 0x8844ff, range);
+
+    this.createVfxBurst(this.alchemyVfx, 0xffbb44, range);
   }
 
-  private createVfxBurst(parent: THREE.Group, color: number, radius: number) {
+  private createVfxBurst(parent: THREE.Group, color: number, radius: number): void {
     parent.clear();
+    const inner = Math.max(0.02, radius - 0.12);
+    const outer = Math.max(inner + 0.02, radius);
     const ring = new THREE.Mesh(
-      new THREE.RingGeometry(radius - 0.12, radius, 32),
+      new THREE.RingGeometry(inner, outer, 32),
       new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
     );
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.1;
     parent.add(ring);
+
     const sphere = new THREE.Mesh(
       new THREE.SphereGeometry(radius * 0.3, 12, 8),
       new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.15 })
@@ -134,14 +142,15 @@ export class HeroAbilities {
     parent.visible = true;
   }
 
-  /** Called each frame from Hero.update() */
-  update(dt: number, alive: boolean, heroPos: THREE.Vector3) {
+  update(dt: number, alive: boolean, heroPos: THREE.Vector3): void {
     if (!alive) return;
 
-    // Poison DoTs
     for (let i = this.dots.length - 1; i >= 0; i--) {
       const dot = this.dots[i];
-      if (!dot.enemy.alive) { this.dots.splice(i, 1); continue; }
+      if (!dot.enemy.alive) {
+        this.dots.splice(i, 1);
+        continue;
+      }
       dot.elapsed += dt;
       if (dot.elapsed >= dot.interval) {
         dot.elapsed -= dot.interval;
@@ -151,7 +160,6 @@ export class HeroAbilities {
       }
     }
 
-    // Ability timers
     for (let i = 0; i < this.abilities.length; i++) {
       const ab = this.abilities[i];
       if (ab.active) {
@@ -161,7 +169,7 @@ export class HeroAbilities {
           ab.cooldown = ab.maxCd;
           ab.timer = ab.maxCd;
           if (i === 0) this.poisonVfx.visible = false;
-          if (i === 1) this.healVfx.visible = false;
+          if (i === 1) this.snareVfx.visible = false;
           if (i === 2) this.alchemyVfx.visible = false;
         }
       } else if (ab.cooldown > 0) {
@@ -172,13 +180,13 @@ export class HeroAbilities {
     }
 
     this.fadeVfx(this.poisonVfx, dt);
-    this.fadeVfx(this.healVfx, dt);
+    this.fadeVfx(this.snareVfx, dt);
     this.fadeVfx(this.alchemyVfx, dt);
   }
 
-  private fadeVfx(group: THREE.Group, dt: number) {
+  private fadeVfx(group: THREE.Group, dt: number): void {
     if (!group.visible) return;
-    group.children.forEach(child => {
+    group.children.forEach((child) => {
       if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshBasicMaterial) {
         child.material.opacity = Math.max(0, child.material.opacity - dt * 0.08);
       }

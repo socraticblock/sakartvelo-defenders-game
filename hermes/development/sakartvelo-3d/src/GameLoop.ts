@@ -607,10 +607,6 @@ export class GameLoop {
       return `You defeated ${formatted} and held the line. Colchis stands victorious.`;
     }
 
-    if (gs.currentLevel?.level === 1) {
-      return `You defeated the Devi and held the line. Colchis stands victorious.`;
-    }
-
     return `You defeated the enemy champion and held the line. Sakartvelo endures.`;
   }
 
