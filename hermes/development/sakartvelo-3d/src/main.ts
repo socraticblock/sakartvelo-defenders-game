@@ -23,8 +23,8 @@ const MAGIC_SPRITE = '/magic_particle_sprite.png';
 // ─── Scene ────────────────────────────────────────────────────────────────
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x151d15);
-scene.fog = new THREE.FogExp2(0x151d15, 0.02);
+scene.background = new THREE.Color(0x0f1812);
+scene.fog = new THREE.FogExp2(0x0f1812, 0.0135);
 
 const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 120);
 const CAMERA_ZOOM_KEY = 'sakartvelo_camera_zoom_pct';
@@ -36,22 +36,22 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0;
+renderer.toneMappingExposure = 1.12;
 document.body.appendChild(renderer.domElement);
 
-// Lighting - Prestige Balance (Moody but Visible)
-scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-scene.add(new THREE.HemisphereLight(0xaaaaff, 0x444422, 0.6));
-const sun = new THREE.DirectionalLight(0xffffff, 2.5);
-sun.position.set(20, 40, 20);
+// Lighting - warmer key + cooler fill for richer terrain readability.
+scene.add(new THREE.AmbientLight(0xfff3d8, 0.96));
+scene.add(new THREE.HemisphereLight(0xe9f0ff, 0x2f3727, 0.86));
+const sun = new THREE.DirectionalLight(0xffd08a, 3.0);
+sun.position.set(-16, 34, 20);
 sun.castShadow = true;
 sun.shadow.camera.left = -30; sun.shadow.camera.right = 30;
 sun.shadow.camera.top = 30; sun.shadow.camera.bottom = -30;
 sun.shadow.mapSize.set(2048, 2048);
 scene.add(sun);
 
-const fillLight = new THREE.DirectionalLight(0xffffff, 1.0);
-fillLight.position.set(-20, 10, -20); 
+const fillLight = new THREE.DirectionalLight(0x8fc2da, 1.1);
+fillLight.position.set(20, 14, -20); 
 scene.add(fillLight);
 
 const ground = new THREE.Mesh(

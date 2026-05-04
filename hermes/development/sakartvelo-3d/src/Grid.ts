@@ -10,6 +10,8 @@ export class Grid {
   private _curve: THREE.CatmullRomCurve3 | null = null;
   private theme = 'colchis';
   private defenseTarget = 'village_gate';
+  private era = 0;
+  private levelNum = 1;
   worldPath: THREE.Vector3[] = [];
   private pathHighlightMeshes: THREE.Mesh[] = [];
   private waterMeshes: THREE.Mesh[] = [];
@@ -22,6 +24,8 @@ export class Grid {
     this.height = level.grid_height;
     this.theme = level.theme || 'colchis';
     this.defenseTarget = level.defense_target || 'village_gate';
+    this.era = level.era ?? 0;
+    this.levelNum = level.level ?? 1;
 
     this.computePathCells(level.path_waypoints);
     this.computeWorldPath(level.path_waypoints);
@@ -30,6 +34,7 @@ export class Grid {
     this.createHitTestTiles();
     this.createPlinths(level.build_nodes || []);
     this.createThemeDecorations();
+    this.createLevelSignature();
     this.createEnvironmentDecorations();
     this.createDefenseObjective();
     this.addDecorations();
@@ -711,6 +716,46 @@ export class Grid {
       this.createRioniValleySet();
     }
 
+    if (this.theme.includes('grove') || this.theme.includes('oak') || this.theme.includes('sacred')) {
+      this.createForestGroveSet();
+    }
+
+    if (this.theme.includes('coast') || this.theme.includes('cliffs') || this.theme.includes('sea') || this.theme.includes('pontus')) {
+      this.createCoastCliffsSet();
+    }
+
+    if (this.theme.includes('devi') || this.theme.includes('ravine')) {
+      this.createDeviSet();
+    }
+
+    if (this.theme.includes('smith') || this.theme.includes('forge') || this.theme.includes('village')) {
+      this.createSmithVillageSet();
+    }
+
+    if (this.theme.includes('watchfire') || this.theme.includes('trial')) {
+      this.createWatchfireSet();
+    }
+
+    if (this.theme.includes('trade') || this.theme.includes('road') || this.theme.includes('phasis')) {
+      this.createTradeRoadSet();
+    }
+
+    if (this.theme.includes('marsh')) {
+      this.createMarshSet();
+    }
+
+    if (this.theme.includes('palisade')) {
+      this.createPalisadeSet();
+    }
+
+    if (this.theme.includes('fleece') && this.theme.includes('gate')) {
+      this.createFleeceGateSet();
+    }
+
+    if (this.theme.includes('heart')) {
+      this.createHeartShrineSet();
+    }
+
     if (this.theme.includes('forest') || this.theme.includes('grove') || this.theme.includes('oak')) addTrees(24);
     else addTrees(isRioniValley ? 7 : 10);
 
@@ -787,6 +832,186 @@ export class Grid {
     this.addRockCluster(1.05, this.height * 0.68, 9, 0.9, 0x7f7a64);
     this.addRockCluster(this.width - 1.25, this.height * 0.72, 8, 0.8, 0x6f705e);
     this.addRockCluster(this.width * 0.5, this.height * 0.44, 8, 0.95, 0x827d67);
+  }
+
+  private createForestGroveSet(): void {
+    for (let i = 0; i < 4; i++) {
+      this.addProp(this.makeArchRuin(0x6f6f5d), 1.4 + i * 0.9, 1.4 + Math.sin(i) * 0.35, 0.72 + i * 0.05);
+    }
+    this.addProp(this.makeShrine(0xd4a017), this.width - 2.1, this.height - 2.2, 1.25);
+    this.addRockCluster(this.width * 0.55, this.height * 0.35, 9, 1.1, 0x6f6f5c);
+    this.addRockCluster(this.width * 0.2, this.height * 0.7, 8, 1.0, 0x777866);
+    for (let i = 0; i < 6; i++) {
+      this.addProp(this.makeQvevri(), this.width - 1.8 + Math.random() * 0.7, this.height - 3.2 - i * 0.34, 0.5 + Math.random() * 0.25);
+    }
+  }
+
+  private createCoastCliffsSet(): void {
+    const sea = this.makeWaterStrip(this.width + 1.2, 1.35);
+    sea.position.set(this.width / 2, 0.01, 0.36);
+    this.group.add(sea);
+    this.addProp(this.makeLandingMarker(), this.width - 1.6, 1.15, 1.2);
+    this.addProp(this.makeWatchtower(), 1.1, 1.2, 0.95);
+    this.addProp(this.makeBanner(0x245f73), this.width - 2.3, 2.0, 1.0);
+    this.addRockCluster(this.width * 0.28, 1.2, 10, 1.35, 0x7e7e72);
+    this.addRockCluster(this.width * 0.78, 1.1, 10, 1.3, 0x707060);
+  }
+
+  private createDeviSet(): void {
+    this.addRockCluster(this.width * 0.5, this.height * 0.5, 16, 1.8, 0x534f47);
+    this.addRockCluster(this.width * 0.25, this.height * 0.55, 12, 1.3, 0x4d4a44);
+    this.addRockCluster(this.width * 0.75, this.height * 0.58, 12, 1.3, 0x4d4a44);
+    this.addProp(this.makeGate(0xaa3333), this.width - 1.9, this.height - 1.4, 1.3);
+    this.addProp(this.makeWatchfire(), 1.5, 2.1, 1.2);
+    this.addProp(this.makeWatchfire(), this.width - 1.6, 2.3, 1.2);
+  }
+
+  private createSmithVillageSet(): void {
+    this.addProp(this.makeForge(), 1.5, 2.0, 1.2);
+    this.addProp(this.makeHut(), 2.6, 2.6, 1.05);
+    this.addProp(this.makeFire(), 3.2, 2.0, 1.2);
+    this.addProp(this.makeBanner(0x7a4f1c), this.width - 2.0, this.height * 0.42, 1.0);
+    this.addRockCluster(this.width * 0.42, this.height * 0.32, 10, 1.2, 0x66665f);
+  }
+
+  private createWatchfireSet(): void {
+    this.addProp(this.makeWatchfire(), 1.8, 2.0, 1.35);
+    this.addProp(this.makeWatchfire(), this.width - 1.8, 2.0, 1.35);
+    this.addProp(this.makeWatchfire(), this.width - 2.0, this.height - 2.0, 1.35);
+    this.addProp(this.makeWatchfire(), 2.2, this.height - 2.3, 1.25);
+    this.addRockCluster(this.width * 0.5, this.height * 0.45, 12, 1.2, 0x6a6758);
+  }
+
+  private createTradeRoadSet(): void {
+    for (let i = 0; i < 3; i++) {
+      this.addProp(this.makeQvevri(), 1.1 + i * 0.28, this.height - 1.0 - i * 0.26, 0.62);
+    }
+    this.addProp(this.makeGate(0xd4a017), this.width - 1.8, this.height - 1.2, 1.18);
+    this.addProp(this.makeBanner(0x8a5c1f), this.width * 0.48, this.height * 0.25, 1.0);
+    this.addRockCluster(this.width * 0.2, this.height * 0.58, 8, 1.05, 0x7a7765);
+    this.addRockCluster(this.width * 0.8, this.height * 0.58, 8, 1.05, 0x7a7765);
+  }
+
+  private createMarshSet(): void {
+    const marsh = this.makeWaterStrip(this.width + 0.8, 1.55);
+    marsh.position.set(this.width / 2, 0.006, this.height - 0.75);
+    this.group.add(marsh);
+    for (let i = 0; i < 8; i++) {
+      const tuft = new THREE.Mesh(
+        new THREE.ConeGeometry(0.05, 0.26, 5),
+        new THREE.MeshLambertMaterial({ color: 0x5a7a42 }),
+      );
+      this.addPropUnsafe(tuft, 0.9 + Math.random() * (this.width - 1.8), this.height - 1.45 + Math.random() * 1.1, 0.9 + Math.random() * 0.35);
+    }
+    this.addProp(this.makeLandingMarker(), this.width - 1.8, this.height - 1.1, 1.12);
+    this.addRockCluster(this.width * 0.4, this.height * 0.62, 11, 1.2, 0x6d6e61);
+  }
+
+  private createPalisadeSet(): void {
+    for (let i = 1.6; i < this.width - 1.4; i += 0.52) {
+      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.5, 4), new THREE.MeshLambertMaterial({ color: 0x735938 }));
+      spike.position.y = 0.25;
+      this.addPropUnsafe(spike, i, this.height - 1.0, 1);
+    }
+    this.addProp(this.makeGate(0xd4a017), this.width / 2, this.height - 1.05, 1.22);
+    this.addRockCluster(this.width * 0.25, this.height * 0.7, 10, 1.0, 0x706f63);
+    this.addRockCluster(this.width * 0.75, this.height * 0.7, 10, 1.0, 0x706f63);
+  }
+
+  private createFleeceGateSet(): void {
+    this.addProp(this.makeGate(0xd4a017), this.width / 2, this.height - 1.1, 1.35);
+    this.addProp(this.makeShrine(0xd4a017), this.width - 2.1, this.height - 2.0, 1.2);
+    this.addProp(this.makeBanner(0xd4a017), 1.6, this.height * 0.35, 1.02);
+    this.addRockCluster(this.width * 0.5, this.height * 0.52, 12, 1.25, 0x77735d);
+  }
+
+  private createHeartShrineSet(): void {
+    this.addProp(this.makeShrine(0xd4a017), this.width / 2, this.height - 2.1, 1.45);
+    this.addProp(this.makeArchRuin(0x6c6b5a), this.width * 0.28, this.height * 0.46, 1.1);
+    this.addProp(this.makeArchRuin(0x6c6b5a), this.width * 0.72, this.height * 0.46, 1.1);
+    this.addRockCluster(this.width * 0.5, this.height * 0.36, 14, 1.45, 0x767462);
+    for (let i = 0; i < 5; i++) {
+      this.addProp(this.makeQvevri(), this.width * 0.4 + i * 0.28, this.height - 1.35 + Math.sin(i) * 0.12, 0.58);
+    }
+  }
+
+  private createLevelSignature(): void {
+    if (this.era !== 0) return;
+    const cX = this.width * 0.5;
+    const cZ = this.height * 0.5;
+
+    switch (this.levelNum) {
+      case 1:
+        this.addProp(this.makeShrine(0xd4a017), cX, this.height - 2.0, 1.1);
+        break;
+      case 2:
+        this.addProp(this.makeBanner(0x9b1d20), cX - 1.1, cZ + 1.5, 1.05);
+        this.addProp(this.makeBanner(0x9b1d20), cX + 1.1, cZ + 1.4, 1.05);
+        break;
+      case 3:
+        this.addProp(this.makeArchRuin(0x6f6f5a), cX, cZ - 0.2, 1.1);
+        break;
+      case 4:
+        this.addProp(this.makeLandingMarker(), cX + 1.5, 1.5, 1.1);
+        break;
+      case 5:
+        this.addProp(this.makeGate(0xaa3333), cX, cZ + 1.3, 1.15);
+        break;
+      case 6:
+        this.addProp(this.makeQvevri(), cX - 1.0, cZ + 1.2, 0.75);
+        this.addProp(this.makeQvevri(), cX - 0.65, cZ + 0.9, 0.62);
+        this.addProp(this.makeQvevri(), cX - 1.3, cZ + 0.95, 0.56);
+        break;
+      case 7:
+        this.addRockCluster(cX + 1.6, cZ + 0.9, 8, 0.8, 0x6d6d5f);
+        break;
+      case 8:
+        this.addProp(this.makeForge(), cX + 1.2, cZ + 0.8, 1.0);
+        break;
+      case 9:
+        this.addProp(this.makeWatchfire(), cX - 1.3, cZ + 1.2, 1.15);
+        this.addProp(this.makeWatchfire(), cX + 1.3, cZ + 1.2, 1.15);
+        break;
+      case 10:
+        this.addRockCluster(cX, cZ, 12, 1.2, 0x4d4a44);
+        break;
+      case 11:
+        this.addProp(this.makeBanner(0x8a5c1f), cX, cZ + 1.2, 1.1);
+        break;
+      case 12:
+        this.addProp(this.makeShrine(0xd4a017), cX, cZ + 1.0, 1.18);
+        this.addRockCluster(cX, cZ + 1.0, 7, 0.75, 0x77735f);
+        break;
+      case 13:
+        this.addProp(this.makeWatchtower(), cX + 1.8, cZ - 0.8, 0.9);
+        break;
+      case 14:
+        this.addRockCluster(cX - 1.0, cZ + 0.9, 6, 0.7, 0x777766);
+        this.addRockCluster(cX + 1.0, cZ + 0.9, 6, 0.7, 0x777766);
+        break;
+      case 15:
+        this.addProp(this.makeShrine(0xaa3333), cX, cZ + 0.9, 1.25);
+        break;
+      case 16:
+        this.addProp(this.makeGate(0xd4a017), cX, cZ + 1.1, 1.1);
+        break;
+      case 17:
+        this.addProp(this.makeLandingMarker(), cX, this.height - 1.3, 1.0);
+        break;
+      case 18:
+        this.addProp(this.makeGate(0xd4a017), cX, this.height - 1.1, 1.28);
+        break;
+      case 19:
+        this.addProp(this.makeShrine(0xd4a017), cX, cZ + 1.25, 1.25);
+        break;
+      case 20:
+        this.addProp(this.makeShrine(0xd4a017), cX, this.height - 2.0, 1.5);
+        this.addProp(this.makeBanner(0xd4a017), cX - 1.6, this.height - 2.3, 1.08);
+        this.addProp(this.makeBanner(0xd4a017), cX + 1.6, this.height - 2.3, 1.08);
+        break;
+      default:
+        break;
+    }
   }
 
   private addRockCluster(cx: number, cz: number, count: number, spread: number, color = 0x777766): void {
