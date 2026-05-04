@@ -286,19 +286,21 @@ function renderSheet(): string {
   const level = selectedBriefingLevel;
   if (level) {
     const briefing = getBriefingForLevel(level);
+    const displayTitle = level.name || briefing.title;
     const canBegin = isLevelStartAllowed(level);
     const tagHtml = briefing.kind.map(tag => `<span class="truth-tag truth-tag-${tag}">${truthTagLabel(tag)}</span>`).join('');
     return `
       <div class="level-briefing-sheet ${level ? 'is-open' : ''}" aria-hidden="false" role="dialog" aria-modal="true">
         <div class="level-briefing-backdrop" data-close-sheet="1"></div>
         <div class="briefing-panel">
+          <div class="briefing-handle" aria-hidden="true"></div>
           <button class="briefing-close" type="button" data-close-sheet="1" aria-label="Close briefing">Close</button>
           <div class="briefing-scroll">
             <div class="briefing-topline">Level ${level.level}</div>
-            <h3 class="briefing-title">${briefing.title}</h3>
+            <h3 class="briefing-title">${displayTitle}</h3>
             <div class="briefing-tags">${tagHtml}</div>
             <div class="briefing-subline">${briefing.chapterLabel} &mdash; ${briefing.chapterName}</div>
-            <div class="briefing-period">${briefing.period}</div>
+            <div class="briefing-period">${normalizePeriod(briefing.period)}</div>
             <p class="briefing-teaser">${briefing.shortTeaser}</p>
 
             <section class="briefing-section briefing-section-quick">
@@ -313,7 +315,7 @@ function renderSheet(): string {
             </section>
 
             <section class="briefing-section">
-              <h4 class="briefing-heading">Why this level is called “${briefing.title}”</h4>
+              <h4 class="briefing-heading">Why this level is called “${displayTitle}”</h4>
               <p class="briefing-copy">${briefing.whyName}</p>
             </section>
 
@@ -361,6 +363,7 @@ function renderSheet(): string {
       <div class="level-briefing-sheet is-open" aria-hidden="false" role="dialog" aria-modal="true">
         <div class="level-briefing-backdrop" data-close-sheet="1"></div>
         <div class="briefing-panel">
+          <div class="briefing-handle" aria-hidden="true"></div>
           <button class="briefing-close" type="button" data-close-sheet="1" aria-label="Close chapter preview">Close</button>
           <div class="briefing-scroll">
             <div class="briefing-topline">${chapter.label}</div>
@@ -394,7 +397,7 @@ function bindInteractions() {
       if (!level) return;
       selectedGateChapter = -1;
       selectedBriefingLevel = level;
-      render(currentEra);
+      rerenderPreserveScroll();
     });
   });
 
@@ -402,7 +405,7 @@ function bindInteractions() {
     gate.addEventListener('click', () => {
       selectedBriefingLevel = null;
       selectedGateChapter = Number(gate.dataset.gateChapter);
-      render(currentEra);
+      rerenderPreserveScroll();
     });
   });
 
@@ -448,7 +451,21 @@ function handleSheetEscape(event: KeyboardEvent) {
 function closeSheet(shouldRerender = true) {
   selectedBriefingLevel = null;
   selectedGateChapter = -1;
-  if (shouldRerender) render(currentEra);
+  if (shouldRerender) rerenderPreserveScroll();
+}
+
+function getScrollHost(): HTMLElement | null {
+  if (!container) return null;
+  const screen = container.closest<HTMLElement>('#screen-level-select');
+  return screen || container;
+}
+
+function rerenderPreserveScroll(): void {
+  const scrollHost = getScrollHost();
+  const scrollTop = scrollHost?.scrollTop ?? 0;
+  render(currentEra);
+  const updatedHost = getScrollHost();
+  if (updatedHost) updatedHost.scrollTop = scrollTop;
 }
 
 function render(era: number) {
@@ -478,6 +495,11 @@ function render(era: number) {
   `;
 
   container.innerHTML = html;
+  const screen = container.closest<HTMLElement>('#screen-level-select');
+  if (screen) {
+    const sheetOpen = Boolean(selectedBriefingLevel || selectedGateChapter >= 0);
+    screen.classList.toggle('briefing-open', sheetOpen);
+  }
   audio.bindVolumeControls();
   bindInteractions();
   bindEscape();

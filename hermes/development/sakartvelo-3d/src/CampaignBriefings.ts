@@ -33,10 +33,15 @@ export type LevelBriefing = {
 
 const chapterMeta = (chapterIndex: number) => {
   const chapter = ERA0_CHAPTERS[chapterIndex];
+  const period = chapter.years
+    .replace(/~/g, 'c. ')
+    .replace(/\s+/g, ' ')
+    .replace(/\s*-\s*/g, ' – ')
+    .trim();
   return {
     chapterLabel: chapter.label,
     chapterName: chapter.name,
-    period: chapter.years.replace(/~/g, 'c.'),
+    period,
   };
 };
 

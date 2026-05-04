@@ -240,16 +240,8 @@ export class ScreenManager {
     document.getElementById('lc-next')?.addEventListener('click', () => {
       const cur = gs.currentLevel;
       if (!cur) return;
-      
-      const nextLevelNum = cur.level + 1;
-      const nextLevel = gs.allLevels.find(l => l.era === cur.era && l.level === nextLevelNum);
-      
-      if (nextLevel) {
-        this._onLevelSelect?.(nextLevel.era, nextLevel.level);
-      } else {
-        // No next level in this era? Back to map.
-        this.showLevelSelect(cur.era);
-      }
+      // Journey-first flow: return to map instead of skipping straight into next battle.
+      this.showLevelSelect(cur.era);
     });
   }
 

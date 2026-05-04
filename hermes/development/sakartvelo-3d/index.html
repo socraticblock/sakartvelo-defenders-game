@@ -56,8 +56,8 @@
   </div>
 
   <div id="tower-action-circle" class="game-ui">
-    <button id="tower-circle-upgrade" class="tower-circle-btn tower-circle-upgrade">â¬† Upgrade</button>
-    <button id="tower-circle-sell" class="tower-circle-btn tower-circle-sell">ðŸ’° Sell</button>
+    <button id="tower-circle-upgrade" class="tower-circle-btn tower-circle-upgrade">Upgrade</button>
+    <button id="tower-circle-sell" class="tower-circle-btn tower-circle-sell">Sell</button>
   </div>
 
   <div id="hero-bar" class="game-ui">
@@ -96,7 +96,7 @@
     <div class="game-info-card">
       <div class="game-info-header">
         <div class="game-info-title">Battle Guide</div>
-        <button id="btn-game-info-close" class="game-info-close" aria-label="Close">âœ•</button>
+        <button id="btn-game-info-close" class="game-info-close" aria-label="Close">Close</button>
       </div>
 
       <div class="game-info-section">
@@ -118,18 +118,18 @@
     <div class="game-info-card">
       <div class="game-info-header">
         <div class="game-info-title">Settings</div>
-        <button id="btn-game-settings-close" class="game-info-close" aria-label="Close">âœ•</button>
+        <button id="btn-game-settings-close" class="game-info-close" aria-label="Close">Close</button>
       </div>
 
       <div class="game-info-section">
         <div class="game-info-section-title">Audio</div>
         <div class="game-info-row">
-          <span class="vol-icon">ðŸŽµ</span>
+          <span class="vol-icon">Music</span>
           <input type="range" id="vol-music-game" min="0" max="100" value="10">
           <span class="vol-val" id="vol-music-game-val">10</span>
         </div>
         <div class="game-info-row">
-          <span class="vol-icon">ðŸ”Š</span>
+          <span class="vol-icon">SFX</span>
           <input type="range" id="vol-sfx-game" min="0" max="100" value="100">
           <span class="vol-val" id="vol-sfx-game-val">100</span>
         </div>
@@ -138,12 +138,12 @@
       <div class="game-info-section">
         <div class="game-info-section-title">View</div>
         <div class="game-info-row">
-          <span class="vol-icon">ðŸ”</span>
+          <span class="vol-icon">Zoom</span>
           <input type="range" id="cam-zoom-game" min="80" max="120" value="100">
           <span class="vol-val" id="cam-zoom-game-val">100</span>
         </div>
         <div class="game-info-row">
-          <span class="vol-icon">ðŸ§­</span>
+          <span class="vol-icon">Build</span>
           <select id="build-layout-game" class="game-info-select">
             <option value="bottom">Build Bottom</option>
             <option value="left">Build Left</option>
@@ -152,7 +152,7 @@
           </select>
         </div>
         <div class="game-info-row">
-          <span class="vol-icon">âœ¨</span>
+          <span class="vol-icon">Abilities</span>
           <select id="ability-layout-game" class="game-info-select">
             <option value="bottom">Abilities Bottom</option>
             <option value="left">Abilities Left</option>
@@ -161,7 +161,7 @@
           </select>
         </div>
         <div class="game-info-row">
-          <span class="vol-icon">ðŸŽž</span>
+          <span class="vol-icon">Visuals</span>
           <select id="visual-quality-game" class="game-info-select">
             <option value="low">Visuals Low</option>
             <option value="medium">Visuals Medium</option>
@@ -176,7 +176,7 @@
       </div>
 
       <div class="game-info-section">
-        <button id="btn-game-level-select" class="game-info-nav-btn">â† Level Select</button>
+        <button id="btn-game-level-select" class="game-info-nav-btn">Level Select</button>
       </div>
     </div>
   </div>
@@ -185,7 +185,7 @@
     <div class="game-info-card pause-menu-card">
       <div class="game-info-header">
         <div class="game-info-title">Paused</div>
-        <button id="btn-pause-close" class="game-info-close" aria-label="Resume">âœ•</button>
+        <button id="btn-pause-close" class="game-info-close" aria-label="Resume">Close</button>
       </div>
       <div class="pause-menu-actions">
         <button id="btn-pause-resume" class="game-info-nav-btn pause-primary">Resume</button>
@@ -201,7 +201,7 @@
     <div class="game-info-card bestiary-card">
       <div class="game-info-header">
         <div class="game-info-title">Bestiary</div>
-        <button id="btn-bestiary-close" class="game-info-close" aria-label="Close">âœ•</button>
+        <button id="btn-bestiary-close" class="game-info-close" aria-label="Close">Close</button>
       </div>
       <div id="bestiary-tabs" class="bestiary-tabs"></div>
       <div id="bestiary-content" class="bestiary-content"></div>
@@ -244,11 +244,11 @@
     <p id="lc-msg"></p>
     <div class="lc-btn-group">
       <button id="lc-menu">Level Select</button>
-      <button id="lc-next">Next Level â†’</button>
+      <button id="lc-next">Continue Journey</button>
     </div>
   </div>
 
-  <div id="pause-overlay">â¸ PAUSED</div>
+  <div id="pause-overlay">PAUSED</div>
 
   <div id="screen-game-over" class="screen">
     <h2 id="game-over-title">VICTORY!</h2>
@@ -260,9 +260,9 @@
   <!-- Build Phase Overlay -->
   <div id="build-overlay">
     <h2>Build Phase</h2>
-    <div id="build-timer-container">â± <span id="build-timer">30</span></div>
+    <div id="build-timer-container">Time <span id="build-timer">30</span></div>
     <div id="bp-enemy-list-container">Inbound: <span id="bp-enemy-list">...</span></div>
-    <button type="button" id="build-start-btn">â–¶ Start Wave Now</button>
+    <button type="button" id="build-start-btn">Start Wave Now</button>
   </div>
 
   <!-- Cultural footer (rotating Georgian facts) -->

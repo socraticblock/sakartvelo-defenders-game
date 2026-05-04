@@ -13,6 +13,10 @@ export const LEVEL_SELECT_CSS = `
       url('/images/3387e128-87a0-4327-a509-c41cb9f85932.png') center center / cover no-repeat;
   }
 
+  #screen-level-select.briefing-open {
+    overflow: hidden;
+  }
+
   #screen-level-select::before {
     content: '';
     position: fixed;
@@ -443,6 +447,15 @@ export const LEVEL_SELECT_CSS = `
     letter-spacing: 0.14em;
     text-transform: uppercase;
     cursor: pointer;
+  }
+
+  .briefing-handle {
+    align-self: center;
+    margin-top: 10px;
+    width: 44px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(216, 190, 141, 0.34);
   }
 
   .briefing-scroll {
