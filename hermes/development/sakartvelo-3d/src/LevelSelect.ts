@@ -215,7 +215,9 @@ function renderEraJourney(eraLevels: LevelData[]): string {
             data-level="${lvl.level}"
             data-start-locked="${lockedForStart ? 'true' : 'false'}"
             aria-label="Open briefing for level ${lvl.level}, ${lvl.name}">
-            <div class="map-node-art" aria-hidden="true"></div>
+            <div class="map-node-art" aria-hidden="true"
+              ${lvl.imageUrl ? `style="background-image:url('${lvl.imageUrl}');background-size:cover;background-position:center;"` : ''}
+            ></div>
             <div class="map-node-meta">
               <div class="map-node-num">${lvl.level}</div>
               <div class="map-node-name">${lvl.name}</div>
@@ -263,7 +265,9 @@ function renderGenericEraList(era: number, eraLevels: LevelData[]): string {
             return `
               <div class="journey-node-wrap">
                 <button class="map-node map-node-${state}" data-era="${lvl.era}" data-level="${lvl.level}" data-start-locked="${!isLevelStartAllowed(lvl) ? 'true' : 'false'}">
-                  <div class="map-node-art" aria-hidden="true"></div>
+                  <div class="map-node-art" aria-hidden="true"
+                    ${lvl.imageUrl ? `style="background-image:url('${lvl.imageUrl}');background-size:cover;background-position:center;"` : ''}
+                  ></div>
                   <div class="map-node-meta">
                     <div class="map-node-num">${lvl.level}</div>
                     <div class="map-node-name">${lvl.name}</div>

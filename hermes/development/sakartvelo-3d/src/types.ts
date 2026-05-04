@@ -26,6 +26,7 @@ export interface LevelData {
   signature_profile?: string;
   historical_profile?: string;
   boss_profile?: string;
+  imageUrl?: string;
 }
 
 export interface WaveData {
