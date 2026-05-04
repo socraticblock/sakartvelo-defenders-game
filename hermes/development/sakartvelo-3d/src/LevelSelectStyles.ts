@@ -218,7 +218,7 @@ export const LEVEL_SELECT_CSS = `
   .map-node {
     width: 100%;
     display: grid;
-    grid-template-columns: 84px minmax(0, 1fr);
+    grid-template-columns: 96px minmax(0, 1fr);
     gap: 14px;
     align-items: center;
     padding: 14px;
@@ -238,14 +238,301 @@ export const LEVEL_SELECT_CSS = `
   }
 
   .map-node-art {
-    width: 84px;
-    height: 84px;
+    width: 96px;
+    height: 96px;
     border-radius: 14px;
     border: 1px solid rgba(227, 179, 73, 0.24);
+    position: relative;
+    overflow: hidden;
     background:
       linear-gradient(135deg, rgba(14, 14, 14, 0.95), rgba(5, 5, 5, 0.95)),
       radial-gradient(circle at 40% 35%, rgba(227, 179, 73, 0.06), transparent 42%);
     box-shadow: inset 0 0 0 1px rgba(255, 220, 138, 0.02);
+  }
+
+  .map-node-art-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    opacity: 0.98;
+    transform: scale(1.14);
+  }
+
+  .map-node-art::before,
+  .map-node-art::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .map-node-art-generic {
+    background:
+      linear-gradient(145deg, rgba(17, 17, 15, 0.96), rgba(7, 7, 7, 0.98)),
+      radial-gradient(circle at 35% 28%, rgba(227, 179, 73, 0.06), transparent 34%);
+  }
+
+  .map-node-art-generic .map-node-art-img {
+    display: none;
+  }
+
+  .map-node-art-river-gold {
+    background:
+      linear-gradient(180deg, rgba(24, 36, 28, 0.98), rgba(11, 17, 13, 0.98)),
+      linear-gradient(135deg, rgba(216, 176, 77, 0.08), transparent 42%);
+  }
+
+  .map-node-art-river-gold::before {
+    background:
+      linear-gradient(110deg, transparent 20%, rgba(206, 163, 70, 0.24) 22%, rgba(245, 215, 128, 0.45) 30%, rgba(90, 122, 112, 0.28) 34%, transparent 38%, transparent 58%, rgba(206, 163, 70, 0.18) 62%, rgba(245, 215, 128, 0.34) 68%, transparent 74%);
+    transform: skewY(-10deg);
+  }
+
+  .map-node-art-river-gold::after {
+    background: radial-gradient(circle at 68% 26%, rgba(255, 227, 150, 0.34), transparent 18%);
+  }
+
+  .map-node-art-river-tribes {
+    background:
+      linear-gradient(180deg, rgba(38, 29, 18, 0.98), rgba(14, 13, 9, 0.98)),
+      radial-gradient(circle at 20% 30%, rgba(143, 101, 52, 0.24), transparent 24%);
+  }
+
+  .map-node-art-river-tribes::before {
+    inset: auto 12px 12px 12px;
+    height: 26px;
+    background:
+      linear-gradient(90deg, rgba(77, 54, 28, 0.95) 0 16%, transparent 16% 20%, rgba(77, 54, 28, 0.95) 20% 37%, transparent 37% 42%, rgba(77, 54, 28, 0.95) 42% 64%, transparent 64% 68%, rgba(77, 54, 28, 0.95) 68% 100%);
+    border-top: 2px solid rgba(176, 126, 62, 0.42);
+    border-radius: 4px;
+  }
+
+  .map-node-art-river-tribes::after {
+    inset: 12px 16px auto 16px;
+    height: 20px;
+    background: linear-gradient(180deg, rgba(100, 135, 120, 0.22), transparent);
+  }
+
+  .map-node-art-sacred-grove {
+    background:
+      linear-gradient(180deg, rgba(12, 22, 14, 0.98), rgba(8, 12, 8, 0.98)),
+      radial-gradient(circle at 50% 28%, rgba(171, 144, 76, 0.18), transparent 24%);
+  }
+
+  .map-node-art-sacred-grove::before {
+    inset: 12px 24px 10px;
+    background:
+      radial-gradient(circle at 50% 18%, rgba(90, 137, 83, 0.88) 0 34%, transparent 35%),
+      linear-gradient(180deg, transparent 0 62%, rgba(89, 58, 30, 0.86) 62% 100%);
+  }
+
+  .map-node-art-sacred-grove::after {
+    inset: auto 12px 10px;
+    height: 12px;
+    background: radial-gradient(ellipse at center, rgba(208, 167, 73, 0.24), transparent 70%);
+  }
+
+  .map-node-art-pontus-coast {
+    background:
+      linear-gradient(180deg, rgba(12, 24, 34, 0.98), rgba(8, 12, 16, 0.98)),
+      linear-gradient(180deg, rgba(122, 153, 172, 0.16), transparent 45%);
+  }
+
+  .map-node-art-pontus-coast::before {
+    background:
+      linear-gradient(180deg, transparent 0 56%, rgba(22, 47, 60, 0.94) 56% 78%, rgba(9, 17, 21, 0.98) 78% 100%),
+      linear-gradient(110deg, transparent 0 18%, rgba(55, 55, 50, 0.86) 18% 28%, transparent 28% 38%, rgba(55, 55, 50, 0.86) 38% 52%, transparent 52%);
+  }
+
+  .map-node-art-pontus-coast::after {
+    inset: auto 0 20px;
+    height: 12px;
+    background: linear-gradient(90deg, transparent, rgba(201, 225, 238, 0.32), transparent);
+  }
+
+  .map-node-art-forest-pass {
+    background:
+      linear-gradient(180deg, rgba(16, 24, 15, 0.98), rgba(7, 11, 7, 0.98)),
+      linear-gradient(135deg, rgba(88, 114, 76, 0.22), transparent 46%);
+  }
+
+  .map-node-art-forest-pass::before {
+    background:
+      linear-gradient(180deg, transparent 0 58%, rgba(54, 46, 28, 0.92) 58% 72%, rgba(12, 12, 10, 0.94) 72% 100%),
+      linear-gradient(90deg, rgba(19, 28, 18, 0.9) 0 18%, transparent 18% 82%, rgba(19, 28, 18, 0.9) 82% 100%);
+  }
+
+  .map-node-art-forge-village {
+    background:
+      linear-gradient(180deg, rgba(30, 18, 12, 0.98), rgba(10, 9, 8, 0.98)),
+      radial-gradient(circle at 64% 34%, rgba(255, 146, 78, 0.32), transparent 18%);
+  }
+
+  .map-node-art-forge-village::before {
+    inset: auto 12px 14px;
+    height: 18px;
+    background: linear-gradient(90deg, rgba(70, 50, 40, 0.94) 0 34%, rgba(92, 63, 42, 0.92) 34% 58%, rgba(70, 50, 40, 0.94) 58% 100%);
+    border-top: 2px solid rgba(210, 123, 62, 0.34);
+  }
+
+  .map-node-art-forge-village::after {
+    inset: 14px 22px auto auto;
+    width: 18px;
+    height: 18px;
+    background: radial-gradient(circle, rgba(255, 180, 86, 0.72), rgba(255, 106, 34, 0.14) 68%, transparent 72%);
+  }
+
+  .map-node-art-watchfires {
+    background:
+      linear-gradient(180deg, rgba(17, 20, 29, 0.98), rgba(9, 10, 14, 0.98)),
+      linear-gradient(180deg, rgba(86, 105, 132, 0.14), transparent 40%);
+  }
+
+  .map-node-art-watchfires::before {
+    background:
+      linear-gradient(180deg, transparent 0 58%, rgba(37, 47, 61, 0.92) 58% 74%, rgba(12, 14, 19, 0.96) 74% 100%);
+  }
+
+  .map-node-art-watchfires::after {
+    inset: 14px 18px auto auto;
+    width: 18px;
+    height: 24px;
+    background:
+      radial-gradient(circle at 50% 26%, rgba(255, 194, 100, 0.82), rgba(255, 124, 52, 0.34) 46%, transparent 58%),
+      linear-gradient(180deg, transparent 0 56%, rgba(85, 66, 45, 0.86) 56% 100%);
+  }
+
+  .map-node-art-trade-road {
+    background:
+      linear-gradient(180deg, rgba(26, 22, 16, 0.98), rgba(10, 10, 9, 0.98)),
+      linear-gradient(135deg, rgba(128, 107, 62, 0.16), transparent 40%);
+  }
+
+  .map-node-art-trade-road::before {
+    background: linear-gradient(120deg, transparent 18%, rgba(170, 133, 74, 0.28) 18% 28%, rgba(112, 88, 50, 0.78) 28% 38%, transparent 38% 54%, rgba(170, 133, 74, 0.2) 54% 64%, rgba(112, 88, 50, 0.72) 64% 74%, transparent 74%);
+  }
+
+  .map-node-art-boundary-stones {
+    background:
+      linear-gradient(180deg, rgba(22, 20, 17, 0.98), rgba(10, 10, 9, 0.98)),
+      radial-gradient(circle at 52% 28%, rgba(186, 148, 88, 0.18), transparent 22%);
+  }
+
+  .map-node-art-boundary-stones::before {
+    background:
+      linear-gradient(180deg, transparent 0 48%, rgba(66, 60, 53, 0.94) 48% 100%);
+    clip-path: polygon(20% 54%, 28% 26%, 36% 54%, 46% 32%, 54% 54%, 64% 18%, 72% 54%, 80% 38%, 86% 54%, 86% 100%, 20% 100%);
+  }
+
+  .map-node-art-mythic-gate {
+    background:
+      linear-gradient(180deg, rgba(18, 12, 16, 0.98), rgba(7, 7, 8, 0.98)),
+      radial-gradient(circle at 50% 32%, rgba(185, 84, 57, 0.26), transparent 24%);
+  }
+
+  .map-node-art-mythic-gate::before {
+    inset: 12px 18px 12px;
+    background:
+      linear-gradient(180deg, rgba(72, 52, 30, 0.92), rgba(40, 24, 14, 0.96));
+    clip-path: polygon(18% 100%, 18% 44%, 34% 24%, 50% 12%, 66% 24%, 82% 44%, 82% 100%, 66% 100%, 66% 50%, 50% 38%, 34% 50%, 34% 100%);
+    box-shadow: 0 0 14px rgba(211, 121, 62, 0.16);
+  }
+
+  .map-node-art-mythic-gate::after {
+    inset: 18px auto auto 50%;
+    width: 20px;
+    height: 20px;
+    transform: translateX(-50%);
+    background: radial-gradient(circle, rgba(240, 183, 103, 0.86), rgba(186, 66, 38, 0.18) 64%, transparent 70%);
+  }
+
+  .map-node-art-trial-ground {
+    background:
+      linear-gradient(180deg, rgba(28, 24, 19, 0.98), rgba(11, 10, 9, 0.98)),
+      linear-gradient(135deg, rgba(145, 118, 72, 0.16), transparent 42%);
+  }
+
+  .map-node-art-trial-ground::before {
+    background:
+      linear-gradient(180deg, transparent 0 58%, rgba(86, 69, 45, 0.78) 58% 62%, transparent 62%),
+      linear-gradient(90deg, transparent 0 22%, rgba(86, 69, 45, 0.72) 22% 26%, transparent 26% 74%, rgba(86, 69, 45, 0.72) 74% 78%, transparent 78%);
+  }
+
+  .map-node-art-marshland {
+    background:
+      linear-gradient(180deg, rgba(16, 28, 22, 0.98), rgba(8, 13, 10, 0.98)),
+      radial-gradient(circle at 50% 62%, rgba(87, 118, 94, 0.22), transparent 28%);
+  }
+
+  .map-node-art-marshland::before {
+    background:
+      linear-gradient(180deg, transparent 0 54%, rgba(38, 66, 54, 0.92) 54% 100%),
+      linear-gradient(120deg, transparent 18%, rgba(154, 177, 146, 0.18) 18% 24%, transparent 24% 34%, rgba(154, 177, 146, 0.14) 34% 40%, transparent 40%);
+  }
+
+  .map-node-art-palisade {
+    background:
+      linear-gradient(180deg, rgba(26, 19, 15, 0.98), rgba(10, 8, 7, 0.98)),
+      linear-gradient(135deg, rgba(126, 89, 52, 0.16), transparent 44%);
+  }
+
+  .map-node-art-palisade::before {
+    inset: 14px 12px;
+    background:
+      linear-gradient(90deg, rgba(101, 72, 43, 0.94) 0 8%, transparent 8% 12%, rgba(101, 72, 43, 0.94) 12% 20%, transparent 20% 24%, rgba(101, 72, 43, 0.94) 24% 32%, transparent 32% 36%, rgba(101, 72, 43, 0.94) 36% 44%, transparent 44% 48%, rgba(101, 72, 43, 0.94) 48% 56%, transparent 56% 60%, rgba(101, 72, 43, 0.94) 60% 68%, transparent 68% 72%, rgba(101, 72, 43, 0.94) 72% 80%, transparent 80% 84%, rgba(101, 72, 43, 0.94) 84% 92%, transparent 92%);
+    clip-path: polygon(0 100%, 0 22%, 4% 12%, 8% 22%, 12% 10%, 16% 22%, 20% 12%, 24% 22%, 28% 10%, 32% 22%, 36% 12%, 40% 22%, 44% 10%, 48% 22%, 52% 12%, 56% 22%, 60% 10%, 64% 22%, 68% 12%, 72% 22%, 76% 10%, 80% 22%, 84% 12%, 88% 22%, 92% 10%, 96% 22%, 100% 12%, 100% 100%);
+  }
+
+  .map-node-art-fleece-gate {
+    background:
+      linear-gradient(180deg, rgba(21, 16, 12, 0.98), rgba(8, 7, 7, 0.98)),
+      radial-gradient(circle at 50% 30%, rgba(223, 182, 97, 0.24), transparent 20%);
+  }
+
+  .map-node-art-fleece-gate::before {
+    inset: 16px 18px 14px;
+    background:
+      radial-gradient(circle at 50% 18%, rgba(240, 217, 149, 0.78), rgba(204, 164, 76, 0.28) 54%, transparent 60%),
+      linear-gradient(180deg, transparent 0 34%, rgba(77, 55, 29, 0.9) 34% 100%);
+    clip-path: polygon(50% 0, 68% 14%, 74% 34%, 70% 58%, 60% 78%, 50% 100%, 40% 78%, 30% 58%, 26% 34%, 32% 14%);
+  }
+
+  .map-node-art-heart-colchis {
+    background:
+      linear-gradient(180deg, rgba(23, 16, 14, 0.98), rgba(8, 7, 7, 0.98)),
+      radial-gradient(circle at 50% 36%, rgba(211, 115, 78, 0.22), transparent 22%);
+  }
+
+  .map-node-art-heart-colchis::before {
+    inset: 16px 18px;
+    background:
+      radial-gradient(circle at 50% 40%, rgba(255, 225, 153, 0.84), rgba(224, 133, 77, 0.42) 48%, rgba(108, 42, 34, 0.24) 68%, transparent 74%);
+  }
+
+  .map-node-art-heart-colchis::after {
+    inset: auto 18px 16px;
+    height: 10px;
+    background: radial-gradient(ellipse at center, rgba(211, 115, 78, 0.28), transparent 74%);
+  }
+
+  .map-node-art-river-gold .map-node-art-img,
+  .map-node-art-river-tribes .map-node-art-img,
+  .map-node-art-sacred-grove .map-node-art-img,
+  .map-node-art-pontus-coast .map-node-art-img,
+  .map-node-art-forest-pass .map-node-art-img,
+  .map-node-art-forge-village .map-node-art-img,
+  .map-node-art-watchfires .map-node-art-img,
+  .map-node-art-trade-road .map-node-art-img,
+  .map-node-art-boundary-stones .map-node-art-img,
+  .map-node-art-mythic-gate .map-node-art-img,
+  .map-node-art-trial-ground .map-node-art-img,
+  .map-node-art-marshland .map-node-art-img,
+  .map-node-art-palisade .map-node-art-img,
+  .map-node-art-fleece-gate .map-node-art-img,
+  .map-node-art-heart-colchis .map-node-art-img {
+    display: block;
   }
 
   .map-node-meta {
@@ -647,14 +934,14 @@ export const LEVEL_SELECT_CSS = `
     }
 
     .map-node {
-      grid-template-columns: 72px minmax(0, 1fr);
+      grid-template-columns: 88px minmax(0, 1fr);
       gap: 12px;
       padding: 12px;
     }
 
     .map-node-art {
-      width: 72px;
-      height: 72px;
+      width: 88px;
+      height: 88px;
     }
 
     .map-node-name {

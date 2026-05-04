@@ -79,6 +79,32 @@ function humanizeTarget(target: string | undefined): string {
     .join(' ');
 }
 
+function getMapArtClass(level: LevelData): string {
+  const theme = (level.theme || '').toLowerCase();
+  const name = level.name.toLowerCase();
+
+  if (theme.includes('golden_river') || theme.includes('gold_stream')) return 'map-node-art-river-gold';
+  if (theme.includes('river_tribes')) return 'map-node-art-river-tribes';
+  if (theme.includes('sacred_grove') || theme.includes('sacred_oak')) return 'map-node-art-sacred-grove';
+  if (theme.includes('pontus_coast') || theme.includes('sea_cliffs')) return 'map-node-art-pontus-coast';
+  if (theme.includes('forest_pass')) return 'map-node-art-forest-pass';
+  if (theme.includes('smith_village')) return 'map-node-art-forge-village';
+  if (theme.includes('mountain_watchfires')) return 'map-node-art-watchfires';
+  if (theme.includes('trade_road')) return 'map-node-art-trade-road';
+  if (theme.includes('boundary_stones')) return 'map-node-art-boundary-stones';
+  if (theme.includes('trial_ground')) return 'map-node-art-trial-ground';
+  if (theme.includes('marshland')) return 'map-node-art-marshland';
+  if (theme.includes('palisade')) return 'map-node-art-palisade';
+  if (theme.includes('fleece_gate')) return 'map-node-art-fleece-gate';
+  if (theme.includes('heart_colchis')) return 'map-node-art-heart-colchis';
+  if (theme.includes('devi') || theme.includes('dragon') || name.includes('devi') || name.includes('dragon')) return 'map-node-art-mythic-gate';
+  return 'map-node-art-generic';
+}
+
+function getMapArtSrc(level: LevelData): string {
+  return `/images/level-art/era0/level-${String(level.level).padStart(2, '0')}.png`;
+}
+
 function truthTagLabel(tag: TruthTag): string {
   switch (tag) {
     case 'history': return 'HISTORY';
@@ -207,6 +233,7 @@ function renderEraJourney(eraLevels: LevelData[]): string {
       const briefing = getBriefingForLevel(lvl);
       const state = getNodeState(lvl, stars);
       const lockedForStart = !isLevelStartAllowed(lvl);
+      const artClass = getMapArtClass(lvl);
       html += `
         <div class="journey-node-wrap">
           <button
@@ -215,7 +242,9 @@ function renderEraJourney(eraLevels: LevelData[]): string {
             data-level="${lvl.level}"
             data-start-locked="${lockedForStart ? 'true' : 'false'}"
             aria-label="Open briefing for level ${lvl.level}, ${lvl.name}">
-            <div class="map-node-art" aria-hidden="true"></div>
+            <div class="map-node-art ${artClass}" aria-hidden="true">
+              <img class="map-node-art-img" src="${getMapArtSrc(lvl)}" alt="" loading="lazy" decoding="async">
+            </div>
             <div class="map-node-meta">
               <div class="map-node-num">${lvl.level}</div>
               <div class="map-node-name">${lvl.name}</div>
@@ -260,10 +289,11 @@ function renderGenericEraList(era: number, eraLevels: LevelData[]): string {
             const stars = SaveManager.getStars(levelId);
             const bestTime = SaveManager.getBestTime(levelId);
             const state = getNodeState(lvl, stars);
+            const artClass = getMapArtClass(lvl);
             return `
               <div class="journey-node-wrap">
                 <button class="map-node map-node-${state}" data-era="${lvl.era}" data-level="${lvl.level}" data-start-locked="${!isLevelStartAllowed(lvl) ? 'true' : 'false'}">
-                  <div class="map-node-art" aria-hidden="true"></div>
+                  <div class="map-node-art ${artClass}" aria-hidden="true"></div>
                   <div class="map-node-meta">
                     <div class="map-node-num">${lvl.level}</div>
                     <div class="map-node-name">${lvl.name}</div>
