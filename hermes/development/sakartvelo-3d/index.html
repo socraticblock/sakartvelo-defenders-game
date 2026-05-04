@@ -13,7 +13,7 @@
 </head>
 
 <body>
-  <!-- Emergency Debug Overlay -->
+  <!-- Debug Overlay -->
   <div id="debug-overlay">
     STATE: <span id="debug-state">INIT</span><br />
     LEVELS: <span id="debug-levels">0</span><br />
@@ -288,43 +288,42 @@
     <button class="intro-btn" id="btn-title-continue" onclick="window.__showEraScreen()">Begin Defense</button>
   </div>
 
-  <!-- â”€â”€â”€ SCREEN 1: ERA INTRO â”€â”€â”€ -->
+  <!-- SCREEN 1: ERA PROLOGUE -->
   <div id="screen-era" class="intro-overlay screen">
     <div id="era-volume-panel" class="volume-panel">
       <div class="vol-row">
-        <span class="vol-icon">ðŸŽ™</span>
+        <span class="vol-label">Narration</span>
         <input type="range" id="vol-narration" min="0" max="100" value="100">
         <span class="vol-val" id="vol-narration-val">100</span>
       </div>
       <div class="vol-row">
-        <span class="vol-icon">ðŸŽµ</span>
+        <span class="vol-label">Music</span>
         <input type="range" id="vol-music-era" min="0" max="100" value="10">
         <span class="vol-val" id="vol-music-era-val">10</span>
       </div>
     </div>
 
-    <div class="intro-era-label">Era 0 - Ancient Colchis</div>
-    <div class="intro-title intro-title-era-start">~1500 BC</div>
-    <div class="intro-title intro-title-era-end">~100 BC</div>
-    <div class="intro-divider"></div>
+    <div class="era-prologue-shell">
+      <div class="intro-era-label">ERA 0 &middot; ANCIENT COLCHIS</div>
+      <div class="era-date-range">c. 1500 BC &ndash; 83 BC</div>
+      <div class="era-framing-line">History, archaeology, and mythic tradition meet in this era.</div>
+      <div class="intro-divider"></div>
 
-    <!-- Teleprompter display -->
-    <div id="era-teleprompter">
-      <div id="era-tp-reading-line"></div>
-      <div id="era-tp-track"></div>
+      <div id="era-teleprompter" aria-live="polite">
+        <div id="era-tp-reading-line"></div>
+        <div id="era-tp-track"></div>
+      </div>
+
+      <div id="era-tp-progress">0:00 / 1:31</div>
+
+      <div id="era-controls">
+        <button id="btn-era-prev" class="era-nav-btn" aria-label="Seek back 10 seconds">-10s</button>
+        <button id="btn-era-play" class="era-play-btn" aria-label="Play or pause narration">PLAY</button>
+        <button id="btn-era-next" class="era-nav-btn" aria-label="Seek forward 10 seconds">+10s</button>
+      </div>
+
+      <button class="intro-btn" id="btn-era-continue">CONTINUE</button>
     </div>
-
-    <!-- Time progress -->
-    <div id="era-tp-progress">â± 0:00 / 1:31</div>
-
-    <!-- Controls -->
-    <div id="era-controls">
-      <button id="btn-era-prev" class="era-nav-btn">â† Prev</button>
-      <button id="btn-era-play" class="era-play-btn">â–¶ Play Narration</button>
-      <button id="btn-era-next" class="era-nav-btn">Next â†’</button>
-    </div>
-
-    <button class="intro-btn" id="btn-era-continue" onclick="window.__navigateToLevelSelect()">Continue</button>
   </div>
 
   <!-- â”€â”€â”€ SCREEN 2: CHAPTER I INTRO â”€â”€â”€ -->
@@ -355,16 +354,19 @@
 
   <script type="module" src="/src/main.ts"></script>
   <script>
-    // Global click auditor for debugging
-    document.addEventListener('click', (e) => {
-      const btn = e.target.closest('button');
-      if (btn) {
-        console.log('--- GLOBAL CLICK AUDIT ---');
-        console.log('Button ID:', btn.id);
-        console.log('Button Classes:', btn.className);
-        console.log('Button Text:', btn.innerText.trim());
-      }
-    }, true);
+    const debugUi = window.location.search.includes('debug-ui=1');
+    if (debugUi) {
+      document.body.dataset.debug = 'true';
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (btn) {
+          console.log('--- GLOBAL CLICK AUDIT ---');
+          console.log('Button ID:', btn.id);
+          console.log('Button Classes:', btn.className);
+          console.log('Button Text:', btn.innerText.trim());
+        }
+      }, true);
+    }
   </script>
 </body>
 

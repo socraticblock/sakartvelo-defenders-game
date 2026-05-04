@@ -629,11 +629,9 @@ export class AudioManager {
   // ─── Era Narration ───────────────────────────────────
 
   startEraNarration(): void {
-    const playBtn = document.getElementById('btn-era-play') as HTMLButtonElement;
-    
     if (this._eraAudioEl && !this._eraPlaying) {
       this._eraPlaying = true;
-      playBtn.textContent = '⏸ Pause';
+      this.resetEraPlayButton('PAUSE', true, false);
       this._eraAudioEl.play();
       teleprompter.start(this._eraAudioEl, this._eraAudioDuration);
       return;
@@ -641,9 +639,7 @@ export class AudioManager {
 
     this._eraPlaying = true;
     const sessionId = ++this._eraSessionId;
-    playBtn.textContent = '⏳ Loading...';
-    playBtn.classList.add('playing');
-    playBtn.disabled = true;
+    this.resetEraPlayButton('PLAY', false, true);
 
     teleprompter.buildTrack(); // Render text immediately
     teleprompter.updateProgress(0, 0); // Show initial 0:00
@@ -663,8 +659,7 @@ export class AudioManager {
       if (sessionId !== this._eraSessionId) return;
       if (!this._eraPlaying) return;
       this._eraAudioDuration = this._eraAudioEl.duration;
-      playBtn.textContent = '⏸ Pause';
-      playBtn.disabled = false;
+      this.resetEraPlayButton('PAUSE', true, false);
       this._eraAudioEl.play();
       teleprompter.start(this._eraAudioEl, this._eraAudioDuration, () => {
         if (this._eraAudioEl?.ended) this.stopEraNarration();
@@ -676,7 +671,7 @@ export class AudioManager {
     this._eraPlaying = false;
     if (this._eraAudioEl) this._eraAudioEl.pause();
     teleprompter.stop();
-    this.resetEraPlayButton(this._eraAudioEl?.ended ? '▶ Play Narration' : '▶ Resume');
+    this.resetEraPlayButton('PLAY', false, false);
   }
 
   hardStopEraNarration(): void {
@@ -689,7 +684,7 @@ export class AudioManager {
     this._eraAudioEl = null;
     this._eraAudioDuration = 0;
     teleprompter.stop();
-    this.resetEraPlayButton('▶ Play Narration');
+    this.resetEraPlayButton('PLAY', false, false);
   }
 
   seekEraNarration(delta: number): void {
@@ -706,12 +701,13 @@ export class AudioManager {
     }
   }
 
-  private resetEraPlayButton(label = '▶ Play Narration'): void {
+  private resetEraPlayButton(label = 'PLAY', isPlaying = false, disabled = false): void {
     const playBtn = document.getElementById('btn-era-play') as HTMLButtonElement;
     if (playBtn) {
       playBtn.textContent = label;
-      playBtn.disabled = false;
-      playBtn.classList.remove('playing');
+      playBtn.disabled = disabled;
+      playBtn.classList.toggle('playing', isPlaying);
+      playBtn.setAttribute('aria-pressed', isPlaying ? 'true' : 'false');
     }
   }
 
