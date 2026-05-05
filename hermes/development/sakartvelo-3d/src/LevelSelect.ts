@@ -20,7 +20,9 @@ let selectedGateChapter = -1;
 
 const SHOW_ALL_ERA0_LEVELS_FOR_DEV =
   new URLSearchParams(window.location.search).get('allLevels') === '1' ||
-  localStorage.getItem('sakartvelo_show_all_levels') === '1';
+  new URLSearchParams(window.location.search).get('unlockAll') === '1' ||
+  localStorage.getItem('sakartvelo_show_all_levels') === '1' ||
+  localStorage.getItem('sakartvelo_unlock_all_levels') === '1';
 
 const ERA_NAMES = [
   'Ancient Colchis', 'Kingdom of Iberia', 'Age of Invasions',

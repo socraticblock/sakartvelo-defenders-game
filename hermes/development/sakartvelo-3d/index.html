@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -228,9 +228,9 @@
     </div>
   </div>
 
-  <div id="horn-bonus" class="game-ui" style="display:none; position:absolute; pointer-events:none; font-weight:bold; font-size:24px; color:#ffd700; text-shadow:0 2px 4px rgba(0,0,0,0.8); z-index: 200; transform: translate(-50%, -50%); transition: transform 0.3s; text-align:center;">
+  <div id="horn-bonus" class="game-ui">
     <div id="horn-bonus-gold">+50g</div>
-    <div style="font-size:12px; color:#fff; text-transform:uppercase; letter-spacing:1px; opacity:0.8;">Tap Horn to Start</div>
+    <div class="horn-bonus-hint">Tap Horn to Start</div>
   </div>
 
   <!-- Level select screen -->
@@ -270,7 +270,7 @@
     <span id="cf-text"></span>
   </div>
 
-  <!-- â”€â”€â”€ SCREEN 0: TITLE CARD â”€â”€â”€ -->
+  <!-- SCREEN 0: TITLE CARD -->
   <div id="screen-title" class="intro-overlay screen visible">
     <div id="title-volume-panel" class="volume-panel">
       <div class="vol-row">
@@ -285,7 +285,7 @@
     <div class="intro-subtitle">A playable chronicle of Georgian history, myth, and survival</div>
     <div class="intro-sound-hint">A game first - inspired by history, myth, and memory</div>
     <div class="intro-divider"></div>
-    <button class="intro-btn" id="btn-title-continue" onclick="window.__showEraScreen()">Begin Defense</button>
+    <button class="intro-btn" id="btn-title-continue">Begin Defense</button>
   </div>
 
   <!-- SCREEN 1: ERA PROLOGUE -->
@@ -326,16 +326,16 @@
     </div>
   </div>
 
-  <!-- â”€â”€â”€ SCREEN 2: CHAPTER I INTRO â”€â”€â”€ -->
+  <!-- SCREEN 2: CHAPTER I INTRO -->
   <div id="screen-chapter" class="intro-overlay screen">
     <div class="intro-chapter-num">Chapter I</div>
     <div class="intro-title intro-title-era-start">The Bronze Age</div>
-    <div class="intro-era-label">~1500 BC â€” ~600 BC</div>
+    <div class="intro-era-label">~1500 BC &mdash; ~600 BC</div>
     <div class="intro-divider"></div>
     <div class="intro-body">
       The Colchian tribes live along the Rioni River,<br>
       panning gold from mountain streams with sheep fleeces.<br>
-      No kingdom yet â€” just scattered villages,<br>
+      No kingdom yet &mdash; just scattered villages,<br>
       wooden palisades, and bronze axes.<br>
       <br>
       Greek traders are beginning to sail these shores.<br>
@@ -344,7 +344,7 @@
     <button class="intro-btn" id="btn-chapter-continue">Enter</button>
   </div>
 
-  <!-- Tutorial overlay â€” shown once per level, dismisses on click/key -->
+  <!-- Tutorial overlay: shown once for level 1 -->
   <div id="tutorial-overlay">
     <div class="tutorial-content">
       <div id="tutorial-text"></div>
@@ -353,21 +353,6 @@
   </div>
 
   <script type="module" src="/src/main.ts"></script>
-  <script>
-    const debugUi = window.location.search.includes('debug-ui=1');
-    if (debugUi) {
-      document.body.dataset.debug = 'true';
-      document.addEventListener('click', (e) => {
-        const btn = e.target.closest('button');
-        if (btn) {
-          console.log('--- GLOBAL CLICK AUDIT ---');
-          console.log('Button ID:', btn.id);
-          console.log('Button Classes:', btn.className);
-          console.log('Button Text:', btn.innerText.trim());
-        }
-      }, true);
-    }
-  </script>
 </body>
 
 </html>

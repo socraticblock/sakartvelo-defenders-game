@@ -751,13 +751,6 @@ export class GameLoop {
     const shareBtn = document.createElement('button');
     shareBtn.className = 'share-btn';
     shareBtn.textContent = 'Share Victory';
-    shareBtn.style.cssText = `
-      margin-top: 12px; padding: 10px 28px;
-      background: linear-gradient(135deg, #d4a017, #8b6914);
-      color: #fff; border: none; border-radius: 6px;
-      font-size: 16px; font-weight: bold; cursor: pointer;
-      text-transform: uppercase; letter-spacing: 1px;
-    `;
     shareBtn.addEventListener('click', async () => {
       const data = (window as any).__lastShareData as ShareCardData | undefined;
       if (data) {

@@ -103,6 +103,26 @@ scene.add(moveRing);
   screenMgr.showLevelSelect(0);
 };
 
+// ─── DOM Events & Debug ──────────────────────────────────────────────────
+
+document.getElementById('btn-title-continue')?.addEventListener('click', () => {
+  (window as any).__showEraScreen();
+});
+
+const debugUi = window.location.search.includes('debug-ui=1');
+if (debugUi) {
+  document.body.dataset.debug = 'true';
+  document.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('button');
+    if (btn) {
+      console.log('--- GLOBAL CLICK AUDIT ---');
+      console.log('Button ID:', btn.id);
+      console.log('Button Classes:', btn.className);
+      console.log('Button Text:', btn.innerText.trim());
+    }
+  }, true);
+}
+
 // ─── Level lifecycle ─────────────────────────────────────────────────────
 
 function setupCamera(gw: number, gh: number): void {
