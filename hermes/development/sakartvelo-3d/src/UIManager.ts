@@ -804,7 +804,7 @@ export class UIManager {
     ok.addEventListener('click', () => {
       modal.classList.remove('visible');
       this._showNextEnemyIntro();
-    });
+    }, { once: true });
   }
 }
 
