@@ -109,11 +109,8 @@ function initDebugClickAudit(): void {
   }, true);
 }
 
-// ─── DOM Events & Debug ──────────────────────────────────────────────────
 
-document.getElementById('btn-title-continue')?.addEventListener('click', () => {
-  (window as any).__showEraScreen();
-});
+// ─── DOM Events & Debug ──────────────────────────────────────────────────
 
 const debugUi = window.location.search.includes('debug-ui=1');
 if (debugUi) {
