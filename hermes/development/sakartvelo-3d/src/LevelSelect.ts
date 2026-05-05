@@ -101,8 +101,22 @@ function getMapArtClass(level: LevelData): string {
   return 'map-node-art-generic';
 }
 
-function getMapArtSrc(level: LevelData): string {
-  return `/images/level-art/era0/level-${String(level.level).padStart(2, '0')}.png`;
+function getLevelArtFile(level: LevelData): string {
+  return `level-${String(level.level).padStart(2, '0')}.webp`;
+}
+
+function getMapThumbSrc(level: LevelData): string {
+  if (level.era === 0) {
+    return `/images/level-art/era0/thumbs/${getLevelArtFile(level)}`;
+  }
+  return level.imageUrl || '';
+}
+
+function getBriefingArtSrc(level: LevelData): string {
+  if (level.era === 0) {
+    return `/images/level-art/era0/briefings/${getLevelArtFile(level)}`;
+  }
+  return level.imageUrl || '';
 }
 
 function truthTagLabel(tag: TruthTag): string {
@@ -132,7 +146,9 @@ function nodeTruthSummary(tags: TruthTag[]): string {
 
 function isChapterVisibleForPublic(chapterIndex: number): boolean {
   if (SHOW_ALL_ERA0_LEVELS_FOR_DEV) return true;
+  if (SaveManager.isChapterUnlocked(0, chapterIndex)) return true;
   if (chapterIndex === 0) return true;
+
   const previousChapter = ERA0_CHAPTERS[chapterIndex - 1];
   return SaveManager.getStars(SaveManager.levelId(0, previousChapter.toLevel)) > 0;
 }
@@ -170,6 +186,15 @@ function getFallbackBriefing(level: LevelData): LevelBriefing {
     gameplayTip: 'Use the briefing tags and objective as a quick read, then begin battle whenever you are ready.',
     accuracyNote: 'This briefing uses available campaign data and falls back to level facts when deeper lore text is missing.',
   };
+}
+
+function preloadEra0Thumbs(levels: LevelData[]): void {
+  levels
+    .filter(level => level.era === 0 && level.level <= 5)
+    .forEach(level => {
+      const img = new Image();
+      img.src = getMapThumbSrc(level);
+    });
 }
 
 function getBriefingForLevel(level: LevelData): LevelBriefing {
@@ -243,7 +268,7 @@ function renderEraJourney(eraLevels: LevelData[]): string {
             data-start-locked="${lockedForStart ? 'true' : 'false'}"
             aria-label="Open briefing for level ${lvl.level}, ${lvl.name}">
             <div class="map-node-art ${artClass}" aria-hidden="true">
-              <img class="map-node-art-img" src="${lvl.era === 0 ? getMapArtSrc(lvl) : (lvl.imageUrl || '')}" alt="" loading="lazy" decoding="async">
+              <img class="map-node-art-img" src="${getMapThumbSrc(lvl)}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'">
             </div>
             <div class="map-node-meta">
               <div class="map-node-num">${lvl.level}</div>
@@ -294,7 +319,7 @@ function renderGenericEraList(era: number, eraLevels: LevelData[]): string {
               <div class="journey-node-wrap">
                 <button class="map-node map-node-${state}" data-era="${lvl.era}" data-level="${lvl.level}" data-start-locked="${!isLevelStartAllowed(lvl) ? 'true' : 'false'}">
                   <div class="map-node-art ${artClass}" aria-hidden="true">
-                    <img class="map-node-art-img" src="${lvl.era === 0 ? getMapArtSrc(lvl) : (lvl.imageUrl || '')}" alt="" loading="lazy" decoding="async">
+                    <img class="map-node-art-img" src="${getMapThumbSrc(lvl)}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'">
                   </div>
                   <div class="map-node-meta">
                     <div class="map-node-num">${lvl.level}</div>
@@ -329,7 +354,7 @@ function renderSheet(): string {
           <button class="briefing-close" type="button" data-close-sheet="1" aria-label="Close briefing">Close</button>
           <div class="briefing-scroll">
             <div class="briefing-hero">
-              <img class="briefing-hero-img" src="${level.era === 0 ? getMapArtSrc(level) : (level.imageUrl || '')}" alt="" loading="lazy">
+              <img class="briefing-hero-img" src="${getBriefingArtSrc(level)}" alt="" loading="lazy" onerror="this.style.display='none'">
             </div>
             <div class="briefing-topline">Level ${level.level}</div>
             <h3 class="briefing-title">${displayTitle}</h3>
@@ -554,6 +579,7 @@ export const LevelSelect = {
     allLevels = levels;
     container = containerEl;
     await loadFacts();
+    preloadEra0Thumbs(levels);
     render(era);
   },
 
