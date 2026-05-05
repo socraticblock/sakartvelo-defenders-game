@@ -256,8 +256,10 @@ export const LEVEL_SELECT_CSS = `
     object-fit: cover;
     object-position: center;
     display: block;
-    opacity: 0.98;
-    transform: scale(1.14);
+    opacity: 1;
+    transform: scale(1.05);
+    position: relative;
+    z-index: 2;
   }
 
   .map-node-art::before,
@@ -275,7 +277,7 @@ export const LEVEL_SELECT_CSS = `
   }
 
   .map-node-art-generic .map-node-art-img {
-    display: none;
+    display: block;
   }
 
   .map-node-art-river-gold {
@@ -746,8 +748,30 @@ export const LEVEL_SELECT_CSS = `
   }
 
   .briefing-scroll {
-    padding: 4px 18px 24px;
+    padding: 0 18px 24px;
     overflow-y: auto;
+  }
+
+  .briefing-hero {
+    margin: 0 -18px 20px;
+    height: 180px;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(227, 179, 73, 0.24);
+  }
+
+  .briefing-hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .briefing-hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 60%, rgba(10, 12, 10, 0.9));
   }
 
   .briefing-topline {

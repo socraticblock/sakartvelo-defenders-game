@@ -243,7 +243,7 @@ function renderEraJourney(eraLevels: LevelData[]): string {
             data-start-locked="${lockedForStart ? 'true' : 'false'}"
             aria-label="Open briefing for level ${lvl.level}, ${lvl.name}">
             <div class="map-node-art ${artClass}" aria-hidden="true">
-              <img class="map-node-art-img" src="${lvl.imageUrl || getMapArtSrc(lvl)}" alt="" loading="lazy" decoding="async">
+              <img class="map-node-art-img" src="${lvl.era === 0 ? getMapArtSrc(lvl) : (lvl.imageUrl || '')}" alt="" loading="lazy" decoding="async">
             </div>
             <div class="map-node-meta">
               <div class="map-node-num">${lvl.level}</div>
@@ -293,9 +293,9 @@ function renderGenericEraList(era: number, eraLevels: LevelData[]): string {
             return `
               <div class="journey-node-wrap">
                 <button class="map-node map-node-${state}" data-era="${lvl.era}" data-level="${lvl.level}" data-start-locked="${!isLevelStartAllowed(lvl) ? 'true' : 'false'}">
-                  <div class="map-node-art ${artClass}" aria-hidden="true"
-                    ${lvl.imageUrl ? `style="background-image:url('${lvl.imageUrl}');background-size:cover;background-position:center;"` : ''}
-                  ></div>
+                  <div class="map-node-art ${artClass}" aria-hidden="true">
+                    <img class="map-node-art-img" src="${lvl.era === 0 ? getMapArtSrc(lvl) : (lvl.imageUrl || '')}" alt="" loading="lazy" decoding="async">
+                  </div>
                   <div class="map-node-meta">
                     <div class="map-node-num">${lvl.level}</div>
                     <div class="map-node-name">${lvl.name}</div>
@@ -328,6 +328,9 @@ function renderSheet(): string {
           <div class="briefing-handle" aria-hidden="true"></div>
           <button class="briefing-close" type="button" data-close-sheet="1" aria-label="Close briefing">Close</button>
           <div class="briefing-scroll">
+            <div class="briefing-hero">
+              <img class="briefing-hero-img" src="${level.era === 0 ? getMapArtSrc(level) : (level.imageUrl || '')}" alt="" loading="lazy">
+            </div>
             <div class="briefing-topline">Level ${level.level}</div>
             <h3 class="briefing-title">${displayTitle}</h3>
             <div class="briefing-tags">${tagHtml}</div>
