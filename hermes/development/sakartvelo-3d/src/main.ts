@@ -16,6 +16,7 @@ import { initMagicParticles } from './MagicalParticles';
 import { initAmbientDust } from './AmbientDust';
 import { warHorn } from './WarHorn';
 import { getMedeaTemplate, loadMedeaTemplate } from './MedeaGltf';
+import { validateLevels } from './validateLevels';
 
 // Use the generated magical sprite
 const MAGIC_SPRITE = '/magic_particle_sprite.png';
@@ -92,16 +93,21 @@ scene.add(moveRing);
 };
 (window as any).__getCameraZoom = () => cameraZoomPct;
 
-(window as any).__showEraScreen = () => {
-  console.log('--- GLOBAL BEGIN TRIGGERED ---');
-  screenMgr.showEraScreen();
-};
-
-(window as any).__navigateToLevelSelect = () => {
-  console.log('--- GLOBAL CONTINUE TRIGGERED ---');
-  audio.hardStopEraNarration();
-  screenMgr.showLevelSelect(0);
-};
+function initDebugClickAudit(): void {
+  const debugUi = window.location.search.includes('debug-ui=1');
+  if (!debugUi) return;
+  document.body.dataset.debug = 'true';
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const btn = target.closest('button');
+    if (!btn) return;
+    console.log('--- GLOBAL CLICK AUDIT ---');
+    console.log('Button ID:', btn.id);
+    console.log('Button Classes:', btn.className);
+    console.log('Button Text:', btn.innerText.trim());
+  }, true);
+}
 
 // ─── Level lifecycle ─────────────────────────────────────────────────────
 
@@ -279,6 +285,7 @@ addEventListener('resize', () => {
 });
 
 async function init(): Promise<void> {
+  initDebugClickAudit();
   const savedZoom = Number(localStorage.getItem(CAMERA_ZOOM_KEY) ?? 100);
   cameraZoomPct = Number.isFinite(savedZoom) ? Math.max(80, Math.min(120, savedZoom)) : 100;
   audio.init();
@@ -297,7 +304,10 @@ async function init(): Promise<void> {
     const resp = await fetch(`/data/levels.json?v=${Date.now()}`, { cache: 'no-store' });
     if (!resp.ok) throw new Error('Fetch failed: ' + resp.status);
     const raw = await resp.json();
-    gs.allLevels = raw.levels || raw;
+    gs.allLevels = validateLevels(raw);
+    if (gs.allLevels.length === 0) {
+      console.error('No valid levels loaded. Title screen will remain available, but battles cannot start.');
+    }
     console.log('Levels loaded:', gs.allLevels.length);
     ui.screens.showTitleScreen();
   } catch (err) {

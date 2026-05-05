@@ -9,6 +9,7 @@ import { audio } from './AudioManager';
 import { ERA0_CHAPTERS, ERA0_TIMELINE } from './Era0Profiles';
 import { ERA0_LEVEL_BRIEFINGS, LevelBriefing, TruthTag } from './CampaignBriefings';
 import { getHistoricalFact, loadFacts } from './historical_facts';
+import { escapeHtml } from './utils/dom';
 
 let onSelect: ((era: number, level: number) => void) | null = null;
 let onBack: (() => void) | null = null;
@@ -69,6 +70,10 @@ function normalizePeriod(period: string): string {
     .replace(/\s+/g, ' ')
     .replace(/\s-\s/g, ' – ')
     .trim();
+}
+
+function e(value: unknown): string {
+  return escapeHtml(value);
 }
 
 function humanizeTarget(target: string | undefined): string {
@@ -208,9 +213,9 @@ function chapterTeaserHtml(chapterIndex: number): string {
   const chapter = ERA0_CHAPTERS[chapterIndex];
   return `
     <div class="chapter-gate-card">
-      <div class="chapter-gate-kicker">${chapter.label}</div>
-      <div class="chapter-gate-title">${chapter.name}</div>
-      <div class="chapter-gate-period">${normalizePeriod(chapter.years)}</div>
+      <div class="chapter-gate-kicker">${e(chapter.label)}</div>
+      <div class="chapter-gate-title">${e(chapter.name)}</div>
+      <div class="chapter-gate-period">${e(normalizePeriod(chapter.years))}</div>
       <div class="chapter-gate-copy">Complete the previous chapter to unlock this part of the Colchian journey.</div>
       <button class="chapter-gate-btn" data-gate-chapter="${chapterIndex}">View Chapter</button>
     </div>
@@ -237,10 +242,10 @@ function renderEraJourney(eraLevels: LevelData[]): string {
     html += `
       <section class="chapter-journey ${chapterVisible ? '' : 'chapter-journey-locked'}">
         <div class="chapter-copy">
-          <div class="chapter-kicker">${chapter.label}</div>
-          <h3 class="chapter-title">${chapter.name}</h3>
-          <p class="chapter-period">${normalizePeriod(chapter.years)}</p>
-          <p class="chapter-desc">${getChapterDescription(chapterIndex)}</p>
+          <div class="chapter-kicker">${e(chapter.label)}</div>
+          <h3 class="chapter-title">${e(chapter.name)}</h3>
+          <p class="chapter-period">${e(normalizePeriod(chapter.years))}</p>
+          <p class="chapter-desc">${e(getChapterDescription(chapterIndex))}</p>
         </div>
     `;
 
@@ -266,16 +271,16 @@ function renderEraJourney(eraLevels: LevelData[]): string {
             data-era="${lvl.era}"
             data-level="${lvl.level}"
             data-start-locked="${lockedForStart ? 'true' : 'false'}"
-            aria-label="Open briefing for level ${lvl.level}, ${lvl.name}">
+            aria-label="Open briefing for level ${e(lvl.level)}, ${e(lvl.name)}">
             <div class="map-node-art ${artClass}" aria-hidden="true">
-              <img class="map-node-art-img" src="${getMapThumbSrc(lvl)}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'">
+              <img class="map-node-art-img" src="${e(getMapThumbSrc(lvl))}" alt="" loading="lazy" decoding="async">
             </div>
             <div class="map-node-meta">
-              <div class="map-node-num">${lvl.level}</div>
-              <div class="map-node-name">${lvl.name}</div>
-              <div class="map-node-tags">${nodeTruthSummary(briefing.kind)}</div>
+              <div class="map-node-num">${e(lvl.level)}</div>
+              <div class="map-node-name">${e(lvl.name)}</div>
+              <div class="map-node-tags">${e(nodeTruthSummary(briefing.kind))}</div>
               <div class="map-node-stars">${starsHtml(stars)}</div>
-              ${bestTime !== undefined ? `<div class="map-node-best">Best ${formatTime(bestTime)}</div>` : `<div class="map-node-best map-node-best-empty">${state === 'locked' ? 'Locked' : 'Unfinished'}</div>`}
+              ${bestTime !== undefined ? `<div class="map-node-best">Best ${e(formatTime(bestTime))}</div>` : `<div class="map-node-best map-node-best-empty">${state === 'locked' ? 'Locked' : 'Unfinished'}</div>`}
             </div>
           </button>
           ${idx < chapterLevels.length - 1 ? `<div class="map-path map-path-${state}"></div>` : ''}
@@ -303,9 +308,9 @@ function renderGenericEraList(era: number, eraLevels: LevelData[]): string {
   return `
     <div class="campaign-map">
       <div class="campaign-map-header">
-        <div class="campaign-kicker">Era ${era} &middot; ${ERA_NAMES[era] || `Era ${era}`}</div>
-        <h2 class="campaign-title">${ERA_NAMES[era] || `Era ${era}`}</h2>
-        <p class="campaign-years">${ERA_YEARS[era] || ''}</p>
+        <div class="campaign-kicker">Era ${e(era)} &middot; ${e(ERA_NAMES[era] || `Era ${era}`)}</div>
+        <h2 class="campaign-title">${e(ERA_NAMES[era] || `Era ${era}`)}</h2>
+        <p class="campaign-years">${e(ERA_YEARS[era] || '')}</p>
       </div>
       <section class="chapter-journey">
         <div class="journey-node-stack">
@@ -319,14 +324,14 @@ function renderGenericEraList(era: number, eraLevels: LevelData[]): string {
               <div class="journey-node-wrap">
                 <button class="map-node map-node-${state}" data-era="${lvl.era}" data-level="${lvl.level}" data-start-locked="${!isLevelStartAllowed(lvl) ? 'true' : 'false'}">
                   <div class="map-node-art ${artClass}" aria-hidden="true">
-                    <img class="map-node-art-img" src="${getMapThumbSrc(lvl)}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'">
+                    <img class="map-node-art-img" src="${e(getMapThumbSrc(lvl))}" alt="" loading="lazy" decoding="async">
                   </div>
                   <div class="map-node-meta">
-                    <div class="map-node-num">${lvl.level}</div>
-                    <div class="map-node-name">${lvl.name}</div>
+                    <div class="map-node-num">${e(lvl.level)}</div>
+                    <div class="map-node-name">${e(lvl.name)}</div>
                     <div class="map-node-tags">History</div>
                     <div class="map-node-stars">${starsHtml(stars)}</div>
-                    ${bestTime !== undefined ? `<div class="map-node-best">Best ${formatTime(bestTime)}</div>` : `<div class="map-node-best map-node-best-empty">${state === 'locked' ? 'Locked' : 'Unfinished'}</div>`}
+                    ${bestTime !== undefined ? `<div class="map-node-best">Best ${e(formatTime(bestTime))}</div>` : `<div class="map-node-best map-node-best-empty">${state === 'locked' ? 'Locked' : 'Unfinished'}</div>`}
                   </div>
                 </button>
                 ${idx < eraLevels.length - 1 ? `<div class="map-path map-path-${state}"></div>` : ''}
@@ -345,7 +350,7 @@ function renderSheet(): string {
     const briefing = getBriefingForLevel(level);
     const displayTitle = level.name || briefing.title;
     const canBegin = isLevelStartAllowed(level);
-    const tagHtml = briefing.kind.map(tag => `<span class="truth-tag truth-tag-${tag}">${truthTagLabel(tag)}</span>`).join('');
+    const tagHtml = briefing.kind.map(tag => `<span class="truth-tag truth-tag-${e(tag)}">${e(truthTagLabel(tag))}</span>`).join('');
     return `
       <div class="level-briefing-sheet ${level ? 'is-open' : ''}" aria-hidden="false" role="dialog" aria-modal="true">
         <div class="level-briefing-backdrop" data-close-sheet="1"></div>
@@ -354,58 +359,58 @@ function renderSheet(): string {
           <button class="briefing-close" type="button" data-close-sheet="1" aria-label="Close briefing">Close</button>
           <div class="briefing-scroll">
             <div class="briefing-hero">
-              <img class="briefing-hero-img" src="${getBriefingArtSrc(level)}" alt="" loading="lazy" onerror="this.style.display='none'">
+              <img class="briefing-hero-img" src="${e(getBriefingArtSrc(level))}" alt="" loading="lazy">
             </div>
-            <div class="briefing-topline">Level ${level.level}</div>
-            <h3 class="briefing-title">${displayTitle}</h3>
+            <div class="briefing-topline">Level ${e(level.level)}</div>
+            <h3 class="briefing-title">${e(displayTitle)}</h3>
             <div class="briefing-tags">${tagHtml}</div>
-            <div class="briefing-subline">${briefing.chapterLabel} &mdash; ${briefing.chapterName}</div>
-            <div class="briefing-period">${normalizePeriod(briefing.period)}</div>
-            <p class="briefing-teaser">${briefing.shortTeaser}</p>
+            <div class="briefing-subline">${e(briefing.chapterLabel)} &mdash; ${e(briefing.chapterName)}</div>
+            <div class="briefing-period">${e(normalizePeriod(briefing.period))}</div>
+            <p class="briefing-teaser">${e(briefing.shortTeaser)}</p>
 
             <section class="briefing-section briefing-section-quick">
               <div class="briefing-row">
                 <div class="briefing-label">Defend</div>
-                <div class="briefing-value">${briefing.defenseTargetLabel}</div>
+                <div class="briefing-value">${e(briefing.defenseTargetLabel)}</div>
               </div>
               <div class="briefing-row">
                 <div class="briefing-label">Objective</div>
-                <div class="briefing-value">${briefing.objective}</div>
+                <div class="briefing-value">${e(briefing.objective)}</div>
               </div>
             </section>
 
             <section class="briefing-section">
-              <h4 class="briefing-heading">Why this level is called “${displayTitle}”</h4>
-              <p class="briefing-copy">${briefing.whyName}</p>
+              <h4 class="briefing-heading">Why this level is called “${e(displayTitle)}”</h4>
+              <p class="briefing-copy">${e(briefing.whyName)}</p>
             </section>
 
             <details class="briefing-accordion">
               <summary>Read historical context</summary>
-              <div class="briefing-accordion-body">${briefing.historicalContext}</div>
+              <div class="briefing-accordion-body">${e(briefing.historicalContext)}</div>
             </details>
 
             ${briefing.mythicContext ? `
               <details class="briefing-accordion">
                 <summary>Myth vs history</summary>
-                <div class="briefing-accordion-body">${briefing.mythicContext}</div>
+                <div class="briefing-accordion-body">${e(briefing.mythicContext)}</div>
               </details>
             ` : ''}
 
             <details class="briefing-accordion">
               <summary>How the game adapts this</summary>
-              <div class="briefing-accordion-body">${briefing.gameAdaptation}</div>
+              <div class="briefing-accordion-body">${e(briefing.gameAdaptation)}</div>
             </details>
 
             ${briefing.gameplayTip ? `
               <section class="briefing-section">
                 <h4 class="briefing-heading">Gameplay tip</h4>
-                <p class="briefing-copy">${briefing.gameplayTip}</p>
+                <p class="briefing-copy">${e(briefing.gameplayTip)}</p>
               </section>
             ` : ''}
 
             <details class="briefing-accordion">
               <summary>Accuracy note</summary>
-              <div class="briefing-accordion-body">${briefing.accuracyNote}</div>
+              <div class="briefing-accordion-body">${e(briefing.accuracyNote)}</div>
             </details>
           </div>
 
@@ -426,10 +431,10 @@ function renderSheet(): string {
           <div class="briefing-handle" aria-hidden="true"></div>
           <button class="briefing-close" type="button" data-close-sheet="1" aria-label="Close chapter preview">Close</button>
           <div class="briefing-scroll">
-            <div class="briefing-topline">${chapter.label}</div>
-            <h3 class="briefing-title">${chapter.name}</h3>
-            <div class="briefing-period">${normalizePeriod(chapter.years)}</div>
-            <p class="briefing-teaser">${getChapterDescription(selectedGateChapter)}</p>
+            <div class="briefing-topline">${e(chapter.label)}</div>
+            <h3 class="briefing-title">${e(chapter.name)}</h3>
+            <div class="briefing-period">${e(normalizePeriod(chapter.years))}</div>
+            <p class="briefing-teaser">${e(getChapterDescription(selectedGateChapter))}</p>
             <section class="briefing-section">
               <h4 class="briefing-heading">What waits here</h4>
               <p class="briefing-copy">This chapter opens later in the journey and expands the campaign into new terrain, stronger mythic pressure, and deeper Colchian lore.</p>
@@ -448,6 +453,7 @@ function renderSheet(): string {
 
 function bindInteractions() {
   if (!container) return;
+  bindMissingImageFallback();
 
   container.querySelectorAll<HTMLElement>('.map-node').forEach((node) => {
     node.addEventListener('click', () => {
@@ -495,6 +501,21 @@ function bindInteractions() {
       render(currentEra);
     }
   });
+}
+
+function bindMissingImageFallback(): void {
+  if (!container || container.dataset.imageErrorBound === '1') return;
+  container.dataset.imageErrorBound = '1';
+  container.addEventListener('error', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLImageElement)) return;
+    if (
+      target.classList.contains('map-node-art-img') ||
+      target.classList.contains('briefing-hero-img')
+    ) {
+      target.classList.add('is-missing');
+    }
+  }, true);
 }
 
 function bindEscape() {

@@ -1,4 +1,5 @@
 import { loadFacts, getHistoricalFact, type HistoricalFact } from './historical_facts';
+import { escapeHtml } from './utils/dom';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CSS injected once into <head>
@@ -102,7 +103,10 @@ function inject() {
  * @param callback  Called when user dismisses popup
  */
 export function showPopup(era: number, level: number, callback: () => void): void {
-  if (active) return;
+  if (active) {
+    callback();
+    return;
+  }
   active = true;
   onDismiss = callback;
   inject();
@@ -120,9 +124,9 @@ export function showPopup(era: number, level: number, callback: () => void): voi
     overlay.innerHTML = `
       <div class="hp-card">
         <div class="hp-badge">📜 Did You Know?</div>
-        <p class="hp-fact">"${fact.text}"</p>
+        <p class="hp-fact">"${escapeHtml(fact.text)}"</p>
         <div class="hp-footer">
-          <span class="hp-era-tag">${fact.attribution}</span>
+          <span class="hp-era-tag">${escapeHtml(fact.attribution)}</span>
           <button class="hp-btn" id="hp-dismiss">Continue →</button>
         </div>
       </div>
@@ -140,7 +144,10 @@ export function showPopup(era: number, level: number, callback: () => void): voi
 }
 
 export function showVictoryPopup(title: string, message: string, callback: () => void): void {
-  if (active) return;
+  if (active) {
+    callback();
+    return;
+  }
   active = true;
   onDismiss = callback;
   inject();
@@ -150,8 +157,8 @@ export function showVictoryPopup(title: string, message: string, callback: () =>
   overlay.innerHTML = `
     <div class="hp-card">
       <div class="hp-badge">⚔ Boss Defeated</div>
-      <h2 class="hp-title">${title}</h2>
-      <p class="hp-fact">${message}</p>
+      <h2 class="hp-title">${escapeHtml(title)}</h2>
+      <p class="hp-fact">${escapeHtml(message)}</p>
       <div class="hp-footer">
         <span class="hp-era-tag">The path is clear</span>
         <button class="hp-btn" id="hp-dismiss">Claim Victory →</button>

@@ -5,6 +5,7 @@
 
 const SAVE_KEY = 'sakartvelo_defenders_v1';
 const DEBUG_UNLOCK_ALL_LEVELS = true;
+// TODO before public release: gate this behind ?unlockAll=1/localStorage.
 
 export interface SaveData {
   version: number;

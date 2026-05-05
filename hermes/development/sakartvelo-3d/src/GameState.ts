@@ -15,6 +15,7 @@ import type { MedeaTemplate } from './MedeaGltf';
 import { SaveManager } from './SaveManager';
 import { FriendlyInfantry } from './FriendlyInfantry';
 import { comboIndicator } from './ComboIndicator';
+import { disposeObject3D } from './utils/threeDispose';
 
 export class GameState {
   // ─── Entities ───────────────────────────────────────────
@@ -77,11 +78,28 @@ export class GameState {
 
   initLevel(lvl: LevelData, scene: THREE.Scene, medeaTemplate: MedeaTemplate | null = null): void {
     // Clean up old level entities
-    this.enemies.forEach(e => scene.remove(e.group));
-    this.friendlies.forEach(f => scene.remove(f.group));
-    this.towers.forEach(t => scene.remove(t.group));
-    if (this.grid) scene.remove(this.grid.group);
-    if (this.hero) scene.remove(this.hero.group);
+    this.enemies.forEach(e => {
+      scene.remove(e.group);
+      disposeObject3D(e.group);
+    });
+    this.friendlies.forEach(f => {
+      scene.remove(f.group);
+      disposeObject3D(f.group);
+    });
+    this.towers.forEach(t => {
+      scene.remove(t.group);
+      // Tower meshes use cached geometries, so only per-instance materials are released here.
+      disposeObject3D(t.group, { disposeGeometry: false });
+    });
+    if (this.grid) {
+      scene.remove(this.grid.group);
+      disposeObject3D(this.grid.group);
+    }
+    if (this.hero) {
+      scene.remove(this.hero.group);
+      // Medea instances share GLTF geometry/materials with the cached template.
+      disposeObject3D(this.hero.group, { disposeGeometry: false, disposeMaterials: false });
+    }
 
     this.enemies = [];
     this.friendlies = [];

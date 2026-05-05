@@ -12,6 +12,7 @@ import { audio } from './AudioManager';
 import { TOWER_CONFIGS } from './types';
 import { BESTIARY_ENTRIES } from './BestiaryData';
 import { visuals } from './VisualsManager';
+import { escapeHtml } from './utils/dom';
 
 type OnLevelSelect = (era: number, level: number) => void;
 type OnEscape = () => void;
@@ -674,7 +675,7 @@ export class UIManager {
       this.$bpEnemyList.innerHTML = preview.entries.length
         ? `<div class="wave-preview-list">${preview.entries.map(entry => {
           const data = BESTIARY_ENTRIES[entry.type] || BESTIARY_ENTRIES.infantry;
-          return `<button class="wave-preview-enemy" data-bestiary-type="${entry.type}">${data.icon} ${entry.count}</button>`;
+          return `<button class="wave-preview-enemy" data-bestiary-type="${escapeHtml(entry.type)}">${escapeHtml(data.icon)} ${escapeHtml(entry.count)}</button>`;
         }).join('')}</div>`
         : 'Unknown wave';
       this.$bpEnemyList.querySelectorAll<HTMLElement>('[data-bestiary-type]').forEach(btn => {
@@ -699,14 +700,14 @@ export class UIManager {
     if (!tabs || !content) return;
 
     tabs.innerHTML = Object.values(BESTIARY_ENTRIES).map(item =>
-      `<button class="bestiary-tab ${item.id === entry.id ? 'active' : ''}" data-bestiary-type="${item.id}">${item.icon} ${item.name}</button>`
+      `<button class="bestiary-tab ${item.id === entry.id ? 'active' : ''}" data-bestiary-type="${escapeHtml(item.id)}">${escapeHtml(item.icon)} ${escapeHtml(item.name)}</button>`
     ).join('');
     content.innerHTML = `
-      <div class="bestiary-entry-name">${entry.icon} ${entry.name}</div>
-      <div><b>Stats:</b> ${entry.stats}</div>
-      <div><b>First Seen:</b> ${entry.firstEncounter}</div>
-      <p>${entry.lore}</p>
-      <p><b>Counter:</b> ${entry.tips}</p>
+      <div class="bestiary-entry-name">${escapeHtml(entry.icon)} ${escapeHtml(entry.name)}</div>
+      <div><b>Stats:</b> ${escapeHtml(entry.stats)}</div>
+      <div><b>First Seen:</b> ${escapeHtml(entry.firstEncounter)}</div>
+      <p>${escapeHtml(entry.lore)}</p>
+      <p><b>Counter:</b> ${escapeHtml(entry.tips)}</p>
     `;
     this.$bestiaryModal?.classList.add('visible');
     gs.paused = true;

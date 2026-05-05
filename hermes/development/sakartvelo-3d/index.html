@@ -45,7 +45,7 @@
     </div>
   </div>
   <div id="controls-hint" class="game-ui">
-    Click ground to move Medea (or right-click) | Q/W/E for abilities | Click tower to select and upgrade | ESC to deselect
+    Tap ground to move Medea · Tap build nodes to raise defenses · Use abilities when enemies cluster
   </div>
 
   <div id="tower-panel" class="game-ui">
@@ -285,7 +285,7 @@
     <div class="intro-subtitle">A playable chronicle of Georgian history, myth, and survival</div>
     <div class="intro-sound-hint">A game first - inspired by history, myth, and memory</div>
     <div class="intro-divider"></div>
-    <button class="intro-btn" id="btn-title-continue" onclick="window.__showEraScreen()">Begin Defense</button>
+    <button class="intro-btn" id="btn-title-continue">Begin Defense</button>
   </div>
 
   <!-- SCREEN 1: ERA PROLOGUE -->
@@ -326,24 +326,6 @@
     </div>
   </div>
 
-  <!-- â”€â”€â”€ SCREEN 2: CHAPTER I INTRO â”€â”€â”€ -->
-  <div id="screen-chapter" class="intro-overlay screen">
-    <div class="intro-chapter-num">Chapter I</div>
-    <div class="intro-title intro-title-era-start">The Bronze Age</div>
-    <div class="intro-era-label">~1500 BC â€” ~600 BC</div>
-    <div class="intro-divider"></div>
-    <div class="intro-body">
-      The Colchian tribes live along the Rioni River,<br>
-      panning gold from mountain streams with sheep fleeces.<br>
-      No kingdom yet â€” just scattered villages,<br>
-      wooden palisades, and bronze axes.<br>
-      <br>
-      Greek traders are beginning to sail these shores.<br>
-      The age of heroes is still far away.
-    </div>
-    <button class="intro-btn" id="btn-chapter-continue">Enter</button>
-  </div>
-
   <!-- Tutorial overlay â€” shown once per level, dismisses on click/key -->
   <div id="tutorial-overlay">
     <div class="tutorial-content">
@@ -353,21 +335,6 @@
   </div>
 
   <script type="module" src="/src/main.ts"></script>
-  <script>
-    const debugUi = window.location.search.includes('debug-ui=1');
-    if (debugUi) {
-      document.body.dataset.debug = 'true';
-      document.addEventListener('click', (e) => {
-        const btn = e.target.closest('button');
-        if (btn) {
-          console.log('--- GLOBAL CLICK AUDIT ---');
-          console.log('Button ID:', btn.id);
-          console.log('Button Classes:', btn.className);
-          console.log('Button Text:', btn.innerText.trim());
-        }
-      }, true);
-    }
-  </script>
 </body>
 
 </html>
