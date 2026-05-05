@@ -68,17 +68,17 @@ function isValidLevel(candidate: unknown, index: number): candidate is LevelData
     return false;
   }
 
-  if (!isBoundedInt(level.era, 0, 9) || !isBoundedInt(level.level, 1, 99)) {
+  if (!isBoundedInt(level.era, 0, 9) || !isBoundedInt(level.level, 1, 20)) {
     console.warn(prefix, 'era and level must be integers in sane ranges.');
     return false;
   }
 
-  if (!isBoundedInt(level.grid_width, 4, 128) || !isBoundedInt(level.grid_height, 4, 128)) {
+  if (!isBoundedInt(level.grid_width, 4, 80) || !isBoundedInt(level.grid_height, 4, 80)) {
     console.warn(prefix, 'grid_width and grid_height must be bounded integers.');
     return false;
   }
 
-  if (!isBoundedInt(level.starting_gold, 0, 100000) || !isBoundedInt(level.starting_lives, 1, 10000)) {
+  if (!isBoundedInt(level.starting_gold, 0, 10000) || !isBoundedInt(level.starting_lives, 1, 999)) {
     console.warn(prefix, 'starting_gold and starting_lives must be bounded integers.');
     return false;
   }
@@ -106,25 +106,25 @@ function isValidLevel(candidate: unknown, index: number): candidate is LevelData
     return false;
   }
 
-  if (!Array.isArray(level.waves) || level.waves.length < 1 || level.waves.length > 100) {
+  if (!Array.isArray(level.waves) || level.waves.length < 1 || level.waves.length > 50) {
     console.warn(prefix, 'waves must be an array with a sane count.');
     return false;
   }
 
   for (const wave of level.waves as any[]) {
-    if (!isBoundedInt(wave?.wave_num, 1, 100)) {
+    if (!isBoundedInt(wave?.wave_num, 1, 50)) {
       console.warn(prefix, 'each wave needs a bounded integer wave_num.');
       return false;
     }
 
-    if (!Array.isArray(wave.enemies) || wave.enemies.length < 1 || wave.enemies.length > 50) {
+    if (!Array.isArray(wave.enemies) || wave.enemies.length < 1 || wave.enemies.length > 20) {
       console.warn(prefix, `wave ${wave.wave_num} enemies must be an array with a sane count.`);
       return false;
     }
 
     for (const enemy of wave.enemies) {
       const knownType = typeof enemy?.type === 'string' && enemy.type in ENEMY_CONFIGS;
-      if (!knownType || !isBoundedInt(enemy?.count, 1, 1000)) {
+      if (!knownType || !isBoundedInt(enemy?.count, 1, 500)) {
         console.warn(prefix, `wave ${wave.wave_num} has an invalid enemy entry.`, enemy);
         return false;
       }

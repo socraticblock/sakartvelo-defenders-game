@@ -801,10 +801,10 @@ export class UIManager {
     counter.textContent = data.counter;
     modal.classList.add('visible');
 
-    ok.onclick = () => {
+    ok.addEventListener('click', () => {
       modal.classList.remove('visible');
       this._showNextEnemyIntro();
-    };
+    });
   }
 }
 
