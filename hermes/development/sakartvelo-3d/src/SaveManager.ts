@@ -4,8 +4,14 @@
  */
 
 const SAVE_KEY = 'sakartvelo_defenders_v1';
-const DEBUG_UNLOCK_ALL_LEVELS = true;
-// TODO before public release: gate this behind ?unlockAll=1/localStorage.
+const requestedUnlockAll =
+  new URLSearchParams(window.location.search).get('unlockAll') === '1' ||
+  localStorage.getItem('sakartvelo_unlock_all_levels') === '1';
+if (!import.meta.env.DEV && requestedUnlockAll) {
+  throw new Error('Unlock-all must never be requested in production.');
+}
+
+const DEBUG_UNLOCK_ALL_LEVELS = import.meta.env.DEV && requestedUnlockAll;
 
 export interface SaveData {
   version: number;

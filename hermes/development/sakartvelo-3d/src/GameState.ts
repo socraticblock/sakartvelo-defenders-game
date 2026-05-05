@@ -169,6 +169,7 @@ export class GameState {
     if (!this.grid) return;
     this.gold += tower.sellValue;
     scene.remove(tower.group);
+    disposeObject3D(tower.group, { disposeGeometry: false });
     this.towers = this.towers.filter(t => t !== tower);
     this.grid.free(tower.gx, tower.gy);
   }
@@ -235,6 +236,7 @@ export class GameState {
 
   removeEnemy(enemy: Enemy, scene: THREE.Scene): void {
     scene.remove(enemy.group);
+    disposeObject3D(enemy.group);
     this.enemies = this.enemies.filter(e => e !== enemy);
   }
 

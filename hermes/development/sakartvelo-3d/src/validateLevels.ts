@@ -1,7 +1,32 @@
 import { ENEMY_CONFIGS, LevelData } from './types';
+import { safeAssetPath } from './utils/assets';
+
+const TEXT_LIMITS: Record<string, number> = {
+  name: 120,
+  historical_fact: 2000,
+  defense_target: 120,
+  theme: 120,
+  sub_era: 120,
+  map_profile: 120,
+  signature_profile: 120,
+  historical_profile: 120,
+  boss_profile: 120,
+  imageUrl: 256,
+};
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
+}
+
+function isBoundedInt(value: unknown, min: number, max: number): value is number {
+  return Number.isInteger(value) && (value as number) >= min && (value as number) <= max;
+}
+
+function isPoint(value: unknown): value is [number, number] {
+  return Array.isArray(value) &&
+    value.length === 2 &&
+    isFiniteNumber(value[0]) &&
+    isFiniteNumber(value[1]);
 }
 
 function getLevelsArray(raw: unknown): unknown[] {
@@ -43,26 +68,79 @@ function isValidLevel(candidate: unknown, index: number): candidate is LevelData
     return false;
   }
 
-  if (!Array.isArray(level.waves)) {
-    console.warn(prefix, 'waves must be an array.');
+  if (!isBoundedInt(level.era, 0, 9) || !isBoundedInt(level.level, 1, 99)) {
+    console.warn(prefix, 'era and level must be integers in sane ranges.');
+    return false;
+  }
+
+  if (!isBoundedInt(level.grid_width, 4, 128) || !isBoundedInt(level.grid_height, 4, 128)) {
+    console.warn(prefix, 'grid_width and grid_height must be bounded integers.');
+    return false;
+  }
+
+  if (!isBoundedInt(level.starting_gold, 0, 100000) || !isBoundedInt(level.starting_lives, 1, 10000)) {
+    console.warn(prefix, 'starting_gold and starting_lives must be bounded integers.');
+    return false;
+  }
+
+  if (!Array.isArray(level.path_waypoints) || level.path_waypoints.length < 2 || !level.path_waypoints.every(isPoint)) {
+    console.warn(prefix, 'path_waypoints must contain at least two [number, number] pairs.');
+    return false;
+  }
+
+  if (level.build_nodes !== undefined && (!Array.isArray(level.build_nodes) || !level.build_nodes.every(isPoint))) {
+    console.warn(prefix, 'build_nodes must be [number, number] pairs when present.');
+    return false;
+  }
+
+  for (const [key, maxLength] of Object.entries(TEXT_LIMITS)) {
+    const value = (level as Record<string, unknown>)[key];
+    if (value !== undefined && (typeof value !== 'string' || value.length > maxLength)) {
+      console.warn(prefix, `${key} must be a string up to ${maxLength} characters.`);
+      return false;
+    }
+  }
+
+  if (level.imageUrl !== undefined && !safeAssetPath(level.imageUrl)) {
+    console.warn(prefix, 'imageUrl must be a safe local asset path.');
+    return false;
+  }
+
+  if (!Array.isArray(level.waves) || level.waves.length < 1 || level.waves.length > 100) {
+    console.warn(prefix, 'waves must be an array with a sane count.');
     return false;
   }
 
   for (const wave of level.waves as any[]) {
-    if (!isFiniteNumber(wave?.wave_num)) {
-      console.warn(prefix, 'each wave needs a finite wave_num.');
+    if (!isBoundedInt(wave?.wave_num, 1, 100)) {
+      console.warn(prefix, 'each wave needs a bounded integer wave_num.');
       return false;
     }
 
-    if (!Array.isArray(wave.enemies)) {
-      console.warn(prefix, `wave ${wave.wave_num} enemies must be an array.`);
+    if (!Array.isArray(wave.enemies) || wave.enemies.length < 1 || wave.enemies.length > 50) {
+      console.warn(prefix, `wave ${wave.wave_num} enemies must be an array with a sane count.`);
       return false;
     }
 
     for (const enemy of wave.enemies) {
       const knownType = typeof enemy?.type === 'string' && enemy.type in ENEMY_CONFIGS;
-      if (!knownType || !isFiniteNumber(enemy?.count) || enemy.count <= 0) {
+      if (!knownType || !isBoundedInt(enemy?.count, 1, 1000)) {
         console.warn(prefix, `wave ${wave.wave_num} has an invalid enemy entry.`, enemy);
+        return false;
+      }
+
+      if (enemy.hp_mult !== undefined && (!isFiniteNumber(enemy.hp_mult) || enemy.hp_mult <= 0 || enemy.hp_mult > 100)) {
+        console.warn(prefix, `wave ${wave.wave_num} has invalid hp_mult.`, enemy);
+        return false;
+      }
+
+      if (enemy.speed_mult !== undefined && (!isFiniteNumber(enemy.speed_mult) || enemy.speed_mult <= 0 || enemy.speed_mult > 100)) {
+        console.warn(prefix, `wave ${wave.wave_num} has invalid speed_mult.`, enemy);
+        return false;
+      }
+
+      if (enemy.spawn_interval !== undefined && (!isFiniteNumber(enemy.spawn_interval) || enemy.spawn_interval <= 0 || enemy.spawn_interval > 60)) {
+        console.warn(prefix, `wave ${wave.wave_num} has invalid spawn_interval.`, enemy);
         return false;
       }
     }

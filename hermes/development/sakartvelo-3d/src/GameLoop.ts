@@ -25,6 +25,7 @@ import { bossCinematic } from './BossCinematic';
 import { shareManager, ShareManager, type ShareCardData } from './ShareManager';
 import { screenShake } from './ScreenShake';
 import { comboIndicator } from './ComboIndicator';
+import { disposeObject3D } from './utils/threeDispose';
 
 const BOSS_NAMES: Record<string, string> = {
   devi: 'Devi, Terror of the Mountains',
@@ -287,6 +288,7 @@ export class GameLoop {
       const unit = gs.friendlies[i];
       if (!unit.alive) {
         this._scene.remove(unit.group);
+        disposeObject3D(unit.group);
         gs.friendlies.splice(i, 1);
       }
     }

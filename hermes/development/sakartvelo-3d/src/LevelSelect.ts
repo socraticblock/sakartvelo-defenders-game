@@ -10,6 +10,7 @@ import { ERA0_CHAPTERS, ERA0_TIMELINE } from './Era0Profiles';
 import { ERA0_LEVEL_BRIEFINGS, LevelBriefing, TruthTag } from './CampaignBriefings';
 import { getHistoricalFact, loadFacts } from './historical_facts';
 import { escapeHtml } from './utils/dom';
+import { safeAssetPath } from './utils/assets';
 
 let onSelect: ((era: number, level: number) => void) | null = null;
 let onBack: (() => void) | null = null;
@@ -112,16 +113,16 @@ function getLevelArtFile(level: LevelData): string {
 
 function getMapThumbSrc(level: LevelData): string {
   if (level.era === 0) {
-    return `/images/level-art/era0/thumbs/${getLevelArtFile(level)}`;
+    return safeAssetPath(`/images/level-art/era0/thumbs/${getLevelArtFile(level)}`);
   }
-  return level.imageUrl || '';
+  return safeAssetPath(level.imageUrl);
 }
 
 function getBriefingArtSrc(level: LevelData): string {
   if (level.era === 0) {
-    return `/images/level-art/era0/briefings/${getLevelArtFile(level)}`;
+    return safeAssetPath(`/images/level-art/era0/briefings/${getLevelArtFile(level)}`);
   }
-  return level.imageUrl || '';
+  return safeAssetPath(level.imageUrl);
 }
 
 function truthTagLabel(tag: TruthTag): string {
@@ -197,8 +198,10 @@ function preloadEra0Thumbs(levels: LevelData[]): void {
   levels
     .filter(level => level.era === 0 && level.level <= 5)
     .forEach(level => {
+      const src = getMapThumbSrc(level);
+      if (!src) return;
       const img = new Image();
-      img.src = getMapThumbSrc(level);
+      img.src = src;
     });
 }
 
