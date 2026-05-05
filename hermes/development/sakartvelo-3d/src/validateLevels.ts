@@ -139,7 +139,7 @@ function isValidLevel(candidate: unknown, index: number): candidate is LevelData
         return false;
       }
 
-      if (enemy.spawn_interval !== undefined && (!isFiniteNumber(enemy.spawn_interval) || enemy.spawn_interval <= 0 || enemy.spawn_interval > 60)) {
+      if (enemy.spawn_interval !== undefined && (!isFiniteNumber(enemy.spawn_interval) || enemy.spawn_interval < 0 || enemy.spawn_interval > 60)) {
         console.warn(prefix, `wave ${wave.wave_num} has invalid spawn_interval.`, enemy);
         return false;
       }

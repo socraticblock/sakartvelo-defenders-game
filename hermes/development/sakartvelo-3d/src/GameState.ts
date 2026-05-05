@@ -88,8 +88,8 @@ export class GameState {
     });
     this.towers.forEach(t => {
       scene.remove(t.group);
-      // Tower meshes use cached geometries, so only per-instance materials are released here.
-      disposeObject3D(t.group, { disposeGeometry: false });
+      // Tower meshes use cached/shared materials, so do not dispose tower materials here.
+      disposeObject3D(t.group, { disposeGeometry: false, disposeMaterials: false });
     });
     if (this.grid) {
       scene.remove(this.grid.group);
@@ -169,7 +169,8 @@ export class GameState {
     if (!this.grid) return;
     this.gold += tower.sellValue;
     scene.remove(tower.group);
-    disposeObject3D(tower.group, { disposeGeometry: false });
+    // Tower meshes use cached/shared materials, so do not dispose tower materials here.
+    disposeObject3D(tower.group, { disposeGeometry: false, disposeMaterials: false });
     this.towers = this.towers.filter(t => t !== tower);
     this.grid.free(tower.gx, tower.gy);
   }

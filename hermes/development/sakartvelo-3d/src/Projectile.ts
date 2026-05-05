@@ -98,15 +98,10 @@ export class Projectile {
     this.arcHeight = towerType === 'catapult' ? 1.5 : 0.3;
 
     // Rebuild mesh for type swap (archer vs catapult)
-    while (this.mesh.children.length > 0) {
-      const child = this.mesh.children[0] as THREE.Mesh;
+    for (let i = this.mesh.children.length - 1; i >= 0; i--) {
+      const child = this.mesh.children[i];
       this.mesh.remove(child);
-      child.geometry?.dispose();
-      const mat = child.material;
-      if (mat) {
-        if (Array.isArray(mat)) mat.forEach(m => m.dispose());
-        else mat.dispose();
-      }
+      // Projectile glow meshes use shared module-level resources. Do not dispose.
     }
     if (towerType === 'archer') {
       this.mesh.geometry = arrowGeo;

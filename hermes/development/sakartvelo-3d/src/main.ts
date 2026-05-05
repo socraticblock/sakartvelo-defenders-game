@@ -320,8 +320,15 @@ async function init(): Promise<void> {
   ui.screens.startCulturalFacts();
 
   try {
-    // Keep level iteration honest during design passes; browsers can cache public JSON.
-    const resp = await fetch(`/data/levels.json?v=${Date.now()}`, { cache: 'no-store' });
+    const levelsUrl = import.meta.env.DEV
+      ? `/data/levels.json?v=${Date.now()}`
+      : `/data/levels.json`;
+
+    const levelsFetchOptions: RequestInit = import.meta.env.DEV
+      ? { cache: 'no-store' }
+      : {};
+
+    const resp = await fetch(levelsUrl, levelsFetchOptions);
     if (!resp.ok) throw new Error('Fetch failed: ' + resp.status);
     const raw = await resp.json();
     gs.allLevels = validateLevels(raw);

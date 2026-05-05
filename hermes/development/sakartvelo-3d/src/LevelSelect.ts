@@ -20,11 +20,18 @@ let allLevels: LevelData[] = [];
 let selectedBriefingLevel: LevelData | null = null;
 let selectedGateChapter = -1;
 
-const SHOW_ALL_ERA0_LEVELS_FOR_DEV =
+const requestedShowAllEra0Levels =
   new URLSearchParams(window.location.search).get('allLevels') === '1' ||
   new URLSearchParams(window.location.search).get('unlockAll') === '1' ||
   localStorage.getItem('sakartvelo_show_all_levels') === '1' ||
   localStorage.getItem('sakartvelo_unlock_all_levels') === '1';
+
+if (!import.meta.env.DEV && requestedShowAllEra0Levels) {
+  console.warn('allLevels requested in production and ignored.');
+}
+
+const SHOW_ALL_ERA0_LEVELS_FOR_DEV =
+  import.meta.env.DEV && requestedShowAllEra0Levels;
 
 const ERA_NAMES = [
   'Ancient Colchis', 'Kingdom of Iberia', 'Age of Invasions',

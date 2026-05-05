@@ -12,6 +12,7 @@ import { audio } from './AudioManager';
 import { screenShake } from './ScreenShake';
 import { comboIndicator } from './ComboIndicator';
 import { magicParticles } from './MagicalParticles';
+import { disposeObject3D } from './utils/threeDispose';
 
 const SLOW_RANGE_SQ = 2.0 * 2.0;
 const ATTACK_RANGE_SQ = 0.64;
@@ -24,6 +25,8 @@ const HERO_DPS: Record<string, number> = {
 };
 const _enemyPos = new THREE.Vector3();
 const _heroAttackCd = new WeakMap<Enemy, number>();
+const _wallAttackCd = new WeakMap<Enemy, number>();
+const WALL_ATTACK_INTERVAL = 1.0;
 
 export function updateEnemySlow(): void {
   for (const enemy of gs.enemies) {
@@ -86,6 +89,14 @@ export function updateEnemyWallAttacks(scene: THREE.Scene, camera: THREE.Camera,
         if (dx * dx + dz * dz <= ATTACK_RANGE_SQ) {
           enemy.isBlocked = true;
           enemy.speed = 0;
+
+          const cd = Math.max(0, (_wallAttackCd.get(enemy) ?? 0) - dt);
+          if (cd > 0) {
+            _wallAttackCd.set(enemy, cd);
+            break;
+          }
+          _wallAttackCd.set(enemy, WALL_ATTACK_INTERVAL);
+
           const dmg = ENEMY_CONFIGS[enemy.type]?.wallDmg ?? 10;
           const destroyed = t.takeWallDamage(dmg);
           t.billboardHp(camera);
@@ -99,6 +110,8 @@ export function updateEnemyWallAttacks(scene: THREE.Scene, camera: THREE.Camera,
             screenShake.trigger(0.3, 0.3);
             gs.grid!.free(t.gx, t.gy);
             scene.remove(t.group);
+            // Tower meshes use cached/shared materials, so do not dispose tower materials here.
+            disposeObject3D(t.group, { disposeGeometry: false, disposeMaterials: false });
             gs.towers = gs.towers.filter(tw => tw !== t);
             if (gs.selectedTower === t) gs.selectedTower = null;
           }
