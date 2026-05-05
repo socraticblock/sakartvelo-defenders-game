@@ -262,6 +262,11 @@ export const LEVEL_SELECT_CSS = `
     z-index: 2;
   }
 
+  .map-node-art-img.is-missing,
+  .briefing-hero-img.is-missing {
+    display: none;
+  }
+
   .map-node-art::before,
   .map-node-art::after {
     content: '';

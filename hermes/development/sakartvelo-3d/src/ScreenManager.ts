@@ -8,6 +8,8 @@ import { audio } from './AudioManager';
 import { culturalFacts } from './CulturalFacts';
 import { Hero } from './Hero';
 import { SaveManager } from './SaveManager';
+import { ERA0_LEVEL_BRIEFINGS } from './CampaignBriefings';
+import { escapeHtml } from './utils/dom';
 
 type OnLevelSelect = (era: number, level: number) => void;
 type OnEscape = () => void;
@@ -17,6 +19,13 @@ type TutorialStep = {
   selector?: string;
   done?: () => boolean;
 };
+
+function humanizeTarget(value: unknown): string {
+  const text = String(value ?? '').trim();
+  if (!text) return 'Sakartvelo';
+  const spaced = text.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
 
 export class ScreenManager {
   private _onLevelSelect: OnLevelSelect | null = null;
@@ -48,6 +57,7 @@ export class ScreenManager {
       if (id !== 'screen-era') {
         audio.hardStopEraNarration();
       }
+      document.body.dataset.screen = id;
 
       // Update Debug Overlay
       const debugState = document.getElementById('debug-state');
@@ -92,6 +102,7 @@ export class ScreenManager {
   }
 
   showGameUI(): void {
+    document.body.dataset.screen = 'gameplay';
     this.hideAllScreens();
     gs.paused = false;
     document.querySelectorAll<HTMLElement>('.game-ui').forEach(el => {
@@ -167,18 +178,22 @@ export class ScreenManager {
     const best = levelId ? SaveManager.getBestTime(levelId) : undefined;
     const elapsed = gs.levelElapsedTime;
     const newRecord = best !== undefined && Math.abs(best - elapsed) < 0.2;
+    const briefingTarget = level?.era === 0 && level.level
+      ? ERA0_LEVEL_BRIEFINGS[level.level]?.defenseTargetLabel
+      : undefined;
+    const target = briefingTarget || humanizeTarget(level?.defense_target || level?.name || 'Sakartvelo');
 
     title.textContent = 'VICTORY';
     starsEl.innerHTML = '☆'.repeat(3);
     msg.innerHTML = `
-      <div class="chronicle-kicker">${message}</div>
-      <div class="chronicle-target">You defended ${level?.defense_target || level?.name || 'Sakartvelo'}.</div>
+      <div class="chronicle-kicker">${escapeHtml(message)}</div>
+      <div class="chronicle-target">You defended ${escapeHtml(target)}.</div>
       <div class="chronicle-stats">
-        <span>Lives Saved: ${gs.lives}/${gs.startingLives}</span>
-        <span>Time: ${this._formatTime(elapsed)}${newRecord ? ' <b>NEW RECORD</b>' : ''}</span>
-        <span>Best: ${best !== undefined ? this._formatTime(best) : this._formatTime(elapsed)}</span>
+        <span>Lives Saved: ${escapeHtml(gs.lives)}/${escapeHtml(gs.startingLives)}</span>
+        <span>Time: ${escapeHtml(this._formatTime(elapsed))}${newRecord ? ' <b>NEW RECORD</b>' : ''}</span>
+        <span>Best: ${escapeHtml(best !== undefined ? this._formatTime(best) : this._formatTime(elapsed))}</span>
       </div>
-      <div class="chronicle-fact">${level?.historical_fact || ''}</div>
+      <div class="chronicle-fact">${escapeHtml(level?.historical_fact || '')}</div>
     `;
     this._showScreen('screen-level-complete');
 
@@ -361,9 +376,9 @@ export class ScreenManager {
     if (step.selector) document.querySelector(step.selector)?.classList.add('tutorial-highlight');
     if (!text) return;
     text.innerHTML = `
-      <div class="tutorial-title">${step.title}</div>
-      <div>${step.text}</div>
-      <div class="tutorial-progress">Step ${this._tutorialStep + 1}/${steps.length}</div>
+      <div class="tutorial-title">${escapeHtml(step.title)}</div>
+      <div>${escapeHtml(step.text)}</div>
+      <div class="tutorial-progress">Step ${escapeHtml(this._tutorialStep + 1)}/${escapeHtml(steps.length)}</div>
       <div class="tutorial-actions">
         <button id="tutorial-next" class="tutorial-btn">${step.done ? 'Continue When Done' : 'Next'}</button>
         <button id="tutorial-skip" class="tutorial-btn tutorial-skip">Skip Tutorial</button>

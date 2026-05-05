@@ -58,7 +58,7 @@ export class InputManager {
   private _plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   private _groundTarget = new THREE.Vector3();
 
-  private readonly ABILITY_LABELS: string[] = ['Q', 'E', 'R'];
+  private readonly ABILITY_LABELS: string[] = ['Q', 'W', 'E'];
 
   // ─── Init ──────────────────────────────────────────────
 
@@ -222,7 +222,7 @@ export class InputManager {
   get layoutLabel(): string { return this._kbLayout.toUpperCase(); }
 
   getAbilityKeys(): string[] {
-    return this._kbLayout === 'azerty' ? ['a', 'e', 'r'] : ['q', 'e', 'r'];
+    return this._kbLayout === 'azerty' ? ['a', 'z', 'e'] : ['q', 'w', 'e'];
   }
   getAbilityLabels(): string[] {
     return this.ABILITY_LABELS;
@@ -332,10 +332,8 @@ export class InputManager {
       else if (k === 'z') { this._kbLayout = 'azerty'; this._layoutDetected = true; }
     }
 
-    // Ability keys (mapping to standard QER regardless of layout for now, or use the layout preference)
-    const qer = ['q', 'e', 'r'];
-    const az = ['a', 'e', 'r'];
-    const keys = this._kbLayout === 'azerty' ? az : qer;
+    // Ability keys: Q/W/E on QWERTY, A/Z/E on AZERTY.
+    const keys = this.getAbilityKeys();
 
     const idx = keys.indexOf(k);
     if (idx >= 0) this._cb.onAbility(idx);

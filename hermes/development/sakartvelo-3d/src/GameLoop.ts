@@ -25,6 +25,7 @@ import { bossCinematic } from './BossCinematic';
 import { shareManager, ShareManager, type ShareCardData } from './ShareManager';
 import { screenShake } from './ScreenShake';
 import { comboIndicator } from './ComboIndicator';
+import { disposeObject3D } from './utils/threeDispose';
 
 const BOSS_NAMES: Record<string, string> = {
   devi: 'Devi, Terror of the Mountains',
@@ -58,6 +59,7 @@ export class GameLoop {
   private _victoryCelebrating = false;
   private _victoryPhase = 0; // 0=none, 1=silence, 2=music, 3=chronicle, 4=share
   private _victoryTimer = 0;
+  private _lastDomScreenRenderMs = 0;
 
   init(
     renderer: THREE.WebGLRenderer,
@@ -173,8 +175,13 @@ export class GameLoop {
 
     ambientDust?.update(this._camera, now);
 
-    // Use the visuals manager for high-end rendering
-    visuals.render(this._renderer, this._scene, this._camera);
+    const screen = document.body.dataset.screen;
+    const isGameplay = screen === 'gameplay';
+    const nowMs = performance.now();
+    if (isGameplay || nowMs - this._lastDomScreenRenderMs >= 250) {
+      visuals.render(this._renderer, this._scene, this._camera);
+      if (!isGameplay) this._lastDomScreenRenderMs = nowMs;
+    }
 
     // Restore camera after shake offset (prevents drift)
     if (screenShake.active) {
@@ -281,6 +288,7 @@ export class GameLoop {
       const unit = gs.friendlies[i];
       if (!unit.alive) {
         this._scene.remove(unit.group);
+        disposeObject3D(unit.group);
         gs.friendlies.splice(i, 1);
       }
     }
