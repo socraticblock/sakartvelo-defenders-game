@@ -99,6 +99,7 @@ export function updateEnemyWallAttacks(scene: THREE.Scene, camera: THREE.Camera,
 
           const dmg = ENEMY_CONFIGS[enemy.type]?.wallDmg ?? 10;
           const destroyed = t.takeWallDamage(dmg);
+          enemy.triggerAttackAnimation();
           t.billboardHp(camera);
           audio.playWallHit();
 
@@ -133,6 +134,7 @@ export function updateEnemyWallAttacks(scene: THREE.Scene, camera: THREE.Camera,
       const cd = Math.max(0, (_heroAttackCd.get(enemy) ?? 0) - dt);
       if (cd <= 0) {
         gs.hero.takeDamage(HERO_DPS[enemy.type] ?? 8);
+        enemy.triggerAttackAnimation();
         const hitPos = _enemyPos.clone().lerp(heroPos, 0.5);
         spawnHitFlash(scene, hitPos);
         _heroAttackCd.set(enemy, 1.0);

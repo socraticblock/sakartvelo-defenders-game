@@ -151,7 +151,8 @@ export function instantiateEra0SpearmanRig(): EnemyRig | null {
 
     rig.idleAction?.setLoop(THREE.LoopRepeat, Infinity);
     rig.runAction?.setLoop(THREE.LoopRepeat, Infinity);
-    rig.attackAction?.setLoop(THREE.LoopRepeat, Infinity);
+    rig.attackAction?.setLoop(THREE.LoopOnce, 1);
+    if (rig.attackAction) rig.attackAction.clampWhenFinished = false;
 
     if (rig.deathAction) {
       rig.deathAction.setLoop(THREE.LoopOnce, 1);

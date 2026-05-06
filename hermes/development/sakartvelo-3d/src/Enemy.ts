@@ -39,6 +39,7 @@ export class Enemy {
   private flashMat: THREE.MeshStandardMaterial[] = [];
   private flashTime = 0;
   private readonly usesStaticGltfInfantry: boolean;
+  private attackAnimationRemaining = 0;
   private deathAnimationRemaining = 0;
   private deathAnimationStarted = false;
 
@@ -166,7 +167,8 @@ export class Enemy {
     const time = gs.gameTime;
 
     if (this.usesStaticGltfInfantry) {
-      if (this.isBlocked && this.rig.attackAction) {
+      this.attackAnimationRemaining = Math.max(0, this.attackAnimationRemaining - dt);
+      if (this.attackAnimationRemaining > 0 && this.rig.attackAction) {
         this.playGltfAction(this.rig.attackAction);
       } else if (this.rig.runAction) {
         this.playGltfAction(this.rig.runAction);
@@ -228,6 +230,13 @@ export class Enemy {
 
   isReadyToRemove(): boolean {
     return this.alive || this.reachedEnd || !this.usesStaticGltfInfantry || this.deathAnimationRemaining <= 0;
+  }
+
+  triggerAttackAnimation(): void {
+    if (!this.usesStaticGltfInfantry || !this.rig.attackAction || !this.alive) return;
+
+    this.attackAnimationRemaining = Math.min(0.9, this.rig.attackAction.getClip().duration);
+    this.playGltfAction(this.rig.attackAction, true);
   }
 
   getPos(): THREE.Vector3 {
