@@ -6,6 +6,7 @@ const srcDir = path.join(root, 'src');
 const registryPath = path.join(srcDir, 'assets', 'ActorAssetRegistry.ts');
 
 const forbiddenLiterals = [
+  'era0_spearman/animations.glb',
   'Spartan_Kick',
   'Punch_Combo',
   'isStaticGltfInfantry',
@@ -56,11 +57,14 @@ if (!infantryMatch) {
   const infantryBlock = infantryMatch[1];
   const requiredSnippets = [
     "modelUrl: '/models/era0_spearman/character.glb'",
-    "animationsUrl: '/models/era0_spearman/animations.glb'",
-    'staticOnly: false',
-    "walk: 'Walking'",
+    'staticOnly: true',
+    "staticPose: 'era0SpearmanRelaxed'",
   ];
   const forbiddenSnippets = [
+    'animationsUrl',
+    'animationClips',
+    "walk: 'Walking'",
+    'staticOnly: false',
     'Spartan_Kick',
     'Punch_Combo',
     'attack:',

@@ -10,32 +10,14 @@ export class GltfEnemyView implements EnemyView {
   private readonly staticOnly: boolean;
 
   private mixer: THREE.AnimationMixer | null = null;
-  private walkAction: THREE.AnimationAction | null = null;
 
   constructor(root: THREE.Object3D, config: EnemyVisualConfig, allClips: THREE.AnimationClip[]) {
     this.root = root;
     this.staticOnly = config.staticOnly === true;
+    applyStaticPose(this.root, config.staticPose);
 
     if (this.staticOnly) {
       return;
-    }
-
-    const walkClipName = config.animationClips?.walk;
-    if (walkClipName) {
-      const walkClip = allClips.find((clip) => clip.name === walkClipName) ?? null;
-
-      if (!walkClip) {
-        console.warn('[GltfEnemyView] Missing configured walk clip:', walkClipName);
-        return;
-      }
-
-      this.mixer = new THREE.AnimationMixer(this.root);
-      this.walkAction = this.mixer.clipAction(walkClip);
-      this.walkAction.setLoop(THREE.LoopRepeat, Infinity);
-      this.walkAction.enabled = true;
-      this.walkAction.play();
-
-      console.info('[GltfEnemyView] Playing walk clip:', walkClip.name);
     }
   }
 
@@ -72,7 +54,7 @@ export class GltfEnemyView implements EnemyView {
   }
 
   triggerAttackAnimation(): void {
-    // Intentionally disabled for Era 0 Spearman until attack clips are curated.
+    // Intentionally disabled until attack clips are curated.
   }
 
   isReadyToRemove(): boolean {
@@ -81,5 +63,69 @@ export class GltfEnemyView implements EnemyView {
 
   dispose(): void {
     // Shared resources handled elsewhere.
+  }
+}
+
+function findBone(root: THREE.Object3D, name: string): THREE.Bone | null {
+  const obj = root.getObjectByName(name);
+  return obj instanceof THREE.Bone ? obj : null;
+}
+
+function applyEra0SpearmanRelaxedPose(root: THREE.Object3D): void {
+  const leftArm = findBone(root, 'LeftArm');
+  const rightArm = findBone(root, 'RightArm');
+  const leftForeArm = findBone(root, 'LeftForeArm');
+  const rightForeArm = findBone(root, 'RightForeArm');
+  const leftShoulder = findBone(root, 'LeftShoulder');
+  const rightShoulder = findBone(root, 'RightShoulder');
+
+  // Do not call SkinnedMesh.pose(). It previously made the model disappear.
+  // These are additive offsets from the exported rest pose.
+  // Goal: lower arms from T-pose into a relaxed readable stance.
+  if (leftShoulder) {
+    leftShoulder.rotation.z += 0.15;
+  }
+
+  if (rightShoulder) {
+    rightShoulder.rotation.z -= 0.15;
+  }
+
+  if (leftArm) {
+    leftArm.rotation.z += 1.15;
+    leftArm.rotation.x += 0.08;
+  }
+
+  if (rightArm) {
+    rightArm.rotation.z -= 1.15;
+    rightArm.rotation.x += 0.08;
+  }
+
+  if (leftForeArm) {
+    leftForeArm.rotation.z += 0.25;
+    leftForeArm.rotation.x += 0.05;
+  }
+
+  if (rightForeArm) {
+    rightForeArm.rotation.z -= 0.25;
+    rightForeArm.rotation.x += 0.05;
+  }
+
+  if (!leftArm || !rightArm) {
+    console.warn('[GltfEnemyView] Era0 spearman relaxed pose missing expected arm bones:', {
+      leftArm: Boolean(leftArm),
+      rightArm: Boolean(rightArm),
+      leftForeArm: Boolean(leftForeArm),
+      rightForeArm: Boolean(rightForeArm),
+      leftShoulder: Boolean(leftShoulder),
+      rightShoulder: Boolean(rightShoulder),
+    });
+  }
+
+  root.updateMatrixWorld(true);
+}
+
+function applyStaticPose(root: THREE.Object3D, pose: string | undefined): void {
+  if (pose === 'era0SpearmanRelaxed') {
+    applyEra0SpearmanRelaxedPose(root);
   }
 }
