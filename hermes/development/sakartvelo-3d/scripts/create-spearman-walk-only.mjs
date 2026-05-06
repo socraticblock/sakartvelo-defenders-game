@@ -19,6 +19,19 @@ if (!keep) {
   throw new Error('Could not find exact Walking animation clip.');
 }
 
+let removedRootMotionChannels = 0;
+for (const channel of [...keep.listChannels()]) {
+  if (
+    channel.getTargetNode()?.getName() === 'Hips' &&
+    channel.getTargetPath() === 'translation'
+  ) {
+    const sampler = channel.getSampler();
+    keep.removeChannel(channel);
+    if (sampler) keep.removeSampler(sampler);
+    removedRootMotionChannels += 1;
+  }
+}
+
 for (const clip of animations) {
   if (clip !== keep) {
     clip.dispose();
@@ -38,6 +51,7 @@ console.log('Wrote:', output);
 console.log('Output size MB:', (stat.size / 1024 / 1024).toFixed(2));
 console.log('Output animations:', outputAnimations);
 console.log('Output meshes:', meshNames);
+console.log('Removed root motion channels:', removedRootMotionChannels);
 
 if (outputAnimations.length !== 1 || outputAnimations[0] !== 'Walking') {
   throw new Error(`Output must contain only Walking. Found: ${outputAnimations.join(', ')}`);
