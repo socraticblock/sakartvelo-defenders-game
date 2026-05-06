@@ -140,7 +140,9 @@ export class Enemy {
     this.poisonVisualTimer = Math.max(0, this.poisonVisualTimer - dt);
 
     // Move
-    this.distanceTraveled += this.speed * dt;
+    const moveDelta = this.speed * dt;
+    const isMovingThisFrame = moveDelta > 0.0001;
+    this.distanceTraveled += moveDelta;
     if (this.distanceTraveled >= this.totalPathLength) {
       this.alive = false;
       this.reachedEnd = true;
@@ -168,10 +170,11 @@ export class Enemy {
 
     if (this.usesStaticGltfInfantry) {
       this.attackAnimationRemaining = Math.max(0, this.attackAnimationRemaining - dt);
-      if (this.attackAnimationRemaining > 0 && this.rig.attackAction) {
-        this.playGltfAction(this.rig.attackAction);
-      } else if (this.rig.runAction) {
+      if (isMovingThisFrame && this.rig.runAction) {
+        this.attackAnimationRemaining = 0;
         this.playGltfAction(this.rig.runAction);
+      } else if ((this.isBlocked || this.attackAnimationRemaining > 0) && this.rig.attackAction) {
+        this.playGltfAction(this.rig.attackAction, !this.rig.attackAction.isRunning());
       } else if (this.rig.idleAction) {
         this.playGltfAction(this.rig.idleAction);
       }
