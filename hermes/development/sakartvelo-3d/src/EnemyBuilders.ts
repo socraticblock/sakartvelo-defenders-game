@@ -53,6 +53,11 @@ export interface EnemyRig {
   bobAmp: number;
   walkSpeed: number;
   walkAmp: number;
+
+  mixer?: THREE.AnimationMixer;
+  idleAction?: THREE.AnimationAction | null;
+  walkAction?: THREE.AnimationAction | null;
+  activeAction?: THREE.AnimationAction | null;
 }
 
 export type EnemyArchetype = 'warrior' | 'cavalry' | 'wolf' | 'siege' | 'boss' | 'infantry';

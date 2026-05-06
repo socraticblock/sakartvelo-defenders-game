@@ -155,9 +155,13 @@ export class Enemy {
       rem -= this.segmentLengths[i];
     }
 
-    // Animate rig (walk cycle)
+    // Animate rig
     const time = gs.gameTime;
-    animateRig(this.rig, time, true, this.type === 'siege');
+    if (this.rig.mixer) {
+      this.rig.mixer.update(dt);
+    } else {
+      animateRig(this.rig, time, true, this.type === 'siege');
+    }
 
     // Vertical bob
     this.rig.root.position.y = Math.sin(time * this.rig.bobSpeed) * this.rig.bobAmp;
