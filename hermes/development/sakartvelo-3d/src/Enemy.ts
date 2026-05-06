@@ -61,6 +61,10 @@ export class Enemy {
     this.group = new THREE.Group();
     this.group.add(this.rig.root);
 
+    if (this.rig.root.userData.preserveSharedResources) {
+      this.group.userData.preserveSharedResources = true;
+    }
+
     // Scale to match gameplay size
     const s = cfg.scale / 0.35; // normalize around humanoid scale
     this.rig.root.scale.setScalar(s);

@@ -74,13 +74,22 @@ export class GameState {
     // even before a level is loaded
   }
 
+  private disposeEnemyGroup(enemy: Enemy): void {
+    if (enemy.group.userData.preserveSharedResources) {
+      disposeObject3D(enemy.group, { disposeGeometry: false, disposeMaterials: false });
+      return;
+    }
+
+    disposeObject3D(enemy.group);
+  }
+
   // ─── Level lifecycle ──────────────────────────────────────
 
   initLevel(lvl: LevelData, scene: THREE.Scene, medeaTemplate: MedeaTemplate | null = null): void {
     // Clean up old level entities
     this.enemies.forEach(e => {
       scene.remove(e.group);
-      disposeObject3D(e.group);
+      this.disposeEnemyGroup(e);
     });
     this.friendlies.forEach(f => {
       scene.remove(f.group);
@@ -237,7 +246,7 @@ export class GameState {
 
   removeEnemy(enemy: Enemy, scene: THREE.Scene): void {
     scene.remove(enemy.group);
-    disposeObject3D(enemy.group);
+    this.disposeEnemyGroup(enemy);
     this.enemies = this.enemies.filter(e => e !== enemy);
   }
 

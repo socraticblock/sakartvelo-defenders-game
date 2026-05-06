@@ -14,13 +14,14 @@ import {
   P,
   makePart,
 } from './EnemyBuilders';
+import { instantiateEra0SpearmanRig } from './Era0SpearmanGltf';
 export { type EnemyRig, P, makePart };
 export type { EnemyArchetype } from './EnemyBuilders';
 
 export function createEnemyModel(type: string): EnemyRig {
   switch (type) {
     case 'infantry':
-      return createColchianRaider();
+      return instantiateEra0SpearmanRig() ?? createColchianRaider();
     case 'cavalry':
       return createColchianHorseman();
     case 'siege':

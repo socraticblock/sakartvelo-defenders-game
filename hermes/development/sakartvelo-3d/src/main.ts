@@ -16,6 +16,7 @@ import { initMagicParticles } from './MagicalParticles';
 import { initAmbientDust } from './AmbientDust';
 import { warHorn } from './WarHorn';
 import { getMedeaTemplate, loadMedeaTemplate } from './MedeaGltf';
+import { loadEra0SpearmanTemplate } from './Era0SpearmanGltf';
 import { validateLevels } from './validateLevels';
 
 // Use the generated magical sprite
@@ -109,22 +110,6 @@ function initDebugClickAudit(): void {
   }, true);
 }
 
-
-// ─── DOM Events & Debug ──────────────────────────────────────────────────
-
-const debugUi = window.location.search.includes('debug-ui=1');
-if (debugUi) {
-  document.body.dataset.debug = 'true';
-  document.addEventListener('click', (e) => {
-    const btn = (e.target as HTMLElement).closest('button');
-    if (btn) {
-      console.log('--- GLOBAL CLICK AUDIT ---');
-      console.log('Button ID:', btn.id);
-      console.log('Button Classes:', btn.className);
-      console.log('Button Text:', btn.innerText.trim());
-    }
-  }, true);
-}
 
 // ─── Level lifecycle ─────────────────────────────────────────────────────
 
@@ -234,6 +219,7 @@ ui.init(
 );
 
 void loadMedeaTemplate().catch(() => {});
+void loadEra0SpearmanTemplate().catch(() => {});
 
 function issueHeroMoveCommand(x: number, z: number): void {
   if (!gs.hero) return;
