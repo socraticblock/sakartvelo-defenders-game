@@ -83,8 +83,19 @@ export function instantiateEra0SpearmanRig(): EnemyRig | null {
 
   const root = new THREE.Group();
   root.userData.preserveSharedResources = true;
+  root.userData.isStaticGltfInfantry = true;
 
   const modelRoot = cloneSkinnedScene(template.sourceScene);
+  modelRoot.userData.isStaticGltfInfantryModel = true;
+
+  modelRoot.traverse((obj) => {
+    if (obj instanceof THREE.SkinnedMesh) {
+      // Force the cloned character back to its bind/rest pose.
+      // This prevents stale or exported action poses from becoming the visual default.
+      obj.pose();
+    }
+  });
+
   root.add(modelRoot);
 
   const leftArm = new THREE.Group();

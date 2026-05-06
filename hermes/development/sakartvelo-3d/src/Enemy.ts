@@ -38,6 +38,7 @@ export class Enemy {
   poisonVisualTimer = 0;
   private flashMat: THREE.MeshStandardMaterial[] = [];
   private flashTime = 0;
+  private readonly usesStaticGltfInfantry: boolean;
 
   constructor(type: string, pathPoints: THREE.Vector3[], hpMult: number, speedMult: number) {
     const cfg = ENEMY_CONFIGS[type] || ENEMY_CONFIGS.infantry;
@@ -60,6 +61,7 @@ export class Enemy {
     this.rig = createEnemyModel(type);
     this.group = new THREE.Group();
     this.group.add(this.rig.root);
+    this.usesStaticGltfInfantry = Boolean(this.rig.root.userData.isStaticGltfInfantry);
 
     if (this.rig.root.userData.preserveSharedResources) {
       this.group.userData.preserveSharedResources = true;
@@ -157,14 +159,20 @@ export class Enemy {
 
     // Animate rig
     const time = gs.gameTime;
-    if (this.rig.mixer) {
+
+    if (this.usesStaticGltfInfantry) {
+      // Static GLB infantry must not use imported animation or procedural limb animation.
+      // It only gets a tiny bob so it does not feel completely dead.
+      this.rig.root.position.y = Math.sin(time * this.rig.bobSpeed) * this.rig.bobAmp;
+      this.rig.root.rotation.x = 0;
+      this.rig.root.rotation.z = 0;
+    } else if (this.rig.mixer) {
       this.rig.mixer.update(dt);
     } else {
       animateRig(this.rig, time, true, this.type === 'siege');
+      this.rig.root.position.y = Math.sin(time * this.rig.bobSpeed) * this.rig.bobAmp;
     }
 
-    // Vertical bob
-    this.rig.root.position.y = Math.sin(time * this.rig.bobSpeed) * this.rig.bobAmp;
     this.poisonRing.visible = this.poisonVisualTimer > 0;
     this.slowRing.visible = this.temporarySlowTimer > 0 || this.isBlocked;
     if (this.poisonRing.visible) this.poisonRing.rotation.z += dt * 1.8;
