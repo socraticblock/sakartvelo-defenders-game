@@ -39,6 +39,8 @@ export class Enemy {
   private flashMat: THREE.MeshStandardMaterial[] = [];
   private flashTime = 0;
   private readonly usesStaticGltfInfantry: boolean;
+  private deathAnimationRemaining = 0;
+  private deathAnimationStarted = false;
 
   constructor(type: string, pathPoints: THREE.Vector3[], hpMult: number, speedMult: number) {
     const cfg = ENEMY_CONFIGS[type] || ENEMY_CONFIGS.infantry;
@@ -126,7 +128,10 @@ export class Enemy {
   }
 
   update(dt: number, camera: THREE.Camera): void {
-    if (!this.alive) return;
+    if (!this.alive) {
+      this.updateDeathAnimation(dt);
+      return;
+    }
     if (this.temporarySlowTimer > 0) {
       this.temporarySlowTimer = Math.max(0, this.temporarySlowTimer - dt);
       if (this.temporarySlowTimer === 0) this.temporarySlowAmount = 0;
@@ -161,8 +166,14 @@ export class Enemy {
     const time = gs.gameTime;
 
     if (this.usesStaticGltfInfantry) {
-      // Static GLB infantry must not use imported animation or procedural limb animation.
-      // It only gets a tiny bob so it does not feel completely dead.
+      if (this.isBlocked && this.rig.attackAction) {
+        this.playGltfAction(this.rig.attackAction);
+      } else if (this.rig.runAction) {
+        this.playGltfAction(this.rig.runAction);
+      } else if (this.rig.idleAction) {
+        this.playGltfAction(this.rig.idleAction);
+      }
+      this.rig.mixer?.update(dt);
       this.rig.root.position.y = Math.sin(time * this.rig.bobSpeed) * this.rig.bobAmp;
       this.rig.root.rotation.x = 0;
       this.rig.root.rotation.z = 0;
@@ -209,9 +220,14 @@ export class Enemy {
 
     if (this.hp <= 0) {
       this.alive = false;
+      this.startDeathAnimation();
       return true;
     }
     return false;
+  }
+
+  isReadyToRemove(): boolean {
+    return this.alive || this.reachedEnd || !this.usesStaticGltfInfantry || this.deathAnimationRemaining <= 0;
   }
 
   getPos(): THREE.Vector3 {
@@ -225,5 +241,35 @@ export class Enemy {
 
   setPoisoned(duration: number): void {
     this.poisonVisualTimer = Math.max(this.poisonVisualTimer, duration);
+  }
+
+  private playGltfAction(action: THREE.AnimationAction, restart = false): void {
+    if (this.rig.activeAction === action && !restart) return;
+
+    this.rig.activeAction?.fadeOut(0.08);
+    action.enabled = true;
+    if (restart || this.rig.activeAction !== action) action.reset();
+    action.fadeIn(0.08).play();
+    this.rig.activeAction = action;
+  }
+
+  private startDeathAnimation(): void {
+    if (!this.usesStaticGltfInfantry || this.deathAnimationStarted) return;
+    this.deathAnimationStarted = true;
+
+    const deathAction = this.rig.deathAction;
+    if (!deathAction) return;
+
+    this.rig.activeAction?.fadeOut(0.05);
+    deathAction.enabled = true;
+    deathAction.reset().fadeIn(0.05).play();
+    this.rig.activeAction = deathAction;
+    this.deathAnimationRemaining = Math.max(0.4, deathAction.getClip().duration);
+  }
+
+  private updateDeathAnimation(dt: number): void {
+    if (!this.usesStaticGltfInfantry || this.deathAnimationRemaining <= 0) return;
+    this.rig.mixer?.update(dt);
+    this.deathAnimationRemaining = Math.max(0, this.deathAnimationRemaining - dt);
   }
 }

@@ -147,6 +147,8 @@ export function updateEnemyDeaths(scene: THREE.Scene, camera: THREE.Camera): voi
   for (let i = gs.enemies.length - 1; i >= 0; i--) {
     const enemy = gs.enemies[i];
     if (!enemy.alive) {
+      if (!enemy.isReadyToRemove()) continue;
+
       if (enemy.reachedEnd) {
         gs.loseLife(enemy.livesCost);
         screenShake.trigger(0.25, 0.25);
