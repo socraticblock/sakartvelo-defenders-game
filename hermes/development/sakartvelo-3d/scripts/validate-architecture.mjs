@@ -72,7 +72,7 @@ if (!infantryMatch) {
 } else {
   const infantryBlock = infantryMatch[1];
   const requiredSnippets = [
-    "modelUrl: '/models/era0_spearman/spearman_run_only.glb'",
+    "modelUrl: '/models/era0_spearman/spearman_run_only.glb?v=2'",
     'staticOnly: false',
     "staticPose: 'none'",
     "walk: 'Running'",
