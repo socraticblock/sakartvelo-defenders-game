@@ -23,14 +23,14 @@ export const ACTOR_REGISTRY: Record<string, EnemyVisualConfig> = {
   infantry: {
     kind: 'gltf',
     type: 'infantry',
-    modelUrl: '/models/era0_spearman/spearman_run_only.glb',
+    modelUrl: '/models/era0_spearman/spearman_walk_only.glb',
     targetHeight: 1.15,
     fallbackProceduralType: 'infantry',
     staticOnly: false,
     staticPose: 'none',
     weaponProp: 'none',
     animationClips: {
-      walk: 'Running',
+      walk: 'Walking',
     },
   },
   cavalry: {
