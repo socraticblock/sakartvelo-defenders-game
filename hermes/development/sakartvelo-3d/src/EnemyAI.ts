@@ -128,7 +128,8 @@ export function updateEnemyWallAttacks(scene: THREE.Scene, camera: THREE.Camera,
       enemy.isBlocked = true;
       enemy.speed = 0;
       const heroPos = gs.hero.group.position;
-      enemy.rig.root.rotation.y = Math.atan2(heroPos.x - _enemyPos.x, heroPos.z - _enemyPos.z);
+      const dir = new THREE.Vector3(heroPos.x - _enemyPos.x, 0, heroPos.z - _enemyPos.z);
+      enemy.view.faceDirection(dir);
 
       const cd = Math.max(0, (_heroAttackCd.get(enemy) ?? 0) - dt);
       if (cd <= 0) {

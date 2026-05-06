@@ -1,15 +1,14 @@
 import * as THREE from 'three';
 import { ENEMY_CONFIGS } from './types';
-import { createEnemyModel } from './EnemyModels';
-import { animateRig } from './EnemyAnimations';
-import { type EnemyRig } from './EnemyBuilders';
 import { gs } from './GameState';
+import { EnemyView } from './actors/EnemyView';
+import { createEnemyView } from './actors/EnemyFactory';
 
 export class Enemy {
   private static _tmpDir = new THREE.Vector3();
 
   group: THREE.Group;
-  rig: EnemyRig;
+  view: EnemyView;
   healthBg: THREE.Mesh;
   healthFill: THREE.Mesh;
   shadow: THREE.Mesh;
@@ -56,18 +55,18 @@ export class Enemy {
       this.totalPathLength += len;
     }
 
-    // Build procedural model
-    this.rig = createEnemyModel(type);
+    // Build visual model
+    this.view = createEnemyView(type);
     this.group = new THREE.Group();
-    this.group.add(this.rig.root);
+    this.group.add(this.view.root);
 
-    if (this.rig.root.userData.preserveSharedResources) {
+    if (this.view.preserveSharedResources) {
       this.group.userData.preserveSharedResources = true;
     }
 
     // Scale to match gameplay size
     const s = cfg.scale / 0.35; // normalize around humanoid scale
-    this.rig.root.scale.setScalar(s);
+    this.view.root.scale.setScalar(s);
 
     // Shadow
     const shadowGeo = new THREE.CircleGeometry(0.35, 12);
@@ -112,12 +111,7 @@ export class Enemy {
     this.group.add(this.healthFill);
 
     // Collect materials for flash effect
-    this.rig.root.traverse(child => {
-      if (child instanceof THREE.Mesh) {
-        const mat = child.material as any;
-        if (mat.emissive) this.flashMat.push(mat);
-      }
-    });
+    this.view.collectFlashMaterials(this.flashMat);
 
     // Position at path start
     if (pathPoints.length > 0) this.group.position.copy(pathPoints[0]);
@@ -147,24 +141,18 @@ export class Enemy {
         this.group.position.lerpVectors(this.worldPath[i], this.worldPath[i + 1], t);
         // Face direction — reuse a cached vector to avoid per-frame allocation
         const dir = Enemy._tmpDir.subVectors(this.worldPath[i + 1], this.worldPath[i]);
-        if (dir.length() > 0.01) {
-          this.rig.root.rotation.y = Math.atan2(dir.x, dir.z);
+        if (dir.lengthSq() > 0.0001) {
+          this.view.faceDirection(dir);
         }
         break;
       }
       rem -= this.segmentLengths[i];
     }
 
-    // Animate rig
+    // Animate visual
     const time = gs.gameTime;
-    if (this.rig.mixer) {
-      this.rig.mixer.update(dt);
-    } else {
-      animateRig(this.rig, time, true, this.type === 'siege');
-    }
+    this.view.update(dt, time);
 
-    // Vertical bob
-    this.rig.root.position.y = Math.sin(time * this.rig.bobSpeed) * this.rig.bobAmp;
     this.poisonRing.visible = this.poisonVisualTimer > 0;
     this.slowRing.visible = this.temporarySlowTimer > 0 || this.isBlocked;
     if (this.poisonRing.visible) this.poisonRing.rotation.z += dt * 1.8;

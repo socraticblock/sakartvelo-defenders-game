@@ -16,8 +16,8 @@ import { initMagicParticles } from './MagicalParticles';
 import { initAmbientDust } from './AmbientDust';
 import { warHorn } from './WarHorn';
 import { getMedeaTemplate, loadMedeaTemplate } from './MedeaGltf';
-import { loadEra0SpearmanTemplate } from './Era0SpearmanGltf';
 import { validateLevels } from './validateLevels';
+import { preloadEnemyAssetsForLevel } from './actors/EnemyFactory';
 
 // Use the generated magical sprite
 const MAGIC_SPRITE = '/magic_particle_sprite.png';
@@ -184,6 +184,7 @@ async function startLevel(era: number, level: number): Promise<void> {
   } else {
     audio.stopBGM();
   }
+  await preloadEnemyAssetsForLevel(lvl);
   await loadMedeaTemplate();
   gs.initLevel(lvl, scene, getMedeaTemplate());
   ui.reset();
@@ -219,7 +220,6 @@ ui.init(
 );
 
 void loadMedeaTemplate().catch(() => {});
-void loadEra0SpearmanTemplate().catch(() => {});
 
 function issueHeroMoveCommand(x: number, z: number): void {
   if (!gs.hero) return;
