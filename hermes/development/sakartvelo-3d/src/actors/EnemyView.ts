@@ -7,5 +7,7 @@ export interface EnemyView {
   update(dt: number, time: number): void;
   faceDirection(dir: THREE.Vector3): void;
   collectFlashMaterials(target: THREE.MeshStandardMaterial[]): void;
+  triggerAttackAnimation(): void;
+  isReadyToRemove(): boolean;
   dispose(): void;
 }

@@ -33,6 +33,12 @@ export class ProceduralEnemyView implements EnemyView {
     });
   }
 
+  triggerAttackAnimation(): void {}
+
+  isReadyToRemove(): boolean {
+    return true;
+  }
+
   dispose(): void {
     // Disposal handled by GameLoop / GameState generic cleanup since preserveSharedResources is false.
   }

@@ -57,6 +57,9 @@ export interface EnemyRig {
   mixer?: THREE.AnimationMixer;
   idleAction?: THREE.AnimationAction | null;
   walkAction?: THREE.AnimationAction | null;
+  runAction?: THREE.AnimationAction | null;
+  attackAction?: THREE.AnimationAction | null;
+  deathAction?: THREE.AnimationAction | null;
   activeAction?: THREE.AnimationAction | null;
 }
 

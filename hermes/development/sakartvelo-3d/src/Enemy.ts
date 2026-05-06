@@ -118,7 +118,10 @@ export class Enemy {
   }
 
   update(dt: number, camera: THREE.Camera): void {
-    if (!this.alive) return;
+    if (!this.alive) {
+      this.view.update(dt, gs.gameTime);
+      return;
+    }
     if (this.temporarySlowTimer > 0) {
       this.temporarySlowTimer = Math.max(0, this.temporarySlowTimer - dt);
       if (this.temporarySlowTimer === 0) this.temporarySlowAmount = 0;
@@ -192,6 +195,14 @@ export class Enemy {
       return true;
     }
     return false;
+  }
+
+  isReadyToRemove(): boolean {
+    return this.view.isReadyToRemove();
+  }
+
+  triggerAttackAnimation(): void {
+    this.view.triggerAttackAnimation();
   }
 
   getPos(): THREE.Vector3 {

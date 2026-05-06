@@ -23,6 +23,7 @@ export async function preloadEnemyAssetsForLevel(level: LevelData): Promise<void
       promises.push(
         loadActorAsset({
           url: config.modelUrl,
+          animationsUrl: config.animationsUrl,
           targetHeight: config.targetHeight,
           label: config.type,
         })
@@ -40,7 +41,7 @@ export function createEnemyView(type: string): EnemyView {
     const template = getActorAsset(config.modelUrl);
     if (template) {
       const root = instantiateActorAsset(template);
-      return new GltfEnemyView(root);
+      return new GltfEnemyView(root, config, template.animations);
     }
   }
 

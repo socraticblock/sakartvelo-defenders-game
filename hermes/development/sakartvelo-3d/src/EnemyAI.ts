@@ -31,6 +31,7 @@ const WALL_ATTACK_INTERVAL = 1.0;
 export function updateEnemySlow(): void {
   for (const enemy of gs.enemies) {
     if (!enemy.alive) continue;
+    enemy.isBlocked = false;
     let totalSlow = 0;
     _enemyPos.copy(enemy.getPos());
     
@@ -76,7 +77,6 @@ export function updateEnemySlow(): void {
 export function updateEnemyWallAttacks(scene: THREE.Scene, camera: THREE.Camera, dt: number): void {
   for (const enemy of gs.enemies) {
     if (!enemy.alive) continue;
-    enemy.isBlocked = false; // Reset each frame; re-set below if still hitting a wall
     _enemyPos.copy(enemy.getPos());
     
     for (const t of gs.towers) {
@@ -99,6 +99,7 @@ export function updateEnemyWallAttacks(scene: THREE.Scene, camera: THREE.Camera,
 
           const dmg = ENEMY_CONFIGS[enemy.type]?.wallDmg ?? 10;
           const destroyed = t.takeWallDamage(dmg);
+          enemy.triggerAttackAnimation();
           t.billboardHp(camera);
           audio.playWallHit();
 
@@ -134,6 +135,7 @@ export function updateEnemyWallAttacks(scene: THREE.Scene, camera: THREE.Camera,
       const cd = Math.max(0, (_heroAttackCd.get(enemy) ?? 0) - dt);
       if (cd <= 0) {
         gs.hero.takeDamage(HERO_DPS[enemy.type] ?? 8);
+        enemy.triggerAttackAnimation();
         const hitPos = _enemyPos.clone().lerp(heroPos, 0.5);
         spawnHitFlash(scene, hitPos);
         _heroAttackCd.set(enemy, 1.0);
@@ -148,6 +150,8 @@ export function updateEnemyDeaths(scene: THREE.Scene, camera: THREE.Camera): voi
   for (let i = gs.enemies.length - 1; i >= 0; i--) {
     const enemy = gs.enemies[i];
     if (!enemy.alive) {
+      if (!enemy.isReadyToRemove()) continue;
+
       if (enemy.reachedEnd) {
         gs.loseLife(enemy.livesCost);
         screenShake.trigger(0.25, 0.25);

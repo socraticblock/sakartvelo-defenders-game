@@ -5,11 +5,14 @@ import { clone as cloneSkinnedScene } from 'three/addons/utils/SkeletonUtils.js'
 export interface ActorAssetTemplate {
   sourceScene: THREE.Object3D;
   url: string;
+  animationsUrl?: string;
   targetHeight: number;
+  animations: THREE.AnimationClip[];
 }
 
 export interface LoadActorAssetOptions {
   url: string;
+  animationsUrl?: string;
   targetHeight: number;
   label: string;
 }
@@ -27,8 +30,19 @@ export async function loadActorAsset(options: LoadActorAssetOptions): Promise<Ac
 
   const promise = (async () => {
     try {
-      const gltf = await gltfLoader.loadAsync(options.url);
-      const sourceScene = gltf.scene;
+      const characterGltf = await gltfLoader.loadAsync(options.url);
+      let animations: THREE.AnimationClip[] = [...(characterGltf.animations || [])];
+
+      if (options.animationsUrl) {
+        try {
+          const animGltf = await gltfLoader.loadAsync(options.animationsUrl);
+          animations = [...animations, ...(animGltf.animations || [])];
+        } catch (e) {
+          console.warn(`[ActorAssetLoader] animations failed to load for ${options.label} at ${options.animationsUrl}`, e);
+        }
+      }
+
+      const sourceScene = characterGltf.scene;
       sourceScene.updateMatrixWorld(true);
 
       const box = new THREE.Box3().setFromObject(sourceScene);
@@ -53,7 +67,9 @@ export async function loadActorAsset(options: LoadActorAssetOptions): Promise<Ac
       const template: ActorAssetTemplate = {
         sourceScene,
         url: options.url,
+        animationsUrl: options.animationsUrl,
         targetHeight: options.targetHeight,
+        animations,
       };
 
       templates.set(options.url, template);

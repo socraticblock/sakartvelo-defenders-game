@@ -127,9 +127,9 @@ export class GameLoop {
       this._updateSpawn(dt);
       this._updateInfantryCooldown(dt);
       updateEnemySlow();
+      updateEnemyWallAttacks(this._scene, this._camera, dt);
       this._updateEnemies(dt);
       this._updateFriendlies(dt);
-      updateEnemyWallAttacks(this._scene, this._camera, dt);
       this._updateCommandLink(dt);
       this._updateWallSynergies();
       this._updateTowers(dt);
