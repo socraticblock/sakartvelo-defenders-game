@@ -184,7 +184,11 @@ async function startLevel(era: number, level: number): Promise<void> {
   } else {
     audio.stopBGM();
   }
-  await loadMedeaTemplate();
+  await Promise.all([
+    loadMedeaTemplate(),
+    loadEra0SpearmanTemplate(),
+  ]);
+
   gs.initLevel(lvl, scene, getMedeaTemplate());
   ui.reset();
   if (gs.waveMgr?.inBuildPhase) {

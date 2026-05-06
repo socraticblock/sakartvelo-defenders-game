@@ -56,7 +56,7 @@ export class Enemy {
       this.totalPathLength += len;
     }
 
-    // Build procedural model
+    // Build enemy visual model, using GLB-backed assets when available.
     this.rig = createEnemyModel(type);
     this.group = new THREE.Group();
     this.group.add(this.rig.root);
