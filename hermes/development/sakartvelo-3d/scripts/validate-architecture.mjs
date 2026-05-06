@@ -58,7 +58,7 @@ if (!infantryMatch) {
   const requiredSnippets = [
     "modelUrl: '/models/era0_spearman/character.glb'",
     'staticOnly: true',
-    "staticPose: 'era0SpearmanRelaxed'",
+    "staticPose: 'none'",
   ];
   const forbiddenSnippets = [
     'animationsUrl',

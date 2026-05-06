@@ -27,7 +27,7 @@ export const ACTOR_REGISTRY: Record<string, EnemyVisualConfig> = {
     targetHeight: 1.15,
     fallbackProceduralType: 'infantry',
     staticOnly: true,
-    staticPose: 'era0SpearmanRelaxed',
+    staticPose: 'none',
     weaponProp: 'none',
   },
   cavalry: {
