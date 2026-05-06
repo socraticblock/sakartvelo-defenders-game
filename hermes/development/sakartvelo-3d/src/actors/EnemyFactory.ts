@@ -41,7 +41,7 @@ export function createEnemyView(type: string): EnemyView {
     const template = getActorAsset(config.modelUrl);
     if (template) {
       const root = instantiateActorAsset(template);
-      return new GltfEnemyView(root, config, template.animations);
+      return new GltfEnemyView(root, config, config.staticOnly ? [] : template.animations);
     }
   }
 
