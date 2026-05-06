@@ -8,6 +8,7 @@ const registryPath = path.join(srcDir, 'assets', 'ActorAssetRegistry.ts');
 const forbiddenLiterals = [
   'era0_spearman/animations.glb',
   'era0_spearman/character.glb',
+  'era0_spearman/spearman_walk_only.glb',
   'Spartan_Kick',
   'Punch_Combo',
   'isStaticGltfInfantry',
@@ -64,19 +65,22 @@ if (!infantryMatch) {
 } else {
   const infantryBlock = infantryMatch[1];
   const requiredSnippets = [
-    "modelUrl: '/models/era0_spearman/spearman_walk_only.glb'",
+    "modelUrl: '/models/era0_spearman/spearman_run_only.glb'",
     'staticOnly: false',
     "staticPose: 'none'",
-    "walk: 'Walking'",
+    "walk: 'Running'",
   ];
   const forbiddenSnippets = [
     'animationsUrl',
     'staticOnly: true',
+    'Dead',
+    'Stumble_Walk',
     'Spartan_Kick',
     'Punch_Combo',
     'attack:',
     'death:',
     'idle:',
+    "walk: 'Walking'",
   ];
 
   for (const snippet of requiredSnippets) {

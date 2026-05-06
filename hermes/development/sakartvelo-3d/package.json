@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "asset:spearman:walk-only": "node scripts/create-spearman-walk-only.mjs",
+    "asset:spearman:run-only": "node scripts/create-spearman-run-only.mjs",
     "typecheck": "tsc --noEmit",
     "validate:architecture": "node scripts/validate-architecture.mjs",
     "validate": "npm run typecheck && npm run validate:architecture",
