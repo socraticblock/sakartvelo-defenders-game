@@ -6,8 +6,8 @@ const srcDir = path.join(root, 'src');
 const registryPath = path.join(srcDir, 'assets', 'ActorAssetRegistry.ts');
 
 const forbiddenLiterals = [
-  'era0_spearman/animations.glb',
   'Spartan_Kick',
+  'Punch_Combo',
   'isStaticGltfInfantry',
   'Era0SpearmanGltf',
 ];
@@ -39,6 +39,13 @@ for (const file of srcFiles) {
       fail(`Forbidden string "${needle}" found in ${path.relative(root, file)}`);
     }
   }
+
+  if (
+    text.includes('era0_spearman/animations.glb') &&
+    path.resolve(file) !== path.resolve(registryPath)
+  ) {
+    fail(`Forbidden string "era0_spearman/animations.glb" found outside ${path.relative(root, registryPath)} in ${path.relative(root, file)}`);
+  }
 }
 
 const registryText = fs.readFileSync(registryPath, 'utf8');
@@ -49,11 +56,16 @@ if (!infantryMatch) {
   const infantryBlock = infantryMatch[1];
   const requiredSnippets = [
     "modelUrl: '/models/era0_spearman/character.glb'",
-    'staticOnly: true',
+    "animationsUrl: '/models/era0_spearman/animations.glb'",
+    'staticOnly: false',
+    "walk: 'Walking'",
   ];
   const forbiddenSnippets = [
-    'animationsUrl',
-    'animationClips',
+    'Spartan_Kick',
+    'Punch_Combo',
+    'attack:',
+    'death:',
+    'idle:',
   ];
 
   for (const snippet of requiredSnippets) {

@@ -11,6 +11,7 @@ export interface EnemyVisualConfig {
   weaponProp?: 'spear' | 'shortSpear' | 'sword' | 'none';
   animationClips?: {
     idle?: string;
+    walk?: string;
     run?: string;
     attack?: string;
     death?: string;
@@ -22,10 +23,14 @@ export const ACTOR_REGISTRY: Record<string, EnemyVisualConfig> = {
     kind: 'gltf',
     type: 'infantry',
     modelUrl: '/models/era0_spearman/character.glb',
+    animationsUrl: '/models/era0_spearman/animations.glb',
     targetHeight: 1.15,
     fallbackProceduralType: 'infantry',
-    staticOnly: true,
+    staticOnly: false,
     weaponProp: 'none',
+    animationClips: {
+      walk: 'Walking',
+    },
   },
   cavalry: {
     kind: 'procedural',

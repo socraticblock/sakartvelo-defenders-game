@@ -10,16 +10,7 @@ export class GltfEnemyView implements EnemyView {
   private readonly staticOnly: boolean;
 
   private mixer: THREE.AnimationMixer | null = null;
-  private idleAction: THREE.AnimationAction | null = null;
-  private runAction: THREE.AnimationAction | null = null;
-  private attackAction: THREE.AnimationAction | null = null;
-  private deathAction: THREE.AnimationAction | null = null;
-  private activeAction: THREE.AnimationAction | null = null;
-
-  private attackAnimationRemaining = 0;
-  private deathAnimationStarted = false;
-  private deathAnimationRemaining = 0;
-  private alive = true;
+  private walkAction: THREE.AnimationAction | null = null;
 
   constructor(root: THREE.Object3D, config: EnemyVisualConfig, allClips: THREE.AnimationClip[]) {
     this.root = root;
@@ -29,30 +20,22 @@ export class GltfEnemyView implements EnemyView {
       return;
     }
 
-    if (allClips.length > 0 && config.animationClips) {
+    const walkClipName = config.animationClips?.walk;
+    if (walkClipName) {
+      const walkClip = allClips.find((clip) => clip.name === walkClipName) ?? null;
+
+      if (!walkClip) {
+        console.warn('[GltfEnemyView] Missing configured walk clip:', walkClipName);
+        return;
+      }
+
       this.mixer = new THREE.AnimationMixer(this.root);
-      const findClip = (name: string | undefined) => name ? allClips.find(c => c.name === name) : null;
-      
-      const idleClip = findClip(config.animationClips.idle);
-      const runClip = findClip(config.animationClips.run);
-      const attackClip = findClip(config.animationClips.attack);
-      const deathClip = findClip(config.animationClips.death);
+      this.walkAction = this.mixer.clipAction(walkClip);
+      this.walkAction.setLoop(THREE.LoopRepeat, Infinity);
+      this.walkAction.enabled = true;
+      this.walkAction.play();
 
-      if (idleClip) this.idleAction = this.mixer.clipAction(idleClip);
-      if (runClip) this.runAction = this.mixer.clipAction(runClip);
-      if (attackClip) {
-        this.attackAction = this.mixer.clipAction(attackClip);
-        this.attackAction.setLoop(THREE.LoopOnce, 1);
-        this.attackAction.clampWhenFinished = false;
-      }
-      if (deathClip) {
-        this.deathAction = this.mixer.clipAction(deathClip);
-        this.deathAction.setLoop(THREE.LoopOnce, 1);
-        this.deathAction.clampWhenFinished = true;
-      }
-
-      this.idleAction?.play();
-      this.activeAction = this.idleAction;
+      console.info('[GltfEnemyView] Playing walk clip:', walkClip.name);
     }
   }
 
@@ -62,35 +45,12 @@ export class GltfEnemyView implements EnemyView {
       return;
     }
 
-    if (this.deathAnimationStarted) {
-      this.mixer?.update(dt);
-      this.deathAnimationRemaining = Math.max(0, this.deathAnimationRemaining - dt);
+    if (this.mixer) {
+      this.mixer.update(dt);
       return;
     }
 
-    if (this.mixer) {
-      this.attackAnimationRemaining = Math.max(0, this.attackAnimationRemaining - dt);
-      
-      let target: THREE.AnimationAction | null = this.idleAction;
-      if (this.attackAnimationRemaining > 0 && this.attackAction) {
-        target = this.attackAction;
-      } else if (this.runAction) {
-        target = this.runAction;
-      }
-
-      if (target && this.activeAction !== target) {
-        this.activeAction?.fadeOut(0.1);
-        target.reset().fadeIn(0.1).play();
-        this.activeAction = target;
-      }
-
-      this.mixer.update(dt);
-    }
-
-    // Subtle bob only if no mixer or as additive?
-    if (!this.mixer) {
-      this.root.position.y = Math.sin(time * this.bobSpeed) * this.bobAmp;
-    }
+    this.root.position.y = Math.sin(time * this.bobSpeed) * this.bobAmp;
   }
 
   faceDirection(dir: THREE.Vector3): void {
@@ -112,25 +72,11 @@ export class GltfEnemyView implements EnemyView {
   }
 
   triggerAttackAnimation(): void {
-    if (this.staticOnly || !this.mixer || !this.attackAction) return;
-    this.attackAnimationRemaining = this.attackAction.getClip().duration;
-    this.activeAction?.fadeOut(0.1);
-    this.attackAction.reset().fadeIn(0.1).play();
-    this.activeAction = this.attackAction;
+    // Intentionally disabled for Era 0 Spearman until attack clips are curated.
   }
 
   isReadyToRemove(): boolean {
-    if (this.staticOnly) return true;
-    if (!this.deathAction) return true;
-    if (!this.deathAnimationStarted) {
-      this.deathAnimationStarted = true;
-      this.activeAction?.fadeOut(0.1);
-      this.deathAction.reset().fadeIn(0.1).play();
-      this.activeAction = this.deathAction;
-      this.deathAnimationRemaining = this.deathAction.getClip().duration;
-      return false;
-    }
-    return this.deathAnimationRemaining <= 0;
+    return true;
   }
 
   dispose(): void {
