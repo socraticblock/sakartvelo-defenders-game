@@ -173,7 +173,7 @@ export class Enemy {
       if (isMovingThisFrame && this.rig.runAction) {
         this.attackAnimationRemaining = 0;
         this.playGltfAction(this.rig.runAction);
-      } else if ((this.isBlocked || this.attackAnimationRemaining > 0) && this.rig.attackAction) {
+      } else if (this.attackAnimationRemaining > 0 && this.rig.attackAction) {
         this.playGltfAction(this.rig.attackAction, !this.rig.attackAction.isRunning());
       } else if (this.rig.idleAction) {
         this.playGltfAction(this.rig.idleAction);

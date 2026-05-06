@@ -31,6 +31,7 @@ const WALL_ATTACK_INTERVAL = 1.0;
 export function updateEnemySlow(): void {
   for (const enemy of gs.enemies) {
     if (!enemy.alive) continue;
+    enemy.isBlocked = false;
     let totalSlow = 0;
     _enemyPos.copy(enemy.getPos());
     
@@ -76,7 +77,6 @@ export function updateEnemySlow(): void {
 export function updateEnemyWallAttacks(scene: THREE.Scene, camera: THREE.Camera, dt: number): void {
   for (const enemy of gs.enemies) {
     if (!enemy.alive) continue;
-    enemy.isBlocked = false; // Reset each frame; re-set below if still hitting a wall
     _enemyPos.copy(enemy.getPos());
     
     for (const t of gs.towers) {
