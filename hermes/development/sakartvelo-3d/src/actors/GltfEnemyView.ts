@@ -10,6 +10,7 @@ export class GltfEnemyView implements EnemyView {
   private readonly staticOnly: boolean;
 
   private mixer: THREE.AnimationMixer | null = null;
+  private walkAction: THREE.AnimationAction | null = null;
 
   constructor(root: THREE.Object3D, config: EnemyVisualConfig, allClips: THREE.AnimationClip[]) {
     this.root = root;
@@ -19,6 +20,25 @@ export class GltfEnemyView implements EnemyView {
     if (this.staticOnly) {
       return;
     }
+
+    const walkClipName = config.animationClips?.walk;
+    if (!walkClipName) {
+      return;
+    }
+
+    const walkClip = allClips.find((clip) => clip.name === walkClipName) ?? null;
+    if (!walkClip) {
+      console.warn('[GltfEnemyView] Missing configured walk clip:', walkClipName);
+      return;
+    }
+
+    this.mixer = new THREE.AnimationMixer(this.root);
+    this.walkAction = this.mixer.clipAction(walkClip);
+    this.walkAction.setLoop(THREE.LoopRepeat, Infinity);
+    this.walkAction.enabled = true;
+    this.walkAction.play();
+
+    console.info('[GltfEnemyView] Playing walk clip:', walkClip.name);
   }
 
   update(dt: number, time: number): void {
