@@ -130,7 +130,7 @@ export function updateEnemyWallAttacks(scene: THREE.Scene, camera: THREE.Camera,
       }
     }
 
-    if (enemy.isBlocked || !gs.hero?.alive) continue;
+    if (enemy.isBlocked || !gs.hero?.alive || !traits.blockableByHero) continue;
 
     const dx = _enemyPos.x - gs.hero.group.position.x;
     const dz = _enemyPos.z - gs.hero.group.position.z;
