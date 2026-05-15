@@ -13,6 +13,7 @@ import { screenShake } from './ScreenShake';
 import { comboIndicator } from './ComboIndicator';
 import { magicParticles } from './MagicalParticles';
 import { disposeObject3D } from './utils/threeDispose';
+import { getEnemyTraits } from './EnemyTraits';
 
 const SLOW_RANGE_SQ = 2.0 * 2.0;
 const ATTACK_RANGE_SQ = 0.64;
@@ -31,18 +32,21 @@ const WALL_ATTACK_INTERVAL = 1.0;
 export function updateEnemySlow(): void {
   for (const enemy of gs.enemies) {
     if (!enemy.alive) continue;
+    const traits = getEnemyTraits(enemy.type);
     enemy.isBlocked = false;
     let totalSlow = 0;
     _enemyPos.copy(enemy.getPos());
     
     let blockedByFriendly = false;
-    for (const f of gs.friendlies) {
-      if (!f.alive) continue;
-      const dx = _enemyPos.x - f.group.position.x;
-      const dz = _enemyPos.z - f.group.position.z;
-      if (dx * dx + dz * dz <= 0.9 * 0.9) {
-        blockedByFriendly = true;
-        break;
+    if (traits.blockableByFriendlies) {
+      for (const f of gs.friendlies) {
+        if (!f.alive) continue;
+        const dx = _enemyPos.x - f.group.position.x;
+        const dz = _enemyPos.z - f.group.position.z;
+        if (dx * dx + dz * dz <= 0.9 * 0.9) {
+          blockedByFriendly = true;
+          break;
+        }
       }
     }
     
@@ -54,14 +58,16 @@ export function updateEnemySlow(): void {
 
     totalSlow = Math.max(totalSlow, enemy.temporarySlowAmount);
     
-    for (const t of gs.towers) {
-      if (t.type === 'wall' && t.getWallHp() > 0) {
-        const wx = t.gx + 0.5;
-        const wz = t.gy + 0.5;
-        const dx = _enemyPos.x - wx;
-        const dz = _enemyPos.z - wz;
-        if (dx * dx + dz * dz <= SLOW_RANGE_SQ) {
-          totalSlow = Math.max(totalSlow, t.getWallSlow());
+    if (traits.blockableByWalls) {
+      for (const t of gs.towers) {
+        if (t.type === 'wall' && t.getWallHp() > 0) {
+          const wx = t.gx + 0.5;
+          const wz = t.gy + 0.5;
+          const dx = _enemyPos.x - wx;
+          const dz = _enemyPos.z - wz;
+          if (dx * dx + dz * dz <= SLOW_RANGE_SQ) {
+            totalSlow = Math.max(totalSlow, t.getWallSlow());
+          }
         }
       }
     }
@@ -77,46 +83,49 @@ export function updateEnemySlow(): void {
 export function updateEnemyWallAttacks(scene: THREE.Scene, camera: THREE.Camera, dt: number): void {
   for (const enemy of gs.enemies) {
     if (!enemy.alive) continue;
+    const traits = getEnemyTraits(enemy.type);
     _enemyPos.copy(enemy.getPos());
     
-    for (const t of gs.towers) {
-      if (t.type === 'wall' && t.getWallHp() > 0) {
-        const wx = t.gx + 0.5;
-        const wz = t.gy + 0.5;
-        const dx = _enemyPos.x - wx;
-        const dz = _enemyPos.z - wz;
-        
-        if (dx * dx + dz * dz <= ATTACK_RANGE_SQ) {
-          enemy.isBlocked = true;
-          enemy.speed = 0;
+    if (traits.blockableByWalls) {
+      for (const t of gs.towers) {
+        if (t.type === 'wall' && t.getWallHp() > 0) {
+          const wx = t.gx + 0.5;
+          const wz = t.gy + 0.5;
+          const dx = _enemyPos.x - wx;
+          const dz = _enemyPos.z - wz;
+          
+          if (dx * dx + dz * dz <= ATTACK_RANGE_SQ) {
+            enemy.isBlocked = true;
+            enemy.speed = 0;
 
-          const cd = Math.max(0, (_wallAttackCd.get(enemy) ?? 0) - dt);
-          if (cd > 0) {
-            _wallAttackCd.set(enemy, cd);
-            break;
+            const cd = Math.max(0, (_wallAttackCd.get(enemy) ?? 0) - dt);
+            if (cd > 0) {
+              _wallAttackCd.set(enemy, cd);
+              break;
+            }
+            _wallAttackCd.set(enemy, WALL_ATTACK_INTERVAL);
+
+            const dmg = ENEMY_CONFIGS[enemy.type]?.wallDmg ?? 10;
+            const destroyed = t.takeWallDamage(dmg);
+            enemy.triggerAttackAnimation();
+            t.billboardHp(camera);
+            audio.playWallHit();
+
+            const reflect = t.getWallReflect();
+            if (reflect > 0) enemy.takeDamage(reflect);
+
+            if (destroyed) {
+              audio.playWallDestruction();
+              screenShake.trigger(0.3, 0.3);
+              gs.grid!.free(t.gx, t.gy);
+              scene.remove(t.group);
+              // Tower meshes use cached/shared materials, so do not dispose tower materials here.
+              disposeObject3D(t.group, { disposeGeometry: false, disposeMaterials: false });
+              gs.towers = gs.towers.filter(tw => tw !== t);
+              if (gs.selectedTower === t) gs.selectedTower = null;
+            }
+            break; // Stop checking walls for this enemy
           }
-          _wallAttackCd.set(enemy, WALL_ATTACK_INTERVAL);
-
-          const dmg = ENEMY_CONFIGS[enemy.type]?.wallDmg ?? 10;
-          const destroyed = t.takeWallDamage(dmg);
-          enemy.triggerAttackAnimation();
-          t.billboardHp(camera);
-          audio.playWallHit();
-
-          const reflect = t.getWallReflect();
-          if (reflect > 0) enemy.takeDamage(reflect);
-
-          if (destroyed) {
-            audio.playWallDestruction();
-            screenShake.trigger(0.3, 0.3);
-            gs.grid!.free(t.gx, t.gy);
-            scene.remove(t.group);
-            // Tower meshes use cached/shared materials, so do not dispose tower materials here.
-            disposeObject3D(t.group, { disposeGeometry: false, disposeMaterials: false });
-            gs.towers = gs.towers.filter(tw => tw !== t);
-            if (gs.selectedTower === t) gs.selectedTower = null;
-          }
-          break; // Stop checking walls for this enemy
         }
       }
     }
