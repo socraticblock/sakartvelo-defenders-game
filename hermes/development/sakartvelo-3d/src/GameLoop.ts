@@ -26,6 +26,7 @@ import { shareManager, ShareManager, type ShareCardData } from './ShareManager';
 import { screenShake } from './ScreenShake';
 import { comboIndicator } from './ComboIndicator';
 import { disposeObject3D } from './utils/threeDispose';
+import { canDamageEnemy, type DamageSource } from './EnemyTraits';
 
 const BOSS_NAMES: Record<string, string> = {
   devi: 'Devi, Terror of the Mountains',
@@ -275,8 +276,9 @@ export class GameLoop {
       unit.update(dt, gs.enemies, nextWall);
 
       // Enemy contact damage back to infantry (simple collision combat).
+      // Flying enemies pass over reinforcements and do not body-collide.
       for (const enemy of gs.enemies) {
-        if (!enemy.alive) continue;
+        if (!enemy.alive || !canDamageEnemy(enemy.type, 'friendlyInfantry')) continue;
         const d = enemy.getPos().distanceTo(unit.group.position);
         if (d <= 0.85) {
           unit.takeDamage((enemy.type === 'siege' ? 18 : 8) * dt);
@@ -406,6 +408,12 @@ export class GameLoop {
     }
   }
 
+  private _getProjectileDamageSource(towerType: string): DamageSource {
+    if (towerType === 'catapult') return 'catapult';
+    if (towerType === 'heroMagic') return 'heroMagic';
+    return 'archer';
+  }
+
   private _updateProjectiles(dt: number): void {
     for (const proj of gs.projectilePool.alive) {
       proj.update(dt);
@@ -417,9 +425,10 @@ export class GameLoop {
           this._audio.playCatapultImpact();
         }
         if (proj.splashRadius > 0) {
+          const source = this._getProjectileDamageSource(proj.towerType);
           spawnSplashRing(this._scene, hitPos, proj.splashRadius);
           for (const enemy of gs.enemies) {
-            if (!enemy.alive) continue;
+            if (!enemy.alive || !canDamageEnemy(enemy.type, source)) continue;
             if (enemy.getPos().distanceTo(hitPos) <= proj.splashRadius) {
               enemy.takeDamage(proj.damage * 0.5);
               if (proj.commandLinked && proj.towerType === 'catapult') {
@@ -674,7 +683,6 @@ export class GameLoop {
       return;
     }
     if (this._waveCompleteProcessed) return;
-    this._waveCompleteProcessed = true;
 
     const bonus = gs.getWaveBonus(gs.waveMgr.waveNum);
     gs.addGold(bonus);
