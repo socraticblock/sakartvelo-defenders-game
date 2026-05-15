@@ -8,8 +8,10 @@
 export const ECONOMY_BALANCE = {
   /** Keep level JSON as the source of truth while Era 0 is being tuned. */
   startingGoldMultiplier: 1,
-  buildPhaseBonusPerSecond: 1,
-  countdownBonusPerSecond: 1.5,
+  /** Matches the current HUD / horn display: players receive exactly what they see. */
+  buildPhaseBonusPerSecond: 2,
+  /** Matches the current countdown display: players receive exactly what they see. */
+  countdownBonusPerSecond: 3,
   waveBonusBase: 15,
   waveBonusPerWave: 5,
 } as const;
