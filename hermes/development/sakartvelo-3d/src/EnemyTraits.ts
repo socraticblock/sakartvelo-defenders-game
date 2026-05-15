@@ -5,6 +5,7 @@ export interface EnemyTraits {
   movementClass: EnemyMovementClass;
   blockableByWalls: boolean;
   blockableByFriendlies: boolean;
+  blockableByHero: boolean;
   targetableBy: Record<DamageSource, boolean>;
 }
 
@@ -29,30 +30,35 @@ export const ENEMY_TRAITS: Record<string, EnemyTraits> = {
     movementClass: 'ground',
     blockableByWalls: true,
     blockableByFriendlies: true,
+    blockableByHero: true,
     targetableBy: GROUND_TARGETING,
   },
   cavalry: {
     movementClass: 'ground',
     blockableByWalls: true,
     blockableByFriendlies: true,
+    blockableByHero: true,
     targetableBy: GROUND_TARGETING,
   },
   siege: {
     movementClass: 'ground',
     blockableByWalls: true,
     blockableByFriendlies: true,
+    blockableByHero: true,
     targetableBy: GROUND_TARGETING,
   },
   flying: {
     movementClass: 'flying',
     blockableByWalls: false,
     blockableByFriendlies: false,
+    blockableByHero: false,
     targetableBy: FLYING_TARGETING,
   },
   boss: {
     movementClass: 'ground',
     blockableByWalls: true,
     blockableByFriendlies: true,
+    blockableByHero: true,
     targetableBy: GROUND_TARGETING,
   },
 };
