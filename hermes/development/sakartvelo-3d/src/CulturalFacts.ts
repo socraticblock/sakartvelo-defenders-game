@@ -1,17 +1,22 @@
 /**
  * CulturalFacts.ts
- * Manages the rotating historical and cultural facts displayed in the footer.
+ * Rotates short Georgian cultural and historical facts in the footer.
+ *
+ * Copy rules:
+ * - Prefer careful wording over impressive but fragile claims.
+ * - Use “often associated with” for interpretations, not settled proof.
+ * - Avoid exact global rankings unless the source and definition are stable.
  */
 export class CulturalFacts {
   private static readonly FACTS = [
-    "Georgia is one of the oldest wine-producing regions in the world.",
-    "The Golden Fleece myth is linked to ancient Colchian gold-mining techniques.",
-    "The Georgian alphabet is one of only 14 unique scripts in the world.",
-    "Mount Shkhara is the highest point in Georgia at 5,193 meters.",
-    "Vardzia is a massive cave monastery complex from the 12th century.",
-    "The Bagrati Cathedral is a masterpiece of medieval Georgian architecture.",
-    "The Dmanisi hominins are the oldest human remains found outside Africa.",
-    "Ushguli is one of the highest continuously inhabited settlements in Europe."
+    'Georgia is one of the world’s oldest wine-producing regions, with qvevri winemaking recognized by UNESCO.',
+    'The Golden Fleece myth is often associated with Colchian gold-gathering traditions in mountain rivers.',
+    'Georgian has three historic writing systems: Asomtavruli, Nuskhuri, and Mkhedruli.',
+    'The living culture of Georgian writing is recognized by UNESCO as intangible cultural heritage.',
+    'Mount Shkhara is the highest point in Georgia at about 5,193 meters.',
+    'Vardzia is a 12th-century cave monastery complex connected with Georgia’s Golden Age.',
+    'Dmanisi preserves some of the earliest hominin remains found outside Africa.',
+    'Ushguli is widely known as one of Europe’s highest continuously inhabited settlements.',
   ];
 
   private _intervalId: number | null = null;
