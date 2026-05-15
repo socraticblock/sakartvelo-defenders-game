@@ -58,7 +58,7 @@ export class GameLoop {
   private _defeatShown = false;
   private _bossCinematicPlayed = false;
   private _victoryCelebrating = false;
-  private _victoryPhase = 0; // 0=none, 1=silence, 2=music, 3=chronicle, 4=share
+  private _victoryPhase = 0;
   private _victoryTimer = 0;
   private _lastDomScreenRenderMs = 0;
 
@@ -105,7 +105,6 @@ export class GameLoop {
     const rawDt = Math.min(this._clock.getDelta(), 0.05);
     const now = performance.now() * 0.001;
 
-    // Time Dilation Lerp (smoothly transition to target speed)
     if (gs.currentTimeScale !== gs.targetTimeScale) {
       gs.currentTimeScale += (gs.targetTimeScale - gs.currentTimeScale) * Math.min(rawDt * 10.0, 1.0);
       if (Math.abs(gs.currentTimeScale - gs.targetTimeScale) < 0.01) {
@@ -116,7 +115,6 @@ export class GameLoop {
     const dt = rawDt * gs.currentTimeScale;
     gs.gameTime += dt;
 
-    // Boss cinematic runs even when game-over (it controls its own time scale)
     if (bossCinematic.active) {
       bossCinematic.update(rawDt, this._camera);
     }
@@ -148,10 +146,8 @@ export class GameLoop {
       comboIndicator.update(dt);
       gs.grid.update(now, gs.selectedType);
       
-      // Update WarHorn
       if (!gs.waveMgr.active || gs.waveMgr.inBuildPhase) {
         warHorn.show();
-        // Shake it if auto-start is imminent
         const isVibrating = gs.waveMgr.waveNum > 0 && gs.waveCountdownActive && gs.waveCountdown < 3;
         warHorn.update(now, isVibrating);
 
@@ -168,7 +164,6 @@ export class GameLoop {
     this._updateHover();
     this._updateCameraSway(now);
 
-    // Screen shake offset
     if (screenShake.active) {
       const shakeOffset = screenShake.update(rawDt);
       this._camera.position.add(shakeOffset);
@@ -183,12 +178,6 @@ export class GameLoop {
       visuals.render(this._renderer, this._scene, this._camera);
       if (!isGameplay) this._lastDomScreenRenderMs = nowMs;
     }
-
-    // Restore camera after shake offset (prevents drift)
-    if (screenShake.active) {
-      // Shake offset is consumed by render, no need to restore since
-      // _updateCameraSway recalculates position each frame
-    }
   };
 
   private _updateHover(): void {
@@ -200,7 +189,6 @@ export class GameLoop {
     const remaining = gs.waveMgr.updateBuildPhase(dt);
     if (remaining <= 0) {
       gs.waveMgr.endBuildPhase();
-      // Wave 1 doesn't auto-start, others do
       if (gs.waveMgr.waveNum > 0) {
         gs.waveMgr.startNext();
       }
@@ -231,7 +219,6 @@ export class GameLoop {
   private _updateEnemies(dt: number): void {
     let boss: any = null;
     for (const enemy of gs.enemies) {
-      // During boss cinematic, freeze boss movement
       if (bossCinematic.active && enemy.type === 'boss') {
         enemy.speed = 0;
       }
@@ -249,7 +236,6 @@ export class GameLoop {
     }
   }
 
-  /** Check if a boss just spawned and trigger the cinematic. */
   private _checkBossSpawn(): void {
     if (this._bossCinematicPlayed) return;
     const boss = gs.enemies.find(e => e.type === 'boss' && e.alive);
@@ -262,7 +248,6 @@ export class GameLoop {
         boss.getPos().clone(),
         bossName,
         () => {
-          // Cinematic complete — boss is now active
           audio.playBossRoar();
         },
       );
@@ -275,8 +260,6 @@ export class GameLoop {
       const nextWall = wallDistances.find(d => d > unit.distanceFromHome) ?? null;
       unit.update(dt, gs.enemies, nextWall);
 
-      // Enemy contact damage back to infantry (simple collision combat).
-      // Flying enemies pass over reinforcements and do not body-collide.
       for (const enemy of gs.enemies) {
         if (!enemy.alive || !canDamageEnemy(enemy.type, 'friendlyInfantry')) continue;
         const d = enemy.getPos().distanceTo(unit.group.position);
@@ -358,9 +341,8 @@ export class GameLoop {
   private _updateOcclusion(dt: number): void {
     this._occlusionTimer -= dt;
     if (this._occlusionTimer > 0) return;
-    this._occlusionTimer = 0.1; // Run 10 times a second max
+    this._occlusionTimer = 0.1;
     
-    // 1. Get units that need visibility (Hero + enemies)
     const targets: THREE.Vector3[] = [];
     if (gs.hero) targets.push(gs.hero.group.position);
     gs.enemies.slice(0, 15).forEach(e => targets.push(e.group.position));
@@ -371,30 +353,22 @@ export class GameLoop {
 
     for (const tower of gs.towers) {
       let occluded = false;
-
-      // Get tower screen position (center-ish)
-      tempV.copy(tower.group.position).y += 0.8; // Offset to tower mid-height
+      tempV.copy(tower.group.position).y += 0.8;
       tempV.project(this._camera);
       towerScreenPos.set(tempV.x, tempV.y);
 
       for (const targetPos of targets) {
-        // Project target to screen
-        tempV.copy(targetPos).y += 0.2; // Offset to unit head
+        tempV.copy(targetPos).y += 0.2;
         tempV.project(this._camera);
         targetScreenPos.set(tempV.x, tempV.y);
-
-        // Calculate screen-space distance
         const distSq = towerScreenPos.distanceToSquared(targetScreenPos);
-
-        // If target is "behind" in world Z and close on screen
         const isBehind = targetPos.z < tower.group.position.z;
-        if (isBehind && distSq < 0.04) { // 0.04 is ~20% of screen width squared
+        if (isBehind && distSq < 0.04) {
           occluded = true;
           break;
         }
       }
 
-      // Smoothly transition opacity
       const targetOpacity = occluded ? 0.3 : 1.0;
       tower.group.traverse((child: any) => {
         if (child instanceof THREE.Mesh) {
@@ -447,18 +421,14 @@ export class GameLoop {
   private _updateHeroBuilding(dt: number): void {
     if (!gs.hero || !gs.hero.pendingBuild) return;
 
-    // Check if build is complete (using 1.5s as base build time)
     if (gs.hero.buildTimer >= 1.5) {
       const b = gs.hero.pendingBuild;
       const placed = gs.placeTower(b.type, b.gx, b.gy, b.isPath, this._scene);
       if (placed) {
         this._audio.playBuild();
-        // Only clear pending build if placement was successful
         gs.hero.pendingBuild = null;
         gs.hero.buildTimer = 0;
-        // Placement mode is cleared on grid click in main (ghost teardown); batch repeat uses UI.
       } else {
-        // Placement failed (e.g. not enough gold anymore?), cancel
         gs.hero.pendingBuild = null;
         gs.hero.buildTimer = 0;
         gs.selectedType = null;
@@ -500,7 +470,6 @@ export class GameLoop {
     if (!gs.hero || !gs.pendingUpgradeTower) return;
     const t = gs.pendingUpgradeTower;
 
-    // Tower was sold or removed while walking.
     if (!gs.towers.includes(t)) {
       gs.pendingUpgradeTower = null;
       return;
@@ -544,7 +513,7 @@ export class GameLoop {
       gs.commandLinkTower.setSynergyActive(false);
     }
     gs.commandLinkTower = best;
-    if (hero) hero.commandLinked = !!best; // Visual feedback on staff orb
+    if (hero) hero.commandLinked = !!best;
     if (best) {
       best.setSynergyActive(true);
       this._updateCommandLinkLine(hero.group.position, best.group.position, dt);
@@ -653,7 +622,7 @@ export class GameLoop {
       this._lastLevelKey = levelKey;
       this._lastLives = gs.lives;
       this._defeatShown = false;
-      this._bossCinematicPlayed = false; // Reset for level restart
+      this._bossCinematicPlayed = false;
       this._victoryCelebrating = false;
       this._victoryPhase = 0;
       return;
@@ -683,40 +652,35 @@ export class GameLoop {
       return;
     }
     if (this._waveCompleteProcessed) return;
+    this._waveCompleteProcessed = true;
 
     const bonus = gs.getWaveBonus(gs.waveMgr.waveNum);
     gs.addGold(bonus);
 
     if (gs.waveMgr.waveNum >= gs.waveMgr.totalWaves) {
       gs.waveMgr.clear();
-
-      // ─── Victory Celebration (phased) ───────────────────────
-      // Instead of instant popup, run a phased emotional arc.
       gs.gameOver = true;
-      gs.targetTimeScale = 0.0; // Freeze
+      gs.targetTimeScale = 0.0;
       gs.currentTimeScale = 0.0;
       gs.saveLevelComplete(true);
       this._ui.screens.refreshLevelSelect();
 
       this._victoryCelebrating = true;
-      this._victoryPhase = 1; // Phase 1: Silence
+      this._victoryPhase = 1;
       this._victoryTimer = 0;
 
-      // Pre-render share card while frozen
       const bossName = this._currentWaveHasBoss() ? this._getBossDisplayName() : undefined;
       const shareData = ShareManager.fromGameState(bossName);
-      shareManager.renderCard(shareData); // Pre-render to canvas
+      shareManager.renderCard(shareData);
       (window as any).__lastShareData = shareData;
 
-      // Phase 1 → Phase 2 after 0.8s silence
       window.setTimeout(() => {
         if (!this._victoryCelebrating) return;
-        this._victoryPhase = 2; // Phase 2: Music swell
+        this._victoryPhase = 2;
         const stars = gs.getStars();
         this._audio.playVictory();
         this._audio.playVictoryMelody(stars);
 
-        // Pulse towers gold
         for (const t of gs.towers) {
           t.group.traverse(c => {
             if (c instanceof THREE.Mesh && c.material instanceof THREE.MeshLambertMaterial) {
@@ -726,10 +690,9 @@ export class GameLoop {
           });
         }
 
-        // Phase 2 → Phase 3 after 1.5s
         window.setTimeout(() => {
           if (!this._victoryCelebrating) return;
-          this._victoryPhase = 3; // Phase 3: Chronicle reveal
+          this._victoryPhase = 3;
 
           const era = Number(gs.currentLevel?.era ?? 0);
           const level = Number(gs.currentLevel?.level ?? 1);
@@ -737,7 +700,6 @@ export class GameLoop {
 
           const finishFlow = () => {
             this._ui.screens.showLevelComplete('Level Complete', stars);
-            // Add share button to level complete screen
             this._addShareButton();
           };
 
@@ -750,18 +712,15 @@ export class GameLoop {
       }, 800);
     } else {
       gs.waveMgr.clear();
-      // No more popups between waves! Just start the build phase.
       if (gs.waveMgr.startBuildPhase()) {
         this._ui.showBuildPhase();
       }
     }
   }
 
-  /** Add a share button to the level complete screen. */
   private _addShareButton(): void {
     const screen = document.getElementById('screen-level-complete');
     if (!screen) return;
-    // Remove existing share button if any
     screen.querySelector('.share-btn')?.remove();
 
     const shareBtn = document.createElement('button');
@@ -788,7 +747,6 @@ export class GameLoop {
     this._camera.position.x = gs.cameraBaseX + Math.sin(t) * 0.15;
   }
 
-  /** Clean up resources when switching levels. Call from main.ts before initLevel. */
   cleanup(): void {
     if (this._commandLinkLine) {
       this._commandLinkLine.geometry.dispose();
