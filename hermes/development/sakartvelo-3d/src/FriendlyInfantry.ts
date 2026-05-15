@@ -1,16 +1,18 @@
 import * as THREE from 'three';
 import { Enemy } from './Enemy';
+import { FRIENDLY_INFANTRY_BALANCE } from './BalanceConfig';
+import { canDamageEnemy } from './EnemyTraits';
 
 export class FriendlyInfantry {
   group: THREE.Group;
-  hp = 90;
-  maxHp = 90;
+  hp = FRIENDLY_INFANTRY_BALANCE.hp;
+  maxHp = FRIENDLY_INFANTRY_BALANCE.hp;
   alive = true;
   reachedEnemySide = false;
   distanceFromHome = 0;
-  speed = 1.9;
-  attackDamage = 10;
-  attackRange = 0.75;
+  speed = FRIENDLY_INFANTRY_BALANCE.speed;
+  attackDamage = FRIENDLY_INFANTRY_BALANCE.attackDamage;
+  attackRange = FRIENDLY_INFANTRY_BALANCE.attackRange;
   attackCooldown = 0;
 
   private readonly totalPathLength: number;
@@ -75,7 +77,7 @@ export class FriendlyInfantry {
     if (canAttack) {
       if (this.attackCooldown <= 0) {
         targetEnemy.takeDamage(this.attackDamage);
-        this.attackCooldown = 0.65;
+        this.attackCooldown = FRIENDLY_INFANTRY_BALANCE.attackCooldown;
       }
     } else if (!blockedByWall) {
       this.distanceFromHome += this.speed * dt;
@@ -104,7 +106,7 @@ export class FriendlyInfantry {
     let best: Enemy | null = null;
     let bestD = Infinity;
     for (const e of enemies) {
-      if (!e.alive) continue;
+      if (!e.alive || !canDamageEnemy(e.type, 'friendlyInfantry')) continue;
       const d = this.group.position.distanceToSquared(e.getPos());
       if (d < bestD) {
         bestD = d;
