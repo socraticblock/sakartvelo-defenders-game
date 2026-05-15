@@ -16,6 +16,7 @@ import { SaveManager } from './SaveManager';
 import { FriendlyInfantry } from './FriendlyInfantry';
 import { comboIndicator } from './ComboIndicator';
 import { disposeObject3D } from './utils/threeDispose';
+import { ECONOMY_BALANCE, FRIENDLY_INFANTRY_BALANCE } from './BalanceConfig';
 
 export class GameState {
   // ─── Entities ───────────────────────────────────────────
@@ -30,7 +31,7 @@ export class GameState {
   // ─── Economy ─────────────────────────────────────────────
   gold = 100;
   lives = 20;
-  infantryCost = 45;
+  infantryCost = FRIENDLY_INFANTRY_BALANCE.cost;
   infantryCooldown = 0;
 
   // ─── Selection ───────────────────────────────────────────
@@ -117,7 +118,7 @@ export class GameState {
     this.projectilePool = new ProjectilePool(scene);
 
     this.currentLevel = lvl;
-    this.gold = Math.floor(lvl.starting_gold * 0.85);
+    this.gold = Math.floor(lvl.starting_gold * ECONOMY_BALANCE.startingGoldMultiplier);
     this.lives = lvl.starting_lives;
     this.startingLives = lvl.starting_lives;
     this.gameOver = false;
@@ -251,14 +252,19 @@ export class GameState {
   }
 
   canSpawnInfantry(): boolean {
-    return !!this.grid && !this.gameOver && this.gold >= this.infantryCost && this.infantryCooldown <= 0;
+    const activeCount = this.friendlies.filter(f => f.alive).length;
+    return !!this.grid &&
+      !this.gameOver &&
+      this.gold >= this.infantryCost &&
+      this.infantryCooldown <= 0 &&
+      activeCount < FRIENDLY_INFANTRY_BALANCE.maxActive;
   }
 
   spawnFriendlyInfantry(scene: THREE.Scene): boolean {
     if (!this.grid || !this.canSpawnInfantry()) return false;
     const unit = new FriendlyInfantry(this.grid.getWorldPath());
     this.gold -= this.infantryCost;
-    this.infantryCooldown = 8;
+    this.infantryCooldown = FRIENDLY_INFANTRY_BALANCE.cooldown;
     this.friendlies.push(unit);
     scene.add(unit.group);
     return true;
@@ -279,15 +285,15 @@ export class GameState {
   // ─── Wave bonus ──────────────────────────────────────────
 
   getWaveBonus(waveNum: number): number {
-    return 15 + waveNum * 5;
+    return ECONOMY_BALANCE.waveBonusBase + waveNum * ECONOMY_BALANCE.waveBonusPerWave;
   }
 
   getCountdownBonus(): number {
-    return Math.ceil(this.waveCountdown * 1.5);
+    return Math.ceil(this.waveCountdown * ECONOMY_BALANCE.countdownBonusPerSecond);
   }
 
   getBuildPhaseBonus(): number {
-    return Math.ceil((this.waveMgr?.buildPhaseTimer ?? 0) * 1.0);
+    return Math.ceil((this.waveMgr?.buildPhaseTimer ?? 0) * ECONOMY_BALANCE.buildPhaseBonusPerSecond);
   }
 }
 
