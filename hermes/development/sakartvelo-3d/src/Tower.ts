@@ -6,7 +6,8 @@
 import * as THREE from 'three';
 import { TOWER_CONFIGS, TOWER_LEVEL_MULTS } from './TowerConfigs';
 import { Enemy } from './Enemy';
-import { toon, outlineGroup } from './CelShader';
+import { outlineGroup } from './CelShader';
+import { canDamageEnemy } from './EnemyTraits';
 import {
   buildArcherMesh,
   buildCatapultMesh,
@@ -70,7 +71,7 @@ export class Tower {
     this.effectiveDamage = this.config.damage;
     this.effectiveRange = this.config.range;
     this.effectiveSpeed = this.config.attackSpeed;
-    this.effectiveSplash = 0;
+    this.effectiveSplash = this.config.splashRadius;
     if (type === 'wall') {
       const wc = TOWER_LEVEL_MULTS.wall;
       this.wallHp = wc.hp[0];
@@ -110,6 +111,7 @@ export class Tower {
       this.effectiveDamage = this.config.damage * m.damage[idx];
       this.effectiveRange = this.config.range * m.range[idx];
       this.effectiveSpeed = this.config.attackSpeed * m.speed[idx];
+      this.effectiveSplash = this.config.splashRadius;
     } else if (this.type === 'catapult') {
       const m = TOWER_LEVEL_MULTS.catapult;
       const idx = this.level - 1;
@@ -242,9 +244,10 @@ export class Tower {
     let bestDist = -1;
     const myPos = this.group.position;
     const effectiveRange = this.getEffectiveRange();
+    const damageSource = this.type === 'catapult' ? 'catapult' : 'archer';
 
     for (const e of enemies) {
-      if (!e.alive || e.reachedEnd) continue;
+      if (!e.alive || e.reachedEnd || !canDamageEnemy(e.type, damageSource)) continue;
       const d = myPos.distanceTo(e.getPos());
       if (d <= effectiveRange && e.distanceTraveled > bestDist) {
         bestDist = e.distanceTraveled;
