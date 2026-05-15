@@ -21,7 +21,6 @@ const heroMagicLinkedMat = new THREE.MeshBasicMaterial({ color: 0xddcc44 });
 const heroMagicLinkedGlowMat = new THREE.MeshBasicMaterial({ color: 0xffdd66, transparent: true, opacity: 0.38 });
 
 // Reusable vectors (zero allocations in update loop)
-const _v1 = new THREE.Vector3();
 const _v2 = new THREE.Vector3();
 const _v3 = new THREE.Vector3();
 
@@ -54,7 +53,9 @@ export class Projectile {
     this.commandLinked = commandLinked;
     this.towerType = towerType;
 
-    this.startPos = _v1.set(origin.x, origin.y, origin.z);
+    // Do not store a shared module-level vector here: concurrent projectiles need
+    // independent start positions or their arcs will corrupt each other.
+    this.startPos = origin.clone();
     this.totalDist = origin.distanceTo(target.getPos());
     this.arcHeight = towerType === 'catapult' ? 1.5 : 0.3;
 
