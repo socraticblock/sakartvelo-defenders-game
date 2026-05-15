@@ -16,7 +16,8 @@ export const TOWER_CONFIGS: Record<string, TowerConfig> = {
     damage: 40, range: 5.0, attackSpeed: 0.4,
     projectileSpeed: 12, cost: 175, color: 0x666666, name: 'Catapult',
     upgradeCosts: [140, 260],
-    splashRadius: 0,
+    // Catapult should immediately read as ground splash, but never anti-air.
+    splashRadius: 0.75,
     critChance: 0,
   },
   wall: {
@@ -28,7 +29,7 @@ export const TOWER_CONFIGS: Record<string, TowerConfig> = {
   },
 };
 
-// Tower level multipliers: [L1, L2, L3]
+// Tower level multipliers / direct derived values: [L1, L2, L3]
 export const TOWER_LEVEL_MULTS = {
   archer: {
     damage:  [1.0, 1.9, 3.0],
@@ -40,7 +41,7 @@ export const TOWER_LEVEL_MULTS = {
     damage:  [1.0, 1.8, 2.9],
     range:   [1.0, 1.15, 1.3],
     speed:   [1.0, 1.3, 1.7],
-    splash:  [0,   1.1, 1.9],
+    splash:  [0.75, 1.2, 1.8],
   },
   wall: {
     hp:      [700, 1550, 2900],
