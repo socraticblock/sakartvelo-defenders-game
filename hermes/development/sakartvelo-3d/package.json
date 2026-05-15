@@ -7,6 +7,7 @@
     "dev": "vite",
     "asset:spearman:walk-only": "node scripts/create-spearman-walk-only.mjs",
     "asset:spearman:run-only": "node scripts/create-spearman-run-only.mjs",
+    "balance:report": "node scripts/balance-report.mjs",
     "typecheck": "tsc --noEmit",
     "validate:architecture": "node scripts/validate-architecture.mjs",
     "validate": "npm run typecheck && npm run validate:architecture",
