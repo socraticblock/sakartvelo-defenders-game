@@ -144,9 +144,8 @@ export class UIManager {
     }
 
     if (wm?.inBuildPhase) {
-      const remaining = wm.buildPhaseTimer;
-      this.setText(this.$buildTimer, String(Math.ceil(remaining)));
-      const bonus = Math.ceil(remaining * 2);
+      this.setText(this.$buildTimer, String(Math.ceil(wm.buildPhaseTimer)));
+      const bonus = gs.getBuildPhaseBonus();
       if (this.$buildStartBtn) {
         this.$buildStartBtn.textContent = `▶ Start Wave Now (+${bonus}g)`;
         this.$buildStartBtn.disabled = gs.gameOver || !!gs.paused;
@@ -157,7 +156,7 @@ export class UIManager {
         this.$hornBonus.style.color = bonus > 10 ? '#ffd700' : (bonus > 5 ? '#ffa500' : '#ff4444');
       }
     } else if (gs.waveCountdownActive && wm && !wm.active) {
-      const bonus = Math.ceil(gs.waveCountdown * 3);
+      const bonus = gs.getCountdownBonus();
       if (this.$hornBonus) {
         this.$hornBonus.style.display = 'block';
         this.setText(this.$hornBonusGold, `+${bonus}g`);
@@ -832,8 +831,8 @@ const ENEMY_INTROS: Record<string, { name: string; lore: string; threat: string;
   flying: {
     name: 'Sky Wolf',
     lore: 'A mythic beast of the mountains, inspired by Georgian tales where wild nature itself becomes an enemy.',
-    threat: 'Very fast and light. Can rush through gaps.',
-    counter: 'Use long sight lines and upgraded archer range.',
+    threat: 'Flying enemy. It ignores walls, friendly infantry, and Medea body-blocking.',
+    counter: 'Use Archers and Medea magic. Catapults, walls, and infantry cannot stop it.',
   },
   boss: {
     name: 'Mythic Boss',
