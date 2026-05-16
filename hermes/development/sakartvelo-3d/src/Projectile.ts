@@ -24,6 +24,12 @@ const heroMagicLinkedGlowMat = new THREE.MeshBasicMaterial({ color: 0xffdd66, tr
 const _v2 = new THREE.Vector3();
 const _v3 = new THREE.Vector3();
 
+function getProjectileAimPos(target: Enemy): THREE.Vector3 {
+  const targetPos = _v2.copy(target.getPos());
+  targetPos.y += target.isFlying ? 1.12 : 0.3;
+  return targetPos;
+}
+
 export class Projectile {
   mesh: THREE.Mesh;
   target: Enemy;
@@ -56,7 +62,7 @@ export class Projectile {
     // Do not store a shared module-level vector here: concurrent projectiles need
     // independent start positions or their arcs will corrupt each other.
     this.startPos = origin.clone();
-    this.totalDist = origin.distanceTo(target.getPos());
+    this.totalDist = origin.distanceTo(getProjectileAimPos(target));
     this.arcHeight = towerType === 'catapult' ? 1.5 : 0.3;
 
     if (towerType === 'archer') {
@@ -95,7 +101,7 @@ export class Projectile {
     this.progress = 0;
 
     this.startPos.copy(origin);
-    this.totalDist = origin.distanceTo(target.getPos());
+    this.totalDist = origin.distanceTo(getProjectileAimPos(target));
     this.arcHeight = towerType === 'catapult' ? 1.5 : 0.3;
 
     // Rebuild mesh for type swap (archer vs catapult)
@@ -130,8 +136,7 @@ export class Projectile {
 
     if (!this.target.alive) { this.alive = false; return false; }
 
-    const targetPos = _v2.copy(this.target.getPos());
-    targetPos.y += 0.3;
+    const targetPos = getProjectileAimPos(this.target);
 
     const currentDist = this.startPos.distanceTo(targetPos);
     this.totalDist = Math.max(this.totalDist, currentDist);
