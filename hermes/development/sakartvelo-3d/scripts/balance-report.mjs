@@ -3,8 +3,25 @@ import path from 'node:path';
 
 const root = process.cwd();
 const levelsPath = path.join(root, 'public', 'data', 'levels.json');
+const balanceConfigPath = path.join(root, 'src', 'BalanceConfig.ts');
 const raw = JSON.parse(fs.readFileSync(levelsPath, 'utf8'));
 const levels = Array.isArray(raw) ? raw : raw.levels;
+const balanceConfigText = fs.readFileSync(balanceConfigPath, 'utf8');
+
+function readNumberFromBlock(blockName, key, fallback) {
+  const block = balanceConfigText.match(new RegExp(`export const ${blockName} = \\{([\\s\\S]*?)\\} as const;`))?.[1];
+  if (!block) return fallback;
+  const match = block.match(new RegExp(`${key}:\\s*([0-9.]+)`));
+  return match ? Number(match[1]) : fallback;
+}
+
+const friendlyInfantry = {
+  cost: readNumberFromBlock('FRIENDLY_INFANTRY_BALANCE', 'cost', 65),
+  damage: readNumberFromBlock('FRIENDLY_INFANTRY_BALANCE', 'attackDamage', 7),
+  cooldown: readNumberFromBlock('FRIENDLY_INFANTRY_BALANCE', 'cooldown', 20),
+  attackCooldown: readNumberFromBlock('FRIENDLY_INFANTRY_BALANCE', 'attackCooldown', 0.9),
+  maxActive: readNumberFromBlock('FRIENDLY_INFANTRY_BALANCE', 'maxActive', 2),
+};
 
 const enemyConfigs = {
   infantry: { hp: 75, speed: 2.2, reward: 7, livesCost: 1, role: 'baseline ground' },
@@ -18,7 +35,11 @@ const towerConfigs = {
   archer: { cost: 85, dps: 15, role: 'single target + anti-air' },
   catapult: { cost: 175, dps: 16, role: 'ground splash' },
   wall: { cost: 50, dps: 0, role: 'ground blocker' },
-  infantry: { cost: 65, dps: 7 / 0.9, role: 'emergency blocker' },
+  infantry: {
+    cost: friendlyInfantry.cost,
+    dps: friendlyInfantry.damage / friendlyInfantry.attackCooldown,
+    role: `emergency blocker, cooldown ${friendlyInfantry.cooldown}s, max ${friendlyInfantry.maxActive}`,
+  },
 };
 
 function pathLength(waypoints) {
@@ -93,9 +114,16 @@ function levelWarnings(level, waveSummaries) {
   if (firstSiege >= 0 && level.level <= 2) warnings.push('siege appears very early; make sure walls were taught first');
 
   const totalFlying = waveSummaries.reduce((sum, w) => sum + w.flying, 0);
+  const firstWaveFlying = waveSummaries[0]?.flying ?? 0;
   const totalGroundHp = waveSummaries.reduce((sum, w) => sum + (w.hp - w.flying * enemyConfigs.flying.hp), 0);
   if (totalFlying > 0 && level.starting_gold < towerConfigs.archer.cost * 2) {
     warnings.push('flying pressure exists but starting economy may not support enough anti-air');
+  }
+  if (firstWaveFlying >= 10) {
+    warnings.push(`opens with ${firstWaveFlying} flying enemies; this is harsh now that flying ignores walls/infantry/catapults`);
+  }
+  if (totalFlying >= 25 && level.level <= 6) {
+    warnings.push(`high early flying count (${totalFlying}); verify anti-air tutorial and starting economy`);
   }
 
   if (totalGroundHp > 0 && level.starting_gold >= towerConfigs.catapult.cost && waveSummaries.every(w => w.count <= 3)) {
@@ -107,7 +135,7 @@ function levelWarnings(level, waveSummaries) {
 
 console.log('\nSakartvelo Defenders — Era 0 Balance Report');
 console.log('================================================');
-console.log('Tower roles:');
+console.log('Tower / unit roles:');
 for (const [type, cfg] of Object.entries(towerConfigs)) {
   console.log(`- ${type.padEnd(9)} cost=${String(cfg.cost).padStart(3)} dps≈${cfg.dps.toFixed(1).padStart(4)} role=${cfg.role}`);
 }
