@@ -421,7 +421,7 @@ export class GameLoop {
   private _updateHeroBuilding(dt: number): void {
     if (!gs.hero || !gs.hero.pendingBuild) return;
 
-    if (gs.hero.buildTimer >= 1.5) {
+    if (gs.hero.buildTimer >= gs.hero.buildRequiredTime) {
       const b = gs.hero.pendingBuild;
       const placed = gs.placeTower(b.type, b.gx, b.gy, b.isPath, this._scene);
       if (placed) {
