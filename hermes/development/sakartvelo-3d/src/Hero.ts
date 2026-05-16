@@ -12,6 +12,8 @@ import { HeroAbilities } from './HeroAbilities';
 import { gs } from './GameState';
 import { audio } from './AudioManager';
 import { instantiateMedea, type MedeaInstance, type MedeaTemplate } from './MedeaGltf';
+import { HERO_BALANCE } from './BalanceConfig';
+import { canDamageEnemy } from './EnemyTraits';
 
 export interface HeroProjectileSpawn {
   origin: THREE.Vector3;
@@ -47,12 +49,12 @@ export class Hero {
 
   // Movement
   moveTarget: THREE.Vector3 | null = null;
-  moveSpeed = 3.5;
+  moveSpeed = HERO_BALANCE.moveSpeed;
 
   // Combat
-  attackRange = 2.8;
-  attackDamage = 14;
-  attackInterval = 1.0;
+  attackRange = HERO_BALANCE.attackRange;
+  attackDamage = HERO_BALANCE.attackDamage;
+  attackInterval = HERO_BALANCE.attackInterval;
   private attackCd = 0;
   private attackGlow = 0;
 
@@ -60,7 +62,7 @@ export class Hero {
   hp = 250;
   maxHp = 250;
   alive = true;
-  private readonly RESPAWN_TIME = 15;
+  private readonly RESPAWN_TIME = HERO_BALANCE.respawnTime;
   private respawnTimer = 0;
 
   // Command Link visual feedback
@@ -74,8 +76,12 @@ export class Hero {
   // Building
   pendingBuild: { type: string; gx: number; gy: number; isPath: boolean } | null = null;
   buildTimer = 0;
-  private readonly BUILD_RANGE = 1.5;
-  private readonly BUILD_TIME = 1.5; // Default base build time
+  private readonly BUILD_RANGE = HERO_BALANCE.buildRange;
+  private readonly BUILD_TIME = HERO_BALANCE.buildTime;
+
+  get buildRequiredTime(): number {
+    return this.BUILD_TIME;
+  }
 
   // Health bar
   private hpBg: THREE.Mesh;
@@ -509,7 +515,7 @@ export class Hero {
     let best: Enemy | null = null;
     const pos = this.group.position;
     for (const e of enemies) {
-      if (!e.alive) continue;
+      if (!e.alive || !canDamageEnemy(e.type, 'heroMagic')) continue;
       const d = pos.distanceTo(e.getPos());
       if (d <= this.attackRange && (!best || e.distanceTraveled > best.distanceTraveled)) {
         best = e;
