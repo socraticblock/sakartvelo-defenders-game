@@ -3,6 +3,7 @@ import { ENEMY_CONFIGS } from './types';
 import { gs } from './GameState';
 import { EnemyView } from './actors/EnemyView';
 import { createEnemyView } from './actors/EnemyFactory';
+import { isFlyingEnemy } from './EnemyTraits';
 
 export class Enemy {
   private static _tmpDir = new THREE.Vector3();
@@ -23,6 +24,7 @@ export class Enemy {
   reward: number;
   type: string;
   livesCost: number;
+  readonly isFlying: boolean;
 
   worldPath: THREE.Vector3[];
   totalPathLength = 0;
@@ -37,10 +39,15 @@ export class Enemy {
   poisonVisualTimer = 0;
   private flashMat: THREE.MeshStandardMaterial[] = [];
   private flashTime = 0;
+  private readonly visualLift: number;
+  private readonly bobPhase: number;
 
   constructor(type: string, pathPoints: THREE.Vector3[], hpMult: number, speedMult: number) {
     const cfg = ENEMY_CONFIGS[type] || ENEMY_CONFIGS.infantry;
     this.type = type;
+    this.isFlying = isFlyingEnemy(type);
+    this.visualLift = this.isFlying ? 0.75 : 0;
+    this.bobPhase = Math.random() * Math.PI * 2;
     this.hp = cfg.hp * hpMult;
     this.maxHp = this.hp;
     this.speed = cfg.speed * speedMult;
@@ -70,10 +77,11 @@ export class Enemy {
 
     // Shadow
     const shadowGeo = new THREE.CircleGeometry(0.35, 12);
-    const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.2 });
+    const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: this.isFlying ? 0.11 : 0.2 });
     this.shadow = new THREE.Mesh(shadowGeo, shadowMat);
     this.shadow.rotation.x = -Math.PI / 2;
     this.shadow.position.y = 0.01;
+    if (this.isFlying) this.shadow.scale.setScalar(0.72);
     this.group.add(this.shadow);
 
     this.poisonRing = new THREE.Mesh(
@@ -100,14 +108,14 @@ export class Enemy {
       new THREE.BoxGeometry(hbW, 0.06, 0.01),
       new THREE.MeshBasicMaterial({ color: 0x333333 })
     );
-    this.healthBg.position.y = 1.3;
+    this.healthBg.position.y = this.isFlying ? 2.05 : 1.3;
     this.group.add(this.healthBg);
 
     this.healthFill = new THREE.Mesh(
       new THREE.BoxGeometry(hbW - 0.02, 0.04, 0.02),
       new THREE.MeshBasicMaterial({ color: 0x44dd44 })
     );
-    this.healthFill.position.y = 1.3;
+    this.healthFill.position.y = this.isFlying ? 2.05 : 1.3;
     this.group.add(this.healthFill);
 
     // Collect materials for flash effect
@@ -154,6 +162,7 @@ export class Enemy {
 
     // Animate visual
     const time = gs.gameTime;
+    this.view.root.position.y = this.visualLift + (this.isFlying ? Math.sin(time * 4.2 + this.bobPhase) * 0.08 : 0);
     this.view.update(dt, time);
 
     this.poisonRing.visible = this.poisonVisualTimer > 0;
