@@ -1,4 +1,4 @@
-import { ENEMY_CONFIGS, LevelData } from './types';
+import { ENEMY_CONFIGS, LevelData, type EnemyFormation } from './types';
 import { safeAssetPath } from './utils/assets';
 
 const TEXT_LIMITS: Record<string, number> = {
@@ -13,6 +13,8 @@ const TEXT_LIMITS: Record<string, number> = {
   boss_profile: 120,
   imageUrl: 256,
 };
+
+const ENEMY_FORMATIONS = new Set<EnemyFormation>(['line', 'loose', 'wide', 'column']);
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
@@ -141,6 +143,16 @@ function isValidLevel(candidate: unknown, index: number): candidate is LevelData
 
       if (enemy.spawn_interval !== undefined && (!isFiniteNumber(enemy.spawn_interval) || enemy.spawn_interval < 0 || enemy.spawn_interval > 60)) {
         console.warn(prefix, `wave ${wave.wave_num} has invalid spawn_interval.`, enemy);
+        return false;
+      }
+
+      if (enemy.pathId !== undefined && (typeof enemy.pathId !== 'string' || enemy.pathId.length > 80)) {
+        console.warn(prefix, `wave ${wave.wave_num} has invalid pathId.`, enemy);
+        return false;
+      }
+
+      if (enemy.formation !== undefined && (!ENEMY_FORMATIONS.has(enemy.formation))) {
+        console.warn(prefix, `wave ${wave.wave_num} has invalid formation.`, enemy);
         return false;
       }
     }
