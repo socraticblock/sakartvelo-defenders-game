@@ -18,6 +18,7 @@ import { warHorn } from './WarHorn';
 import { getMedeaTemplate, loadMedeaTemplate } from './MedeaGltf';
 import { validateLevels } from './validateLevels';
 import { preloadEnemyAssetsForLevel } from './actors/EnemyFactory';
+import { requestLandscapeOrientation } from './Orientation';
 
 // Use the generated magical sprite
 const MAGIC_SPRITE = '/magic_particle_sprite.png';
@@ -170,6 +171,7 @@ function setupCamera(gw: number, gh: number): void {
 }
 
 async function startLevel(era: number, level: number): Promise<void> {
+  await requestLandscapeOrientation();
   const lvl = gs.allLevels.find(l => l.era === era && l.level === level);
   if (!lvl) return;
 
@@ -289,6 +291,7 @@ addEventListener('resize', () => {
 
 async function init(): Promise<void> {
   initDebugClickAudit();
+  void requestLandscapeOrientation();
   const savedZoom = Number(localStorage.getItem(CAMERA_ZOOM_KEY) ?? 100);
   cameraZoomPct = Number.isFinite(savedZoom) ? Math.max(80, Math.min(120, savedZoom)) : 100;
   audio.init();
