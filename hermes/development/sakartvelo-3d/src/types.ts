@@ -34,12 +34,18 @@ export interface WaveData {
   enemies: EnemySpawnData[];
 }
 
+export type EnemyFormation = 'line' | 'loose' | 'wide' | 'column';
+
 export interface EnemySpawnData {
   type: string;
   count: number;
   hp_mult: number;
   speed_mult: number;
   spawn_interval: number;
+  /** Future v5 multi-entrance maps can route this group through a named path. */
+  pathId?: string;
+  /** Visual lane spread. Keeps enemies from looking like a single-file train. */
+  formation?: EnemyFormation;
 }
 
 export interface TowerConfig {
