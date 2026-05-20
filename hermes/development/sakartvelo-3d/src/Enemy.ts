@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ENEMY_CONFIGS } from './types';
+import { ENEMY_CONFIGS, type EnemyFormation } from './types';
 import { gs } from './GameState';
 import { EnemyView } from './actors/EnemyView';
 import { createEnemyView } from './actors/EnemyFactory';
@@ -7,6 +7,8 @@ import { isFlyingEnemy } from './EnemyTraits';
 
 export class Enemy {
   private static _tmpDir = new THREE.Vector3();
+  private static _tmpNormal = new THREE.Vector3();
+  private static _tmpBasePos = new THREE.Vector3();
 
   group: THREE.Group;
   view: EnemyView;
@@ -41,13 +43,22 @@ export class Enemy {
   private flashTime = 0;
   private readonly visualLift: number;
   private readonly bobPhase: number;
+  private readonly laneOffset: number;
 
-  constructor(type: string, pathPoints: THREE.Vector3[], hpMult: number, speedMult: number) {
+  constructor(
+    type: string,
+    pathPoints: THREE.Vector3[],
+    hpMult: number,
+    speedMult: number,
+    formation: EnemyFormation = 'loose',
+    spawnIndex = 0,
+  ) {
     const cfg = ENEMY_CONFIGS[type] || ENEMY_CONFIGS.infantry;
     this.type = type;
     this.isFlying = isFlyingEnemy(type);
     this.visualLift = this.isFlying ? 0.75 : 0;
     this.bobPhase = Math.random() * Math.PI * 2;
+    this.laneOffset = this.computeLaneOffset(type, formation, spawnIndex);
     this.hp = cfg.hp * hpMult;
     this.maxHp = this.hp;
     this.speed = cfg.speed * speedMult;
@@ -125,6 +136,23 @@ export class Enemy {
     if (pathPoints.length > 0) this.group.position.copy(pathPoints[0]);
   }
 
+  private computeLaneOffset(type: string, formation: EnemyFormation, spawnIndex: number): number {
+    if (type === 'boss') return 0;
+
+    const lanesByFormation: Record<EnemyFormation, number[]> = {
+      line: [0],
+      column: [0, -0.18, 0.18],
+      loose: [0, -0.24, 0.24, -0.42, 0.42],
+      wide: [0, -0.34, 0.34, -0.56, 0.56],
+    };
+
+    const lanes = lanesByFormation[formation] ?? lanesByFormation.loose;
+    const base = lanes[Math.abs(spawnIndex) % lanes.length] ?? 0;
+    const jitter = ((Math.random() - 0.5) * 0.1);
+    const typeScale = type === 'siege' ? 0.55 : type === 'cavalry' ? 1.1 : this.isFlying ? 1.25 : 1;
+    return (base + jitter) * typeScale;
+  }
+
   update(dt: number, camera: THREE.Camera): void {
     if (!this.alive) {
       this.view.update(dt, gs.gameTime);
@@ -144,16 +172,21 @@ export class Enemy {
       return;
     }
 
-    // Find position on path
+    // Find position on path, with a visual lateral lane offset so waves read like formations instead of a train.
     let rem = this.distanceTraveled;
     for (let i = 0; i < this.segmentLengths.length; i++) {
       if (rem <= this.segmentLengths[i]) {
         const t = rem / this.segmentLengths[i];
-        this.group.position.lerpVectors(this.worldPath[i], this.worldPath[i + 1], t);
-        // Face direction — reuse a cached vector to avoid per-frame allocation
+        Enemy._tmpBasePos.lerpVectors(this.worldPath[i], this.worldPath[i + 1], t);
+
         const dir = Enemy._tmpDir.subVectors(this.worldPath[i + 1], this.worldPath[i]);
         if (dir.lengthSq() > 0.0001) {
+          dir.normalize();
+          Enemy._tmpNormal.set(-dir.z, 0, dir.x);
+          this.group.position.copy(Enemy._tmpBasePos).addScaledVector(Enemy._tmpNormal, this.laneOffset);
           this.view.faceDirection(dir);
+        } else {
+          this.group.position.copy(Enemy._tmpBasePos);
         }
         break;
       }
