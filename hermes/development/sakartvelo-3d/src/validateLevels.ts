@@ -16,6 +16,8 @@ const TEXT_LIMITS: Record<string, number> = {
 
 const ENEMY_FORMATIONS = new Set<EnemyFormation>(['line', 'loose', 'wide', 'column']);
 
+type GridPoint = [number, number];
+
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
@@ -24,7 +26,7 @@ function isBoundedInt(value: unknown, min: number, max: number): value is number
   return Number.isInteger(value) && (value as number) >= min && (value as number) <= max;
 }
 
-function isPoint(value: unknown): value is [number, number] {
+function isPoint(value: unknown): value is GridPoint {
   return Array.isArray(value) &&
     value.length === 2 &&
     isFiniteNumber(value[0]) &&
@@ -38,6 +40,27 @@ function getLevelsArray(raw: unknown): unknown[] {
   }
   console.warn('Invalid levels payload: expected an array or { levels: array }.');
   return [];
+}
+
+/**
+ * v5 gameplay is landscape-only. The early data set was authored as 12×16
+ * portrait boards. Rotate those legacy boards clockwise at load time so the
+ * playable level itself becomes a horizontal battlefield, not merely a portrait
+ * board hidden inside a landscape browser window.
+ */
+function normalizeLevelToLandscape(level: LevelData): LevelData {
+  if (level.grid_width >= level.grid_height) return level;
+
+  const oldHeight = level.grid_height;
+  const rotatePoint = ([x, y]: number[]): GridPoint => [oldHeight - 1 - y, x];
+
+  return {
+    ...level,
+    grid_width: level.grid_height,
+    grid_height: level.grid_width,
+    path_waypoints: level.path_waypoints.map(rotatePoint),
+    build_nodes: level.build_nodes?.map(rotatePoint),
+  };
 }
 
 function isValidLevel(candidate: unknown, index: number): candidate is LevelData {
@@ -162,5 +185,5 @@ function isValidLevel(candidate: unknown, index: number): candidate is LevelData
 }
 
 export function validateLevels(raw: unknown): LevelData[] {
-  return getLevelsArray(raw).filter(isValidLevel);
+  return getLevelsArray(raw).filter(isValidLevel).map(normalizeLevelToLandscape);
 }
