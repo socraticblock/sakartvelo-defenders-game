@@ -36,6 +36,22 @@ export const LEVEL_SELECT_CSS = `
     height: 100%;
     overflow: hidden;
     color: #f0dfb8;
+    background: #07100b;
+    cursor: grab;
+  }
+
+  .campaign-map-shell.is-panning { cursor: grabbing; }
+
+  .campaign-pan-world {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: max(100vw, 174vh);
+    min-width: 132vw;
+    height: 100%;
+    transform: translate3d(var(--campaign-pan-x, 0px), 0, 0);
+    will-change: transform;
+    overflow: hidden;
     background:
       radial-gradient(circle at 15% 82%, rgba(212, 160, 23, 0.18), transparent 18%),
       radial-gradient(circle at 80% 24%, rgba(212, 160, 23, 0.12), transparent 14%),
@@ -100,6 +116,23 @@ export const LEVEL_SELECT_CSS = `
   }
   .campaign-route-lit { stroke: rgba(212, 160, 23, 0.92); stroke-width: 2; stroke-dasharray: none; }
 
+  .campaign-pan-hint {
+    position: absolute;
+    z-index: 19;
+    left: 50%;
+    bottom: calc(12px + var(--safe-bottom));
+    transform: translateX(-50%);
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(227, 179, 73, 0.28);
+    background: rgba(5, 8, 6, 0.48);
+    color: rgba(240, 223, 184, 0.68);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
   .campaign-topbar {
     position: absolute;
     z-index: 20;
@@ -157,15 +190,15 @@ export const LEVEL_SELECT_CSS = `
   .campaign-node-challenge { border-radius: 28%; background: radial-gradient(circle at 35% 28%, #ebf3c8, #8aa864 48%, #273818 100%); }
   @keyframes campaign-node-pulse { 0%,100% { transform: scale(.92); opacity:.42; } 50% { transform: scale(1.12); opacity:.9; } }
 
-  .campaign-hero-chip { position: absolute; z-index: 18; left: calc(14px + var(--safe-left)); bottom: calc(14px + var(--safe-bottom)); display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 18px; }
+  .campaign-hero-chip { position: absolute; z-index: 18; left: calc(14px + var(--safe-left)); bottom: calc(14px + var(--safe-bottom)); display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 18px; pointer-events: auto; }
   .campaign-hero-orb { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; color: #1c1006; background: linear-gradient(180deg, #f4dfad, #d4a017); font-weight: 900; }
   .campaign-hero-chip strong, .campaign-star-chip strong { display: block; color: #f2dfae; font-size: 16px; line-height: 1; }
-  .campaign-star-chip { position: absolute; z-index: 18; left: calc(15px + var(--safe-left)); bottom: calc(76px + var(--safe-bottom)); padding: 8px 12px; border-radius: 14px; }
+  .campaign-star-chip { position: absolute; z-index: 18; left: calc(15px + var(--safe-left)); bottom: calc(76px + var(--safe-bottom)); padding: 8px 12px; border-radius: 14px; pointer-events: auto; }
 
   .campaign-info-card {
     position: absolute; z-index: 18; right: calc(14px + var(--safe-right)); bottom: calc(14px + var(--safe-bottom));
     width: min(360px, 35vw); max-height: calc(100dvh - 86px - var(--safe-top) - var(--safe-bottom)); overflow: hidden;
-    border-radius: 22px; padding: 15px;
+    border-radius: 22px; padding: 15px; cursor: default;
   }
   .campaign-card-title { margin: 2px 0 6px; color: #f4dfad; font-size: clamp(20px, 2.4vw, 31px); line-height: 1.02; }
   .campaign-card-stars { margin-bottom: 8px; font-size: 15px; }
@@ -185,7 +218,7 @@ export const LEVEL_SELECT_CSS = `
 
   .campaign-readmore { position: fixed; inset: 0; z-index: 80; }
   .campaign-readmore-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.56); }
-  .campaign-readmore-panel { position: absolute; right: calc(16px + var(--safe-right)); top: calc(16px + var(--safe-top)); bottom: calc(16px + var(--safe-bottom)); width: min(520px, 52vw); overflow-y: auto; touch-action: pan-y; padding: 22px; border-radius: 22px; border: 1px solid rgba(227,179,73,.42); background: rgba(7,10,7,.96); box-shadow: 0 18px 60px rgba(0,0,0,.56); }
+  .campaign-readmore-panel { position: absolute; right: calc(16px + var(--safe-right)); top: calc(16px + var(--safe-top)); bottom: calc(16px + var(--safe-bottom)); width: min(520px, 52vw); overflow-y: auto; touch-action: pan-y; padding: 22px; border-radius: 22px; border: 1px solid rgba(227,179,73,.42); background: rgba(7,10,7,.96); box-shadow: 0 18px 60px rgba(0,0,0,.56); cursor: default; }
   .campaign-readmore-close { float: right; min-height: 34px; padding: 0 12px; }
   .campaign-readmore-kicker { color: #d4a017; font-size: 11px; letter-spacing: .2em; }
   .campaign-readmore-panel h2 { margin: 6px 0 8px; color: #f4dfad; font-size: 30px; }
@@ -196,6 +229,7 @@ export const LEVEL_SELECT_CSS = `
   .campaign-fallback-level { min-height: 72px; border-radius: 16px; border: 1px solid rgba(227,179,73,.35); background: rgba(5,8,6,.74); color: #f0dfb8; font-family: inherit; text-align: left; padding: 12px; }
 
   @media (pointer: coarse) and (orientation: landscape), (max-height: 620px) and (orientation: landscape) {
+    .campaign-pan-world { width: max(100vw, 196vh); min-width: 152vw; }
     .campaign-era-badge { min-width: 0; max-width: 34vw; padding: 8px 10px; }
     .campaign-era-badge strong { font-size: clamp(15px, 4vh, 20px); }
     .campaign-era-badge span:last-child, .campaign-title-block, .campaign-volume-panel, .campaign-card-copy, .campaign-card-objective, .campaign-star-chip { display: none; }
@@ -206,7 +240,7 @@ export const LEVEL_SELECT_CSS = `
     .campaign-read-btn { min-height: 34px; }
     .campaign-hero-chip { padding: 7px 9px; border-radius: 15px; }
     .campaign-hero-orb { width: 34px; height: 34px; }
-    .campaign-node-label { display: none; }
+    .campaign-node-label, .campaign-pan-hint { display: none; }
     .campaign-readmore-panel { left: calc(16px + var(--safe-left)); right: calc(16px + var(--safe-right)); width: auto; padding: 16px; }
   }
 `;
