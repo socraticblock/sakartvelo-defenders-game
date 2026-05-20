@@ -10,6 +10,7 @@ import { Hero } from './Hero';
 import { SaveManager } from './SaveManager';
 import { ERA0_LEVEL_BRIEFINGS } from './CampaignBriefings';
 import { escapeHtml } from './utils/dom';
+import { requestLandscapeOrientation } from './Orientation';
 
 type OnLevelSelect = (era: number, level: number) => void;
 type OnEscape = () => void;
@@ -215,7 +216,33 @@ export class ScreenManager {
   // ─── Binding ──────────────────────────────────────────────────────────
 
   private _bindIntroButtons(): void {
-    document.getElementById('btn-title-continue')?.addEventListener('click', () => this.showEraScreen());
+    const isMobile = window.matchMedia('(pointer: coarse)').matches ||
+                     /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    const fullscreenBtn = document.getElementById('btn-title-fullscreen');
+    const continueBtn = document.getElementById('btn-title-continue');
+
+    if (isMobile && fullscreenBtn) {
+      if (continueBtn) continueBtn.style.display = 'none';
+      fullscreenBtn.style.display = 'inline-block';
+      fullscreenBtn.addEventListener('click', async () => {
+        try {
+          if (document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen();
+          } else if ((document.documentElement as any).webkitRequestFullscreen) {
+            await (document.documentElement as any).webkitRequestFullscreen();
+          }
+        } catch (err) {
+          console.warn('Fullscreen request failed:', err);
+        }
+        await requestLandscapeOrientation();
+        this.showEraScreen();
+      });
+    }
+
+    continueBtn?.addEventListener('click', async () => {
+      await requestLandscapeOrientation();
+      this.showEraScreen();
+    });
   }
 
   private _bindEraButtons(): void {

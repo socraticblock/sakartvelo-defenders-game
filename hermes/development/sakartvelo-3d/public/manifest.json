@@ -1,0 +1,16 @@
+{
+  "name": "Sakartvelo Defenders",
+  "short_name": "Sakartvelo",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "theme_color": "#07110b",
+  "background_color": "#07110b",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

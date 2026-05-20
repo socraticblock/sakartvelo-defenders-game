@@ -1,4 +1,4 @@
-﻿/* intro.css â€” Game title, atmospheric intros, and narration systems */
+/* intro.css â€” Game title, atmospheric intros, and narration systems */
 
 .intro-overlay {
   position: fixed;
@@ -834,4 +834,44 @@
     font-size: min(4vw, 3.4vh, 34px);
   }
 }
+
+/* Compact Landscape Mobile Layout on short viewports */
+@media (max-height: 520px) and (orientation: landscape) {
+  #screen-title.intro-overlay {
+    justify-content: center !important;
+    padding: 10px 20px !important;
+  }
+  #screen-title .volume-panel {
+    display: none !important;
+  }
+  #screen-title .intro-flag {
+    display: none !important;
+  }
+  #screen-title .intro-divider {
+    display: none !important;
+  }
+  #screen-title .intro-sound-hint {
+    display: none !important;
+  }
+  #screen-title .intro-subtitle {
+    display: none !important;
+  }
+  #screen-title .intro-title:first-of-type {
+    font-size: min(8vw, 12vh, 48px) !important;
+    margin: 0 0 2px !important;
+  }
+  #screen-title .intro-title-alt {
+    font-size: min(4vw, 7vh, 26px) !important;
+    margin: 0 0 8px !important;
+    letter-spacing: 0.15em !important;
+  }
+  #screen-title .intro-btn {
+    padding: 8px 24px !important;
+    font-size: min(3vw, 5vh, 20px) !important;
+    height: auto !important;
+    min-width: min(300px, 45vw) !important;
+    margin-top: 4px !important;
+  }
+}
+
 

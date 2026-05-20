@@ -119,8 +119,8 @@
       "defense_target": "river_village",
       "imageUrl": "/images/level1-golden-river.png",
       "map_presentation": "full_field",
-      "visual_width": 28,
-      "visual_height": 16,
+      "visual_width": 40,
+      "visual_height": 24,
       "visual_offset_x": 0,
       "visual_offset_y": 0
     },

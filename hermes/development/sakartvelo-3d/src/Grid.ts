@@ -1080,68 +1080,118 @@ export class Grid {
   private createFullFieldDecorations(): void {
     // Fill the margins outside the playable 18x10 grid with beautiful scenery
     // Gameplay grid is [0, 18] in X, [0, 10] in Z
-    // Full field visual bounds are 28x16, meaning X is [-5, 23] and Z is [-3, 13]
+    // Full field visual bounds are 40x24, meaning X is [-11, 29] and Z is [-7, 17]
 
-    // 1. Top margin tree line & rocks (Z is [-3, 0])
-    for (let x = -4.5; x <= 22.5; x += 1.3) {
-      const scale = 0.75 + this.rand() * 0.45;
+    // 1. Top margin thick, overlapping double-row forest wall & cliffs (Z is [-7, 0])
+    // Row 1 (far back)
+    for (let x = -10.5; x <= 28.5; x += 0.8) {
+      const scale = 0.95 + this.rand() * 0.45;
+      const xOffset = (this.rand() - 0.5) * 0.25;
+      const zOffset = (this.rand() - 0.5) * 0.25;
+      this.addPropUnsafe(this.makeTree(), x + xOffset, -5.5 + zOffset, scale);
+      if (this.rand() < 0.3) {
+        this.addPropUnsafe(this.makeStone(0x77735f), x + xOffset + 0.3, -6.0 + zOffset, 0.7 + this.rand() * 0.6);
+      }
+    }
+    // Row 2 (closer front)
+    for (let x = -10.0; x <= 28.0; x += 0.9) {
+      const scale = 0.8 + this.rand() * 0.4;
+      const xOffset = (this.rand() - 0.5) * 0.3;
+      const zOffset = (this.rand() - 0.5) * 0.3;
+      this.addPropUnsafe(this.makeTree(), x + xOffset, -3.0 + zOffset, scale);
+      if (this.rand() < 0.4) {
+        this.addPropUnsafe(this.makeStone(0x77735f), x + xOffset - 0.3, -2.5 + zOffset, 0.5 + this.rand() * 0.5);
+      }
+    }
+
+    // 2. Left margin tree-and-cliff clusters & path entrance wrapping (X is [-11, 0])
+    // Watchtower & Arch ruin at the left margin
+    this.addPropUnsafe(this.makeWatchtower(), -4.5, 1.2, 1.0);
+    this.addPropUnsafe(this.makeArchRuin(0x77735f), -3.5, 2.2, 0.95);
+    this.addPropUnsafe(this.makeStone(0x77735f), -5.5, 2.5, 1.5);
+    this.addPropUnsafe(this.makeStone(0x66624f), -6.0, 1.8, 1.25);
+
+    // A rustic Georgian campfire area on the left
+    this.addPropUnsafe(this.makeHut(), -5.0, 7.5, 1.15);
+    this.addPropUnsafe(this.makeFire(), -3.8, 8.0, 1.2);
+    this.addPropUnsafe(this.makeQvevri(), -3.2, 6.8, 0.75);
+    this.addPropUnsafe(this.makeQvevri(), -2.9, 7.1, 0.6);
+
+    // Wind the path entrance at [-1, 4] out from a dense forest gate
+    for (let i = 0; i < 6; i++) {
+      // Above path entrance
+      this.addPropUnsafe(this.makeTree(), -2.0 - i * 0.8, 2.8 - (this.rand() * 0.4), 0.85 + this.rand() * 0.3);
+      this.addPropUnsafe(this.makeStone(0x77735f), -1.5 - i * 1.0, 2.2, 0.6 + this.rand() * 0.5);
+      // Below path entrance
+      this.addPropUnsafe(this.makeTree(), -2.0 - i * 0.8, 5.2 + (this.rand() * 0.4), 0.85 + this.rand() * 0.3);
+      this.addPropUnsafe(this.makeStone(0x77735f), -1.5 - i * 1.0, 5.8, 0.6 + this.rand() * 0.5);
+    }
+
+    // Leftmost boundary tree and rock wall (dense cluster at X = [-11, -6])
+    for (let z = 0; z <= 10; z += 1.2) {
+      for (let ox = -10.5; ox <= -6.5; ox += 1.5) {
+        this.addPropUnsafe(this.makeTree(), ox + (this.rand() - 0.5) * 0.4, z + (this.rand() - 0.5) * 0.4, 0.8 + this.rand() * 0.45);
+        if (this.rand() < 0.5) {
+          this.addPropUnsafe(this.makeStone(0x77735f), ox + 0.6, z - 0.3, 0.7 + this.rand() * 0.7);
+        }
+      }
+    }
+
+    // 3. Right margin village and ruins, path exit village gate (X is [18, 29])
+    // Village Gate at path exit endpoint
+    const villageGate = this.makeGate(0xd4a017);
+    villageGate.rotation.y = -Math.PI / 2; // Face horizontally
+    this.addPropUnsafe(villageGate, 17.6, 5.0, 1.35);
+
+    // Right margin structures & village scenery (X is [18, 29])
+    this.addPropUnsafe(this.makeWatchtower(), 21.0, 1.5, 1.05);
+    this.addPropUnsafe(this.makeArchRuin(0x827a60), 22.5, 2.5, 1.0);
+    this.addPropUnsafe(this.makeBanner(0x9b1d20), 20.0, 2.8, 1.1);
+
+    this.addPropUnsafe(this.makeHut(), 22.5, 7.5, 1.15);
+    this.addPropUnsafe(this.makeFire(), 21.2, 8.0, 1.25);
+    this.addPropUnsafe(this.makeQvevri(), 23.0, 6.5, 0.75);
+
+    // Right boundary tree & rock wall (dense clusters at X = [24, 29])
+    for (let z = 0; z <= 11; z += 1.2) {
+      for (let ox = 24.0; ox <= 28.0; ox += 1.5) {
+        this.addPropUnsafe(this.makeTree(), ox + (this.rand() - 0.5) * 0.4, z + (this.rand() - 0.5) * 0.4, 0.8 + this.rand() * 0.4);
+        if (this.rand() < 0.5) {
+          this.addPropUnsafe(this.makeStone(0x827a60), ox + 0.5, z + 0.2, 0.7 + this.rand() * 0.7);
+        }
+      }
+    }
+
+    // 4. Bottom margin decorations / far riverbank (Z is [10, 17])
+    // Vineyard rows on the far bank
+    for (let i = 0; i < 5; i++) {
+      const row = this.makeVineyardRow(6);
+      row.rotation.y = -0.05;
+      this.addPropUnsafe(row, -7.0 + i * 2.5, 12.0, 0.95);
+    }
+    for (let i = 0; i < 5; i++) {
+      const row = this.makeVineyardRow(6);
+      row.rotation.y = -0.05;
+      this.addPropUnsafe(row, 20.0 + i * 2.5, 12.0, 0.95);
+    }
+
+    // Dense forest and rocks along the far bank (Z = 14 to 17) to hide the bottom edge
+    for (let x = -10.0; x <= 28.0; x += 1.2) {
+      const scale = 0.85 + this.rand() * 0.4;
       const xOffset = (this.rand() - 0.5) * 0.4;
       const zOffset = (this.rand() - 0.5) * 0.4;
-      const z = -2.2 + zOffset;
-      
-      this.addProp(this.makeTree(), x + xOffset, z, scale);
-      
-      if (this.rand() < 0.45) {
-        this.addProp(this.makeStone(0x77735f), x + xOffset + 0.4, z - 0.3, 0.5 + this.rand() * 0.6);
-      }
-    }
-
-    // 2. Left margin village huts & ruins (X is [-5, 0])
-    // Path entrance is at [-1, 4], so avoid placing blocking props near z = 4
-    this.addProp(this.makeWatchtower(), -2.5, 0.8, 0.95);
-    this.addProp(this.makeArchRuin(0x77735f), -1.8, 1.8, 0.9);
-    this.addProp(this.makeStone(0x77735f), -3.0, 1.2, 1.1);
-
-    this.addProp(this.makeHut(), -3.0, 6.8, 1.0);
-    this.addProp(this.makeFire(), -2.0, 7.3, 1.1);
-    this.addProp(this.makeQvevri(), -1.6, 6.2, 0.7);
-    this.addProp(this.makeQvevri(), -1.3, 6.5, 0.58);
-    for (let i = 0; i < 4; i++) {
-      this.addProp(this.makeTree(), -4.2, 6.0 + i * 1.5, 0.8 + this.rand() * 0.4);
-    }
-
-    // 3. Right margin village and ruins (X is [18, 23])
-    // Path exit is at [18, 5], so avoid z = 5
-    this.addProp(this.makeWatchtower(), 19.5, 1.5, 1.0);
-    this.addProp(this.makeArchRuin(0x827a60), 20.8, 2.5, 0.95);
-    this.addProp(this.makeBanner(0x9b1d20), 19.0, 2.8, 1.05);
-
-    this.addProp(this.makeHut(), 21.0, 7.2, 1.1);
-    this.addProp(this.makeFire(), 20.0, 7.8, 1.2);
-    this.addProp(this.makeQvevri(), 21.8, 6.2, 0.72);
-    
-    for (let i = 0; i < 5; i++) {
-      this.addProp(this.makeTree(), 21.5 + (this.rand() - 0.5) * 0.5, 10.0 + i * 0.8, 0.8 + this.rand() * 0.35);
-    }
-
-    // 4. Bottom margin decorations (Z is [10, 13])
-    // River is running along z = 9.45
-    // Z = 11 to 13 is the far bank of the river
-    for (let i = 0; i < 3; i++) {
-      const row = this.makeVineyardRow(5);
-      row.rotation.y = -0.05;
-      this.addProp(row, -2.5 + i * 2.8, 11.5, 0.95);
-    }
-    
-    for (let x = 6.0; x <= 17.0; x += 2.0) {
-      this.addProp(this.makeTree(), x + (this.rand() - 0.5) * 0.4, 11.8 + (this.rand() - 0.5) * 0.3, 0.85 + this.rand() * 0.3);
+      const z = 15.0 + zOffset;
+      this.addPropUnsafe(this.makeTree(), x + xOffset, z, scale);
       if (this.rand() < 0.5) {
-        this.addProp(this.makeStone(0x6d6e61), x + 0.8, 12.1, 0.6 + this.rand() * 0.6);
+        this.addPropUnsafe(this.makeStone(0x6d6e61), x + xOffset + 0.5, z + 0.5, 0.7 + this.rand() * 0.6);
       }
     }
-    
-    this.addProp(this.makeWatchtower(), 18.5, 12.2, 0.95);
-    this.addProp(this.makeBanner(0x9b1d20), 19.5, 12.5, 1.0);
+
+    // A watchtower and banner guarding the far riverbank
+    this.addPropUnsafe(this.makeWatchtower(), 6.5, 12.5, 1.05);
+    this.addPropUnsafe(this.makeBanner(0x9b1d20), 8.0, 12.8, 1.1);
+    this.addPropUnsafe(this.makeWatchtower(), 14.5, 12.5, 1.05);
+    this.addPropUnsafe(this.makeBanner(0x9b1d20), 13.0, 12.8, 1.1);
   }
 
   private addDecorations() {

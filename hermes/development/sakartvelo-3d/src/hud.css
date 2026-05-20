@@ -1399,3 +1399,9 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
     right: 8px;
   }
 }
+
+/* Hide game settings button from battle HUD (accessible via Pause menu) */
+#btn-game-settings, .game-settings-btn {
+  display: none !important;
+}
+
