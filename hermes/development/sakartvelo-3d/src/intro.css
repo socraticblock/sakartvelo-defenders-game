@@ -835,8 +835,8 @@
   }
 }
 
-/* Compact Landscape Mobile Layout on short viewports */
-@media (max-height: 520px) and (orientation: landscape) {
+/* Compact Landscape Mobile Layout on short viewports and landscape touch devices */
+@media (pointer: coarse) and (orientation: landscape), (max-height: 620px) and (orientation: landscape) {
   #screen-title.intro-overlay {
     justify-content: center !important;
     padding: 10px 20px !important;

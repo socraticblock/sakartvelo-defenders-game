@@ -474,7 +474,9 @@ export class InputManager {
       const dist = Math.sqrt(dx * dx + dy * dy);
 
       if (!this._isDragging) {
-        if (dist > 8) { // Drag deadzone threshold
+        const isTouch = e.pointerType === 'touch' || e.pointerType === 'pen';
+        const dragThreshold = isTouch ? 16 : 8;
+        if (dist > dragThreshold) { // Drag deadzone threshold
           this._isDragging = true;
         }
       }
@@ -486,10 +488,25 @@ export class InputManager {
         // Boundaries based on level grid size + cushion for expanded scenery
         const gridWidth = gs.currentLevel?.grid_width ?? 18;
         const gridHeight = gs.currentLevel?.grid_height ?? 10;
-        const minX = -6;
-        const maxX = gridWidth + 6;
-        const minZ = -4;
-        const maxZ = gridHeight + 4;
+        let minX = -6;
+        let maxX = gridWidth + 6;
+        let minZ = -4;
+        let maxZ = gridHeight + 4;
+
+        if (gs.currentLevel && gs.currentLevel.map_presentation === 'full_field') {
+          const w = gs.currentLevel.visual_width ?? gridWidth;
+          const h = gs.currentLevel.visual_height ?? gridHeight;
+          const ox = gs.currentLevel.visual_offset_x ?? 0;
+          const oz = gs.currentLevel.visual_offset_y ?? 0;
+          const cx = gridWidth / 2 + ox;
+          const cz = gridHeight / 2 + oz;
+          
+          // Clamp to visual boundaries minus margins to prevent showing empty backdrop scenery
+          minX = cx - w / 2 + 4;
+          maxX = cx + w / 2 - 4;
+          minZ = cz - h / 2 + 3;
+          maxZ = cz + h / 2 - 3;
+        }
 
         gs.cameraBaseX = THREE.MathUtils.clamp(this._camStartBaseX - dx * factor, minX, maxX);
         gs.cameraBaseZ = THREE.MathUtils.clamp(this._camStartBaseZ - dy * factor, minZ, maxZ);

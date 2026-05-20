@@ -14,23 +14,37 @@ html, body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  position: fixed;
-  touch-action: none;
-  -webkit-overflow-scrolling: none;
+  overscroll-behavior: none;
   user-select: none;
   -webkit-user-select: none;
   background: #1a1a2e;
   font-family: 'Noto Serif Georgian', 'Georgia', serif;
 }
 
-/* Allow touch scrolling inside scrollable info and settings cards/modals */
-.game-info-card, .bestiary-modal, .enemy-intro-modal, .scrollable {
+/* Shell-specific touch action locking to prevent page scrolling in gameplay */
+canvas,
+#hud,
+#hero-bar,
+#build-overlay,
+#build-circle,
+#tower-action-circle,
+#horn-bonus,
+#tutorial-overlay,
+.intro-overlay {
+  touch-action: none !important;
+}
+
+/* Allow touch scrolling inside scrollable panels and the campaign map */
+.game-info-card,
+.bestiary-modal,
+.enemy-intro-modal,
+.scrollable,
+#screen-level-select:not(.quick-start-active) {
   touch-action: pan-y !important;
 }
 
 canvas {
   display: block;
-  touch-action: none;
   position: fixed;
   top: 0;
   left: 0;

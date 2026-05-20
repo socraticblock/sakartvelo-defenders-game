@@ -19,6 +19,12 @@ let currentEra = 0;
 let allLevels: LevelData[] = [];
 let selectedBriefingLevel: LevelData | null = null;
 let selectedGateChapter = -1;
+let mobileExploreMapActive = false;
+
+function isMobileLandscape(): boolean {
+  return window.matchMedia('(pointer: coarse) and (orientation: landscape)').matches ||
+         window.matchMedia('(max-height: 620px) and (orientation: landscape)').matches;
+}
 
 const requestedShowAllEra0Levels =
   new URLSearchParams(window.location.search).get('allLevels') === '1' ||
@@ -467,6 +473,29 @@ function bindInteractions() {
   if (!container) return;
   bindMissingImageFallback();
 
+  const qsPlayBtn = container.querySelector<HTMLButtonElement>('#qs-play-btn');
+  if (qsPlayBtn) {
+    const eraLevels = allLevels.filter(l => l.era === currentEra).sort((a, b) => a.level - b.level);
+    let currentQuickStartLevel = eraLevels[0];
+    for (const lvl of eraLevels) {
+      if (isLevelStartAllowed(lvl)) {
+        currentQuickStartLevel = lvl;
+      }
+    }
+    qsPlayBtn.addEventListener('click', () => {
+      closeSheet(false);
+      onSelect?.(currentEra, currentQuickStartLevel.level);
+    });
+  }
+
+  const qsExploreBtn = container.querySelector<HTMLButtonElement>('#qs-explore-btn');
+  if (qsExploreBtn) {
+    qsExploreBtn.addEventListener('click', () => {
+      mobileExploreMapActive = true;
+      render(currentEra);
+    });
+  }
+
   container.querySelectorAll<HTMLElement>('.map-node').forEach((node) => {
     node.addEventListener('click', () => {
       const era = Number(node.dataset.era);
@@ -567,7 +596,56 @@ function render(era: number) {
   injectStyles();
 
   const eraLevels = allLevels.filter(l => l.era === era).sort((a, b) => a.level - b.level);
-  const eraJourneyHtml = era === 0 ? renderEraJourney(eraLevels) : renderGenericEraList(era, eraLevels);
+  
+  let currentQuickStartLevel = eraLevels[0];
+  for (const lvl of eraLevels) {
+    if (isLevelStartAllowed(lvl)) {
+      currentQuickStartLevel = lvl;
+    }
+  }
+
+  const isLandscapeTouch = isMobileLandscape();
+  const screen = container.closest<HTMLElement>('#screen-level-select');
+  
+  if (screen) {
+    screen.classList.toggle('quick-start-active', isLandscapeTouch && !mobileExploreMapActive);
+  }
+
+  let mainContentHtml = '';
+  if (isLandscapeTouch && !mobileExploreMapActive) {
+    const currentBriefing = getBriefingForLevel(currentQuickStartLevel);
+    mainContentHtml = `
+      <div class="quick-start-container">
+        <div class="quick-start-card">
+          <div class="qs-kicker">ERA ${currentEra} &middot; ${e(ERA_NAMES[currentEra])}</div>
+          <div class="qs-title">Level ${currentQuickStartLevel.level}</div>
+          <div class="qs-subtitle">${e(currentQuickStartLevel.name)}</div>
+          
+          <div class="qs-meta-grid">
+            <div class="qs-meta-item">
+              <span class="qs-meta-label">Objective</span>
+              <span class="qs-meta-val">${e(currentBriefing.objective || 'Defend stronghold')}</span>
+            </div>
+            <div class="qs-meta-item">
+              <span class="qs-meta-label">Type</span>
+              <span class="qs-meta-val">${e(nodeTruthSummary(currentBriefing.kind))}</span>
+            </div>
+          </div>
+          
+          <div class="qs-actions">
+            <button class="qs-btn-play" id="qs-play-btn">
+              Play Level ${currentQuickStartLevel.level}
+            </button>
+            <button class="qs-btn-explore" id="qs-explore-btn">
+              Campaign Map
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    mainContentHtml = era === 0 ? renderEraJourney(eraLevels) : renderGenericEraList(era, eraLevels);
+  }
 
   const html = `
     <div class="ls-shell">
@@ -578,7 +656,7 @@ function render(era: number) {
           <span class="vol-val" id="vol-music-level-val">10</span>
         </div>
       </div>
-      ${eraJourneyHtml}
+      ${mainContentHtml}
       <div class="ls-footer">
         <button id="ls-back-btn">Back</button>
         <button id="ls-reset-btn">Clear Progress</button>
@@ -588,7 +666,6 @@ function render(era: number) {
   `;
 
   container.innerHTML = html;
-  const screen = container.closest<HTMLElement>('#screen-level-select');
   if (screen) {
     const sheetOpen = Boolean(selectedBriefingLevel || selectedGateChapter >= 0);
     screen.classList.toggle('briefing-open', sheetOpen);
@@ -611,6 +688,7 @@ export const LevelSelect = {
     onBack = onBackFn;
     allLevels = levels;
     container = containerEl;
+    mobileExploreMapActive = false;
     await loadFacts();
     preloadEra0Thumbs(levels);
     render(era);
