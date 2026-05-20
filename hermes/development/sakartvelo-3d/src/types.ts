@@ -27,6 +27,11 @@ export interface LevelData {
   historical_profile?: string;
   boss_profile?: string;
   imageUrl?: string;
+  map_presentation?: 'board' | 'full_field';
+  visual_width?: number;
+  visual_height?: number;
+  visual_offset_x?: number;
+  visual_offset_y?: number;
 }
 
 export interface WaveData {

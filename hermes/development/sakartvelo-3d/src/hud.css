@@ -638,6 +638,7 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
 }
 
 .game-settings-btn {
+  display: none !important;
   position: absolute;
   right: 12px;
   bottom: 12px;

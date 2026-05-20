@@ -1,4 +1,4 @@
-﻿import * as THREE from 'three';
+import * as THREE from 'three';
 import { LevelData } from './types';
 
 export class Grid {
@@ -17,6 +17,12 @@ export class Grid {
   private waterMeshes: THREE.Mesh[] = [];
   private rngState = 1;
 
+  private mapPresentation: 'board' | 'full_field' = 'board';
+  private visualWidth: number;
+  private visualHeight: number;
+  private visualOffsetX: number;
+  private visualOffsetY: number;
+
   readonly width: number;
   readonly height: number;
 
@@ -27,6 +33,11 @@ export class Grid {
     this.defenseTarget = level.defense_target || 'village_gate';
     this.era = level.era ?? 0;
     this.levelNum = level.level ?? 1;
+    this.mapPresentation = level.map_presentation || 'board';
+    this.visualWidth = level.visual_width ?? level.grid_width;
+    this.visualHeight = level.visual_height ?? level.grid_height;
+    this.visualOffsetX = level.visual_offset_x ?? 0;
+    this.visualOffsetY = level.visual_offset_y ?? 0;
     this.seedRng();
 
     this.computePathCells(level.path_waypoints);
@@ -40,6 +51,9 @@ export class Grid {
     this.createEnvironmentDecorations();
     this.createDefenseObjective();
     this.addDecorations();
+    if (this.mapPresentation === 'full_field') {
+      this.createFullFieldDecorations();
+    }
   }
 
   /** Update method for animating pulsing auras and wall-path highlight. */
@@ -124,10 +138,15 @@ export class Grid {
   // â”€â”€â”€ ORGANIC GROUND (replaces visible grid tiles) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   private createOrganicGround() {
+    const w = this.mapPresentation === 'full_field' ? this.visualWidth : this.width;
+    const h = this.mapPresentation === 'full_field' ? this.visualHeight : this.height;
+    const ox = this.mapPresentation === 'full_field' ? this.visualOffsetX : 0;
+    const oz = this.mapPresentation === 'full_field' ? this.visualOffsetY : 0;
+
     // Single terrain plane covering the entire map
-    const terrainGeo = new THREE.PlaneGeometry(this.width, this.height, this.width * 2, this.height * 2);
+    const terrainGeo = new THREE.PlaneGeometry(w, h, Math.floor(w * 2), Math.floor(h * 2));
     terrainGeo.rotateX(-Math.PI / 2);
-    terrainGeo.translate(this.width / 2, -0.01, this.height / 2);
+    terrainGeo.translate((this.width / 2) + ox, -0.01, (this.height / 2) + oz);
 
     // Subtle vertex color variation for organic feel
     const colors = new Float32Array(terrainGeo.attributes.position.count * 3);
@@ -158,7 +177,9 @@ export class Grid {
     terrain.receiveShadow = true;
     this.group.add(terrain);
 
-    this.createTerrainEdges();
+    if (this.mapPresentation !== 'full_field') {
+      this.createTerrainEdges();
+    }
   }
 
   private createTerrainEdges(): void {
@@ -817,8 +838,10 @@ export class Grid {
   }
 
   private createRioniValleySet(): void {
-    const river = this.makeWaterStrip(this.width + 0.8, 1.0);
-    river.position.set(this.width / 2, 0.008, this.height - 0.55);
+    const riverW = this.mapPresentation === 'full_field' ? this.visualWidth : this.width + 0.8;
+    const riverX = this.mapPresentation === 'full_field' ? (this.width / 2) + this.visualOffsetX : this.width / 2;
+    const river = this.makeWaterStrip(riverW, 1.0);
+    river.position.set(riverX, 0.008, this.height - 0.55);
     this.group.add(river);
 
     const end = this.worldPath[this.worldPath.length - 1];
@@ -1052,6 +1075,73 @@ export class Grid {
         0.55 + this.rand() * 0.7,
       );
     }
+  }
+
+  private createFullFieldDecorations(): void {
+    // Fill the margins outside the playable 18x10 grid with beautiful scenery
+    // Gameplay grid is [0, 18] in X, [0, 10] in Z
+    // Full field visual bounds are 28x16, meaning X is [-5, 23] and Z is [-3, 13]
+
+    // 1. Top margin tree line & rocks (Z is [-3, 0])
+    for (let x = -4.5; x <= 22.5; x += 1.3) {
+      const scale = 0.75 + this.rand() * 0.45;
+      const xOffset = (this.rand() - 0.5) * 0.4;
+      const zOffset = (this.rand() - 0.5) * 0.4;
+      const z = -2.2 + zOffset;
+      
+      this.addProp(this.makeTree(), x + xOffset, z, scale);
+      
+      if (this.rand() < 0.45) {
+        this.addProp(this.makeStone(0x77735f), x + xOffset + 0.4, z - 0.3, 0.5 + this.rand() * 0.6);
+      }
+    }
+
+    // 2. Left margin village huts & ruins (X is [-5, 0])
+    // Path entrance is at [-1, 4], so avoid placing blocking props near z = 4
+    this.addProp(this.makeWatchtower(), -2.5, 0.8, 0.95);
+    this.addProp(this.makeArchRuin(0x77735f), -1.8, 1.8, 0.9);
+    this.addProp(this.makeStone(0x77735f), -3.0, 1.2, 1.1);
+
+    this.addProp(this.makeHut(), -3.0, 6.8, 1.0);
+    this.addProp(this.makeFire(), -2.0, 7.3, 1.1);
+    this.addProp(this.makeQvevri(), -1.6, 6.2, 0.7);
+    this.addProp(this.makeQvevri(), -1.3, 6.5, 0.58);
+    for (let i = 0; i < 4; i++) {
+      this.addProp(this.makeTree(), -4.2, 6.0 + i * 1.5, 0.8 + this.rand() * 0.4);
+    }
+
+    // 3. Right margin village and ruins (X is [18, 23])
+    // Path exit is at [18, 5], so avoid z = 5
+    this.addProp(this.makeWatchtower(), 19.5, 1.5, 1.0);
+    this.addProp(this.makeArchRuin(0x827a60), 20.8, 2.5, 0.95);
+    this.addProp(this.makeBanner(0x9b1d20), 19.0, 2.8, 1.05);
+
+    this.addProp(this.makeHut(), 21.0, 7.2, 1.1);
+    this.addProp(this.makeFire(), 20.0, 7.8, 1.2);
+    this.addProp(this.makeQvevri(), 21.8, 6.2, 0.72);
+    
+    for (let i = 0; i < 5; i++) {
+      this.addProp(this.makeTree(), 21.5 + (this.rand() - 0.5) * 0.5, 10.0 + i * 0.8, 0.8 + this.rand() * 0.35);
+    }
+
+    // 4. Bottom margin decorations (Z is [10, 13])
+    // River is running along z = 9.45
+    // Z = 11 to 13 is the far bank of the river
+    for (let i = 0; i < 3; i++) {
+      const row = this.makeVineyardRow(5);
+      row.rotation.y = -0.05;
+      this.addProp(row, -2.5 + i * 2.8, 11.5, 0.95);
+    }
+    
+    for (let x = 6.0; x <= 17.0; x += 2.0) {
+      this.addProp(this.makeTree(), x + (this.rand() - 0.5) * 0.4, 11.8 + (this.rand() - 0.5) * 0.3, 0.85 + this.rand() * 0.3);
+      if (this.rand() < 0.5) {
+        this.addProp(this.makeStone(0x6d6e61), x + 0.8, 12.1, 0.6 + this.rand() * 0.6);
+      }
+    }
+    
+    this.addProp(this.makeWatchtower(), 18.5, 12.2, 0.95);
+    this.addProp(this.makeBanner(0x9b1d20), 19.5, 12.5, 1.0);
   }
 
   private addDecorations() {

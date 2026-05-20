@@ -7,41 +7,17 @@
       "starting_gold": 130,
       "starting_lives": 20,
       "total_waves": 5,
-      "grid_width": 12,
-      "grid_height": 16,
+      "grid_width": 18,
+      "grid_height": 10,
       "path_waypoints": [
-        [
-          5,
-          0
-        ],
-        [
-          5,
-          3
-        ],
-        [
-          3,
-          3
-        ],
-        [
-          3,
-          7
-        ],
-        [
-          7,
-          7
-        ],
-        [
-          7,
-          11
-        ],
-        [
-          5,
-          11
-        ],
-        [
-          5,
-          15
-        ]
+        [-1, 4],
+        [3, 4],
+        [3, 1],
+        [9, 1],
+        [9, 8],
+        [14, 8],
+        [14, 5],
+        [18, 5]
       ],
       "waves": [
         {
@@ -130,42 +106,23 @@
       "boss": null,
       "sub_era": "bronze_roots_rioni",
       "build_nodes": [
-        [
-          4,
-          2
-        ],
-        [
-          6,
-          2
-        ],
-        [
-          2,
-          5
-        ],
-        [
-          2,
-          8
-        ],
-        [
-          6,
-          6
-        ],
-        [
-          8,
-          8
-        ],
-        [
-          7,
-          12
-        ],
-        [
-          4,
-          13
-        ]
+        [2, 2],
+        [4, 3],
+        [6, 3],
+        [8, 3],
+        [11, 3],
+        [11, 6],
+        [13, 6],
+        [16, 7]
       ],
       "theme": "golden_river",
       "defense_target": "river_village",
-      "imageUrl": "/images/level1-golden-river.png"
+      "imageUrl": "/images/level1-golden-river.png",
+      "map_presentation": "full_field",
+      "visual_width": 28,
+      "visual_height": 16,
+      "visual_offset_x": 0,
+      "visual_offset_y": 0
     },
     {
       "era": 0,
