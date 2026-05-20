@@ -1,57 +1,162 @@
 /**
  * LevelSelect.ts
- * Renders a mobile-first campaign journey map with briefing sheets.
+ * One-screen campaign map selector.
+ *
+ * v5 rule: the main path from campaign map to battle must feel like a game,
+ * not a scrollable website. The campaign map itself is the quick start.
  */
 import { SaveManager } from './SaveManager';
 import { LevelData } from './types';
 import { LEVEL_SELECT_CSS } from './LevelSelectStyles';
 import { audio } from './AudioManager';
-import { ERA0_CHAPTERS, ERA0_TIMELINE } from './Era0Profiles';
-import { ERA0_LEVEL_BRIEFINGS, LevelBriefing, TruthTag } from './CampaignBriefings';
+import { ERA0_LEVEL_BRIEFINGS } from './CampaignBriefings';
 import { getHistoricalFact, loadFacts } from './historical_facts';
 import { escapeHtml } from './utils/dom';
-import { safeAssetPath } from './utils/assets';
 
-let onSelect: ((era: number, level: number) => void) | null = null;
+type OnSelect = (era: number, level: number) => void;
+type CampaignNodeType = 'main' | 'challenge' | 'boss';
+type CampaignNodeState = 'completed' | 'current' | 'unlocked' | 'locked' | 'coming-soon';
+
+type CampaignNode = {
+  id: string;
+  level?: number;
+  title: string;
+  type: CampaignNodeType;
+  x: number;
+  y: number;
+  description: string;
+  levelRef?: { era: number; level: number };
+  requires?: string[];
+  next?: string[];
+};
+
+type CampaignEra = {
+  id: number;
+  name: string;
+  subtitle: string;
+  dateRange: string;
+  heroName: string;
+  nodes: CampaignNode[];
+};
+
+let onSelect: OnSelect | null = null;
 let onBack: (() => void) | null = null;
 let container: HTMLElement | null = null;
 let currentEra = 0;
 let allLevels: LevelData[] = [];
-let selectedBriefingLevel: LevelData | null = null;
-let selectedGateChapter = -1;
-let mobileExploreMapActive = false;
+let selectedNodeId: string | null = null;
+let readMoreOpen = false;
 
-function isMobileLandscape(): boolean {
-  return window.matchMedia('(pointer: coarse) and (orientation: landscape)').matches ||
-         window.matchMedia('(max-height: 620px) and (orientation: landscape)').matches;
+const ERA0_CAMPAIGN: CampaignEra = {
+  id: 0,
+  name: 'Ancient Colchis',
+  subtitle: 'Rivers, forests, gold, and old gods',
+  dateRange: 'c. 600 BC – c. 100 BC',
+  heroName: 'Medea',
+  nodes: [
+    {
+      id: 'e0_l1',
+      level: 1,
+      title: 'The Golden River',
+      type: 'main',
+      x: 14,
+      y: 66,
+      description: 'Defend the first village road near the Rioni.',
+      levelRef: { era: 0, level: 1 },
+      next: ['e0_l2'],
+    },
+    {
+      id: 'e0_l2',
+      level: 2,
+      title: 'Forest Road',
+      type: 'main',
+      x: 28,
+      y: 53,
+      description: 'Hold the road through the Colchian forest.',
+      levelRef: { era: 0, level: 2 },
+      requires: ['e0_l1'],
+      next: ['e0_l3', 'e0_c1'],
+    },
+    {
+      id: 'e0_l3',
+      level: 3,
+      title: 'Reed Village',
+      type: 'main',
+      x: 41,
+      y: 42,
+      description: 'Protect a riverside settlement of reed and timber.',
+      levelRef: { era: 0, level: 3 },
+      requires: ['e0_l2'],
+      next: ['e0_l4'],
+    },
+    {
+      id: 'e0_c1',
+      title: 'Gold-Panner’s Trial',
+      type: 'challenge',
+      x: 43,
+      y: 73,
+      description: 'Optional river challenge for extra mastery. Coming later.',
+      requires: ['e0_l2'],
+    },
+    {
+      id: 'e0_l4',
+      level: 4,
+      title: 'Sacred Grove',
+      type: 'main',
+      x: 55,
+      y: 35,
+      description: 'Defend the old grove marked with the Borjgali.',
+      levelRef: { era: 0, level: 4 },
+      requires: ['e0_l3'],
+      next: ['e0_l5'],
+    },
+    {
+      id: 'e0_l5',
+      level: 5,
+      title: 'Bronze Ford',
+      type: 'main',
+      x: 67,
+      y: 53,
+      description: 'Hold the crossing before enemies reach the valley.',
+      levelRef: { era: 0, level: 5 },
+      requires: ['e0_l4'],
+      next: ['e0_l6'],
+    },
+    {
+      id: 'e0_l6',
+      level: 6,
+      title: 'Vani Outskirts',
+      type: 'main',
+      x: 78,
+      y: 39,
+      description: 'The road climbs toward the rich hill settlement.',
+      levelRef: { era: 0, level: 6 },
+      requires: ['e0_l5'],
+      next: ['e0_boss1'],
+    },
+    {
+      id: 'e0_boss1',
+      level: 8,
+      title: 'Guardian of the Fleece',
+      type: 'boss',
+      x: 89,
+      y: 27,
+      description: 'A mythic guardian waits beyond the golden shrine.',
+      levelRef: { era: 0, level: 8 },
+      requires: ['e0_l6'],
+    },
+  ],
+};
+
+const CAMPAIGNS: Record<number, CampaignEra> = {
+  0: ERA0_CAMPAIGN,
+};
+
+function e(value: unknown): string {
+  return escapeHtml(value);
 }
 
-const requestedShowAllEra0Levels =
-  new URLSearchParams(window.location.search).get('allLevels') === '1' ||
-  new URLSearchParams(window.location.search).get('unlockAll') === '1' ||
-  localStorage.getItem('sakartvelo_show_all_levels') === '1' ||
-  localStorage.getItem('sakartvelo_unlock_all_levels') === '1';
-
-if (!import.meta.env.DEV && requestedShowAllEra0Levels) {
-  console.warn('allLevels requested in production and ignored.');
-}
-
-const SHOW_ALL_ERA0_LEVELS_FOR_DEV =
-  import.meta.env.DEV && requestedShowAllEra0Levels;
-
-const ERA_NAMES = [
-  'Ancient Colchis', 'Kingdom of Iberia', 'Age of Invasions',
-  'Georgian Golden Age', 'Mongol Catastrophe', 'Between Empires',
-  'Russian Empire', 'First Republic', 'Soviet Century', 'Modern Georgia',
-];
-
-const ERA_YEARS = [
-  ERA0_TIMELINE, '~300 BC – 630 AD', '630 – 1089 AD',
-  '1089 – 1225 AD', '1225 – 1500 AD', '1500 – 1801 AD',
-  '1801 – 1918', '1918 – 1921', '1921 – 1991', '1991 – Present',
-];
-
-function injectStyles() {
+function injectStyles(): void {
   if (document.getElementById('ls-styles')) return;
   const el = document.createElement('style');
   el.id = 'ls-styles';
@@ -59,620 +164,361 @@ function injectStyles() {
   document.head.appendChild(el);
 }
 
-function getChapterForLevel(level: number): number {
-  for (let i = 0; i < ERA0_CHAPTERS.length; i++) {
-    const ch = ERA0_CHAPTERS[i];
-    if (level >= ch.fromLevel && level <= ch.toLevel) return i;
+function levelExists(ref: { era: number; level: number } | undefined): boolean {
+  if (!ref) return false;
+  return allLevels.some(level => level.era === ref.era && level.level === ref.level);
+}
+
+function levelId(ref: { era: number; level: number }): string {
+  return SaveManager.levelId(ref.era, ref.level);
+}
+
+function isNodePlayable(node: CampaignNode): boolean {
+  if (!node.levelRef || !levelExists(node.levelRef)) return false;
+  return SaveManager.isLevelUnlocked(node.levelRef.era, node.levelRef.level);
+}
+
+function isNodeCompleted(node: CampaignNode): boolean {
+  return Boolean(node.levelRef && SaveManager.getStars(levelId(node.levelRef)) > 0);
+}
+
+function requirementsMet(node: CampaignNode): boolean {
+  if (!node.requires?.length) return true;
+  const campaign = CAMPAIGNS[currentEra];
+  return node.requires.every(requiredId => {
+    const required = campaign?.nodes.find(candidate => candidate.id === requiredId);
+    return required ? isNodeCompleted(required) : false;
+  });
+}
+
+function getNodeState(node: CampaignNode): CampaignNodeState {
+  if (!node.levelRef || !levelExists(node.levelRef)) return 'coming-soon';
+  if (isNodeCompleted(node)) return 'completed';
+  if (!requirementsMet(node)) return 'locked';
+  if (isNodePlayable(node)) {
+    return node.id === getLatestPlayableNode()?.id ? 'current' : 'unlocked';
   }
-  return 0;
+  return 'locked';
+}
+
+function getStars(node: CampaignNode): number {
+  if (!node.levelRef) return 0;
+  return SaveManager.getStars(levelId(node.levelRef));
 }
 
 function starsHtml(stars: number): string {
-  if (stars > 0) {
-    return `<span class="ls-stars-completed">${'&#9733;'.repeat(stars)}</span><span class="ls-stars-empty">${'&#9734;'.repeat(3 - stars)}</span>`;
+  const full = '&#9733;'.repeat(Math.max(0, Math.min(3, stars)));
+  const empty = '&#9734;'.repeat(Math.max(0, 3 - stars));
+  return `<span class="campaign-stars-full">${full}</span><span class="campaign-stars-empty">${empty}</span>`;
+}
+
+function getLatestPlayableNode(): CampaignNode | null {
+  const campaign = CAMPAIGNS[currentEra];
+  if (!campaign) return null;
+  const playable = campaign.nodes.filter(isNodePlayable);
+  if (playable.length === 0) return campaign.nodes.find(node => node.levelRef && levelExists(node.levelRef)) || campaign.nodes[0] || null;
+  return playable.reduce((best, node) => {
+    const bestLevel = best.levelRef?.level ?? 0;
+    const nodeLevel = node.levelRef?.level ?? 0;
+    return nodeLevel >= bestLevel ? node : best;
+  }, playable[0]);
+}
+
+function getSelectedNode(): CampaignNode | null {
+  const campaign = CAMPAIGNS[currentEra];
+  if (!campaign) return null;
+  const byId = selectedNodeId ? campaign.nodes.find(node => node.id === selectedNodeId) : null;
+  return byId || getLatestPlayableNode();
+}
+
+function getLevelDataForNode(node: CampaignNode | null): LevelData | null {
+  if (!node?.levelRef) return null;
+  return allLevels.find(level => level.era === node.levelRef?.era && level.level === node.levelRef?.level) || null;
+}
+
+function getBriefingText(node: CampaignNode): { objective: string; teaser: string; history: string; accuracy: string } {
+  if (!node.levelRef) {
+    return {
+      objective: 'Optional challenge node planned for the campaign map.',
+      teaser: node.description,
+      history: 'This side route is reserved for an optional challenge mode and will be connected once challenge battles are implemented.',
+      accuracy: 'Placeholder campaign node. It is not yet a historical battle claim.',
+    };
   }
-  return `<span class="ls-stars-empty">&#9734;&#9734;&#9734;</span>`;
-}
 
-function formatTime(totalSeconds: number | undefined): string {
-  if (totalSeconds === undefined) return '';
-  const safe = Math.max(0, Math.floor(totalSeconds));
-  return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, '0')}`;
-}
+  const briefing = node.levelRef.era === 0 ? ERA0_LEVEL_BRIEFINGS[node.levelRef.level] : undefined;
+  const level = getLevelDataForNode(node);
+  const fact = getHistoricalFact(node.levelRef.era, node.levelRef.level)?.text || level?.historical_fact || node.description;
 
-function normalizePeriod(period: string): string {
-  return period
-    .replace(/~/g, 'c. ')
-    .replace(/\s+/g, ' ')
-    .replace(/\s-\s/g, ' – ')
-    .trim();
-}
-
-function e(value: unknown): string {
-  return escapeHtml(value);
-}
-
-function humanizeTarget(target: string | undefined): string {
-  if (!target) return 'Colchian stronghold';
-  return target
-    .split('_')
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-}
-
-function getMapArtClass(level: LevelData): string {
-  const theme = (level.theme || '').toLowerCase();
-  const name = level.name.toLowerCase();
-
-  if (theme.includes('golden_river') || theme.includes('gold_stream')) return 'map-node-art-river-gold';
-  if (theme.includes('river_tribes')) return 'map-node-art-river-tribes';
-  if (theme.includes('sacred_grove') || theme.includes('sacred_oak')) return 'map-node-art-sacred-grove';
-  if (theme.includes('pontus_coast') || theme.includes('sea_cliffs')) return 'map-node-art-pontus-coast';
-  if (theme.includes('forest_pass')) return 'map-node-art-forest-pass';
-  if (theme.includes('smith_village')) return 'map-node-art-forge-village';
-  if (theme.includes('mountain_watchfires')) return 'map-node-art-watchfires';
-  if (theme.includes('trade_road')) return 'map-node-art-trade-road';
-  if (theme.includes('boundary_stones')) return 'map-node-art-boundary-stones';
-  if (theme.includes('trial_ground')) return 'map-node-art-trial-ground';
-  if (theme.includes('marshland')) return 'map-node-art-marshland';
-  if (theme.includes('palisade')) return 'map-node-art-palisade';
-  if (theme.includes('fleece_gate')) return 'map-node-art-fleece-gate';
-  if (theme.includes('heart_colchis')) return 'map-node-art-heart-colchis';
-  if (theme.includes('devi') || theme.includes('dragon') || name.includes('devi') || name.includes('dragon')) return 'map-node-art-mythic-gate';
-  return 'map-node-art-generic';
-}
-
-function getLevelArtFile(level: LevelData): string {
-  return `level-${String(level.level).padStart(2, '0')}.webp`;
-}
-
-function getMapThumbSrc(level: LevelData): string {
-  if (level.era === 0) {
-    return safeAssetPath(`/images/level-art/era0/thumbs/${getLevelArtFile(level)}`);
-  }
-  return safeAssetPath(level.imageUrl);
-}
-
-function getBriefingArtSrc(level: LevelData): string {
-  if (level.era === 0) {
-    return safeAssetPath(`/images/level-art/era0/briefings/${getLevelArtFile(level)}`);
-  }
-  return safeAssetPath(level.imageUrl);
-}
-
-function truthTagLabel(tag: TruthTag): string {
-  switch (tag) {
-    case 'history': return 'HISTORY';
-    case 'archaeology': return 'ARCHAEOLOGY';
-    case 'myth': return 'MYTH';
-    case 'game-adaptation': return 'GAME ADAPTATION';
-    case 'uncertain': return 'UNCERTAIN';
-    case 'tutorial': return 'TUTORIAL';
-    case 'hybrid': return 'HYBRID';
-    case 'boss': return 'BOSS';
-    case 'finale': return 'FINALE';
-    default: return String(tag).toUpperCase();
-  }
-}
-
-function nodeTruthSummary(tags: TruthTag[]): string {
-  if (tags.includes('tutorial')) return 'Tutorial';
-  if (tags.includes('boss')) return 'Boss';
-  if (tags.includes('finale')) return 'Finale';
-  if (tags.includes('hybrid')) return 'Hybrid';
-  if (tags.includes('myth')) return 'Myth';
-  if (tags.includes('archaeology')) return 'Archaeology';
-  return 'History';
-}
-
-function isChapterVisibleForPublic(chapterIndex: number): boolean {
-  if (SHOW_ALL_ERA0_LEVELS_FOR_DEV) return true;
-  if (SaveManager.isChapterUnlocked(0, chapterIndex)) return true;
-  if (chapterIndex === 0) return true;
-
-  const previousChapter = ERA0_CHAPTERS[chapterIndex - 1];
-  return SaveManager.getStars(SaveManager.levelId(0, previousChapter.toLevel)) > 0;
-}
-
-function isLevelStartAllowed(level: LevelData): boolean {
-  if (SHOW_ALL_ERA0_LEVELS_FOR_DEV) return true;
-  return SaveManager.isLevelUnlocked(level.era, level.level);
-}
-
-function getNodeState(level: LevelData, stars: number): 'completed' | 'current' | 'unlocked' | 'locked' {
-  if (stars > 0) return 'completed';
-  if (!isLevelStartAllowed(level)) return 'locked';
-  const previousLevelId = level.level > 1 ? SaveManager.levelId(level.era, level.level - 1) : null;
-  const isNext = level.level === 1 || (previousLevelId !== null && SaveManager.getStars(previousLevelId) > 0);
-  return isNext ? 'current' : 'unlocked';
-}
-
-function getFallbackBriefing(level: LevelData): LevelBriefing {
-  const chapter = ERA0_CHAPTERS[getChapterForLevel(level.level)];
-  const factText = getHistoricalFact(level.era, level.level)?.text || level.historical_fact || 'This mission uses the campaign map to bridge history, myth, and gameplay.';
   return {
-    era: level.era,
-    level: level.level,
-    title: level.name,
-    chapterLabel: chapter.label,
-    chapterName: chapter.name,
-    period: normalizePeriod(chapter.years),
-    kind: [level.level === 1 ? 'tutorial' : 'hybrid'],
-    defenseTargetLabel: humanizeTarget(level.defense_target),
-    shortTeaser: factText,
-    whyName: `${level.name} is the campaign title for this battlefield. It is used to give the place a clear identity inside the journey map, even when the mission itself is a gameplay adaptation.`,
-    historicalContext: factText,
-    gameAdaptation: 'This mission layout, its enemy waves, and the defensive setup are adapted for tower-defense gameplay.',
-    objective: `Defend ${humanizeTarget(level.defense_target)} and survive the level’s assault route.`,
-    gameplayTip: 'Use the briefing tags and objective as a quick read, then begin battle whenever you are ready.',
-    accuracyNote: 'This briefing uses available campaign data and falls back to level facts when deeper lore text is missing.',
+    objective: briefing?.objective || `Defend ${level?.defense_target || 'the route'} and survive all waves.`,
+    teaser: briefing?.shortTeaser || node.description,
+    history: briefing?.historicalContext || fact,
+    accuracy: briefing?.accuracyNote || 'This node links historical setting, campaign storytelling, and tower-defense adaptation.',
   };
 }
 
-function preloadEra0Thumbs(levels: LevelData[]): void {
-  levels
-    .filter(level => level.era === 0 && level.level <= 5)
-    .forEach(level => {
-      const src = getMapThumbSrc(level);
-      if (!src) return;
-      const img = new Image();
-      img.src = src;
-    });
-}
-
-function getBriefingForLevel(level: LevelData): LevelBriefing {
-  if (level.era === 0) {
-    return ERA0_LEVEL_BRIEFINGS[level.level] || getFallbackBriefing(level);
-  }
-  return getFallbackBriefing(level);
-}
-
-function chapterTeaserHtml(chapterIndex: number): string {
-  const chapter = ERA0_CHAPTERS[chapterIndex];
-  return `
-    <div class="chapter-gate-card">
-      <div class="chapter-gate-kicker">${e(chapter.label)}</div>
-      <div class="chapter-gate-title">${e(chapter.name)}</div>
-      <div class="chapter-gate-period">${e(normalizePeriod(chapter.years))}</div>
-      <div class="chapter-gate-copy">Complete the previous chapter to unlock this part of the Colchian journey.</div>
-      <button class="chapter-gate-btn" data-gate-chapter="${chapterIndex}">View Chapter</button>
-    </div>
-  `;
-}
-
-function renderEraJourney(eraLevels: LevelData[]): string {
-  let html = `
-    <div class="campaign-map">
-      <div class="campaign-map-header">
-        <div class="campaign-kicker">Era 0 &middot; Ancient Colchis</div>
-        <h2 class="campaign-title">Journey Through Ancient Colchis</h2>
-        <p class="campaign-years">c. 1500 BC &ndash; 83 BC</p>
-        <p class="campaign-subtitle">Travel from river villages and sacred groves toward the last heart of Colchis.</p>
-        ${SHOW_ALL_ERA0_LEVELS_FOR_DEV ? `<div class="campaign-dev-badge">Dev: all levels visible</div>` : ''}
-      </div>
-  `;
-
-  for (let chapterIndex = 0; chapterIndex < ERA0_CHAPTERS.length; chapterIndex++) {
-    const chapter = ERA0_CHAPTERS[chapterIndex];
-    const chapterLevels = eraLevels.filter(level => level.level >= chapter.fromLevel && level.level <= chapter.toLevel);
-    const chapterVisible = isChapterVisibleForPublic(chapterIndex);
-
-    html += `
-      <section class="chapter-journey ${chapterVisible ? '' : 'chapter-journey-locked'}">
-        <div class="chapter-copy">
-          <div class="chapter-kicker">${e(chapter.label)}</div>
-          <h3 class="chapter-title">${e(chapter.name)}</h3>
-          <p class="chapter-period">${e(normalizePeriod(chapter.years))}</p>
-          <p class="chapter-desc">${e(getChapterDescription(chapterIndex))}</p>
-        </div>
-    `;
-
-    if (!chapterVisible) {
-      html += chapterTeaserHtml(chapterIndex);
-      html += `</section>`;
-      continue;
+function renderRouteSvg(campaign: CampaignEra): string {
+  const paths: string[] = [];
+  for (const node of campaign.nodes) {
+    for (const nextId of node.next || []) {
+      const next = campaign.nodes.find(candidate => candidate.id === nextId);
+      if (!next) continue;
+      const midX = (node.x + next.x) / 2;
+      const bend = node.y < next.y ? -4 : 4;
+      const d = `M ${node.x} ${node.y} C ${midX} ${node.y + bend}, ${midX} ${next.y - bend}, ${next.x} ${next.y}`;
+      const completed = isNodeCompleted(node) && (isNodeCompleted(next) || isNodePlayable(next));
+      paths.push(`<path class="campaign-route ${completed ? 'campaign-route-lit' : ''}" d="${d}" />`);
     }
-
-    html += `<div class="journey-node-stack">`;
-    chapterLevels.forEach((lvl, idx) => {
-      const levelId = SaveManager.levelId(lvl.era, lvl.level);
-      const stars = SaveManager.getStars(levelId);
-      const bestTime = SaveManager.getBestTime(levelId);
-      const briefing = getBriefingForLevel(lvl);
-      const state = getNodeState(lvl, stars);
-      const lockedForStart = !isLevelStartAllowed(lvl);
-      const artClass = getMapArtClass(lvl);
-      html += `
-        <div class="journey-node-wrap">
-          <button
-            class="map-node map-node-${state}"
-            data-era="${lvl.era}"
-            data-level="${lvl.level}"
-            data-start-locked="${lockedForStart ? 'true' : 'false'}"
-            aria-label="Open briefing for level ${e(lvl.level)}, ${e(lvl.name)}">
-            <div class="map-node-art ${artClass}" aria-hidden="true">
-              <img class="map-node-art-img" src="${e(getMapThumbSrc(lvl))}" alt="" loading="lazy" decoding="async">
-            </div>
-            <div class="map-node-meta">
-              <div class="map-node-num">${e(lvl.level)}</div>
-              <div class="map-node-name">${e(lvl.name)}</div>
-              <div class="map-node-tags">${e(nodeTruthSummary(briefing.kind))}</div>
-              <div class="map-node-stars">${starsHtml(stars)}</div>
-              ${bestTime !== undefined ? `<div class="map-node-best">Best ${e(formatTime(bestTime))}</div>` : `<div class="map-node-best map-node-best-empty">${state === 'locked' ? 'Locked' : 'Unfinished'}</div>`}
-            </div>
-          </button>
-          ${idx < chapterLevels.length - 1 ? `<div class="map-path map-path-${state}"></div>` : ''}
-        </div>
-      `;
-    });
-    html += `</div></section>`;
   }
 
-  html += `</div>`;
-  return html;
-}
-
-function getChapterDescription(chapterIndex: number): string {
-  switch (chapterIndex) {
-    case 0: return 'Follow the Rioni through river villages, sacred groves, and the first mythic threshold of Colchis.';
-    case 1: return 'Move through mountain streams, forge settlements, ridge watchfires, and the rising defensive world of Colchis.';
-    case 2: return 'Travel the trade routes, ritual clearings, and mythic borders where Phasis, Medea, and the Fleece converge.';
-    case 3: return 'Cross trial grounds, marsh routes, palisades, and the last ceremonial gates before the fall of independent Colchis.';
-    default: return 'Continue deeper into the campaign journey.';
-  }
-}
-
-function renderGenericEraList(era: number, eraLevels: LevelData[]): string {
   return `
-    <div class="campaign-map">
-      <div class="campaign-map-header">
-        <div class="campaign-kicker">Era ${e(era)} &middot; ${e(ERA_NAMES[era] || `Era ${era}`)}</div>
-        <h2 class="campaign-title">${e(ERA_NAMES[era] || `Era ${era}`)}</h2>
-        <p class="campaign-years">${e(ERA_YEARS[era] || '')}</p>
+    <svg class="campaign-route-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      ${paths.join('')}
+    </svg>
+  `;
+}
+
+function renderNode(node: CampaignNode, selected: CampaignNode | null): string {
+  const state = getNodeState(node);
+  const selectedClass = selected?.id === node.id ? 'is-selected' : '';
+  const nodeLabel = node.level ? `Level ${node.level}` : node.type === 'challenge' ? 'Trial' : 'Node';
+  const stars = getStars(node);
+  return `
+    <button
+      class="campaign-node campaign-node-${e(node.type)} campaign-node-${e(state)} ${selectedClass}"
+      type="button"
+      style="left:${node.x}%; top:${node.y}%"
+      data-node-id="${e(node.id)}"
+      aria-label="Select ${e(node.title)}">
+      <span class="campaign-node-glow" aria-hidden="true"></span>
+      <span class="campaign-node-icon" aria-hidden="true">${node.type === 'boss' ? '🐉' : node.type === 'challenge' ? '✦' : node.level || '•'}</span>
+      <span class="campaign-node-label">${e(nodeLabel)}</span>
+      ${stars > 0 ? `<span class="campaign-node-stars">${starsHtml(stars)}</span>` : ''}
+    </button>
+  `;
+}
+
+function renderSelectedCard(node: CampaignNode | null): string {
+  if (!node) return '';
+  const state = getNodeState(node);
+  const stars = getStars(node);
+  const text = getBriefingText(node);
+  const playable = isNodePlayable(node);
+  const comingSoon = state === 'coming-soon';
+  const locked = state === 'locked';
+
+  const action = playable
+    ? `<button class="campaign-play-btn" id="campaign-play-btn" type="button">Play${node.level ? ` Level ${e(node.level)}` : ''}</button>`
+    : `<button class="campaign-play-btn is-disabled" type="button" disabled>${comingSoon ? 'Coming Later' : 'Locked'}</button>`;
+
+  return `
+    <aside class="campaign-info-card" aria-live="polite">
+      <div class="campaign-card-kicker">${node.type === 'boss' ? 'Boss Node' : node.type === 'challenge' ? 'Optional Trial' : `Level ${e(node.level || '')}`}</div>
+      <h2 class="campaign-card-title">${e(node.title)}</h2>
+      <div class="campaign-card-stars">${starsHtml(stars)}</div>
+      <p class="campaign-card-copy">${e(text.teaser)}</p>
+      <div class="campaign-card-objective">${e(text.objective)}</div>
+      <div class="campaign-card-actions">
+        ${action}
+        <button class="campaign-read-btn" id="campaign-read-btn" type="button">Read More</button>
       </div>
-      <section class="chapter-journey">
-        <div class="journey-node-stack">
-          ${eraLevels.map((lvl, idx) => {
-            const levelId = SaveManager.levelId(lvl.era, lvl.level);
-            const stars = SaveManager.getStars(levelId);
-            const bestTime = SaveManager.getBestTime(levelId);
-            const state = getNodeState(lvl, stars);
-            const artClass = getMapArtClass(lvl);
-            return `
-              <div class="journey-node-wrap">
-                <button class="map-node map-node-${state}" data-era="${lvl.era}" data-level="${lvl.level}" data-start-locked="${!isLevelStartAllowed(lvl) ? 'true' : 'false'}">
-                  <div class="map-node-art ${artClass}" aria-hidden="true">
-                    <img class="map-node-art-img" src="${e(getMapThumbSrc(lvl))}" alt="" loading="lazy" decoding="async">
-                  </div>
-                  <div class="map-node-meta">
-                    <div class="map-node-num">${e(lvl.level)}</div>
-                    <div class="map-node-name">${e(lvl.name)}</div>
-                    <div class="map-node-tags">History</div>
-                    <div class="map-node-stars">${starsHtml(stars)}</div>
-                    ${bestTime !== undefined ? `<div class="map-node-best">Best ${e(formatTime(bestTime))}</div>` : `<div class="map-node-best map-node-best-empty">${state === 'locked' ? 'Locked' : 'Unfinished'}</div>`}
-                  </div>
-                </button>
-                ${idx < eraLevels.length - 1 ? `<div class="map-path map-path-${state}"></div>` : ''}
-              </div>
-            `;
-          }).join('')}
-        </div>
+      ${locked ? `<div class="campaign-lock-note">Complete the previous node to unlock this road.</div>` : ''}
+    </aside>
+  `;
+}
+
+function renderReadMore(node: CampaignNode | null): string {
+  if (!node || !readMoreOpen) return '';
+  const text = getBriefingText(node);
+  return `
+    <div class="campaign-readmore" role="dialog" aria-modal="true" aria-label="Campaign history details">
+      <div class="campaign-readmore-backdrop" data-close-readmore="1"></div>
+      <section class="campaign-readmore-panel scrollable">
+        <button class="campaign-readmore-close" type="button" data-close-readmore="1">Close</button>
+        <div class="campaign-readmore-kicker">${e(node.type.toUpperCase())}</div>
+        <h2>${e(node.title)}</h2>
+        <p class="campaign-readmore-lead">${e(text.teaser)}</p>
+        <h3>Historical context</h3>
+        <p>${e(text.history)}</p>
+        <h3>Accuracy note</h3>
+        <p>${e(text.accuracy)}</p>
       </section>
     </div>
   `;
 }
 
-function renderSheet(): string {
-  const level = selectedBriefingLevel;
-  if (level) {
-    const briefing = getBriefingForLevel(level);
-    const displayTitle = level.name || briefing.title;
-    const canBegin = isLevelStartAllowed(level);
-    const tagHtml = briefing.kind.map(tag => `<span class="truth-tag truth-tag-${e(tag)}">${e(truthTagLabel(tag))}</span>`).join('');
-    return `
-      <div class="level-briefing-sheet ${level ? 'is-open' : ''}" aria-hidden="false" role="dialog" aria-modal="true">
-        <div class="level-briefing-backdrop" data-close-sheet="1"></div>
-        <div class="briefing-panel">
-          <div class="briefing-handle" aria-hidden="true"></div>
-          <button class="briefing-close" type="button" data-close-sheet="1" aria-label="Close briefing">Close</button>
-          <div class="briefing-scroll">
-            <div class="briefing-hero">
-              <img class="briefing-hero-img" src="${e(getBriefingArtSrc(level))}" alt="" loading="lazy">
-            </div>
-            <div class="briefing-topline">Level ${e(level.level)}</div>
-            <h3 class="briefing-title">${e(displayTitle)}</h3>
-            <div class="briefing-tags">${tagHtml}</div>
-            <div class="briefing-subline">${e(briefing.chapterLabel)} &mdash; ${e(briefing.chapterName)}</div>
-            <div class="briefing-period">${e(normalizePeriod(briefing.period))}</div>
-            <p class="briefing-teaser">${e(briefing.shortTeaser)}</p>
+function renderCampaignMap(): string {
+  const campaign = CAMPAIGNS[currentEra] || ERA0_CAMPAIGN;
+  const selected = getSelectedNode();
+  const totalStars = SaveManager.getTotalStars();
 
-            <section class="briefing-section briefing-section-quick">
-              <div class="briefing-row">
-                <div class="briefing-label">Defend</div>
-                <div class="briefing-value">${e(briefing.defenseTargetLabel)}</div>
-              </div>
-              <div class="briefing-row">
-                <div class="briefing-label">Objective</div>
-                <div class="briefing-value">${e(briefing.objective)}</div>
-              </div>
-            </section>
+  return `
+    <div class="campaign-map-shell">
+      <div class="campaign-bg" aria-hidden="true">
+        <div class="campaign-river"></div>
+        <div class="campaign-forest campaign-forest-left"></div>
+        <div class="campaign-forest campaign-forest-top"></div>
+        <div class="campaign-gold-dust"></div>
+      </div>
 
-            <section class="briefing-section">
-              <h4 class="briefing-heading">Why this level is called “${e(displayTitle)}”</h4>
-              <p class="briefing-copy">${e(briefing.whyName)}</p>
-            </section>
+      ${renderRouteSvg(campaign)}
 
-            <details class="briefing-accordion">
-              <summary>Read historical context</summary>
-              <div class="briefing-accordion-body">${e(briefing.historicalContext)}</div>
-            </details>
+      <header class="campaign-topbar">
+        <div class="campaign-era-badge">
+          <span class="campaign-era-small">Era ${campaign.id}</span>
+          <strong>${e(campaign.name)}</strong>
+          <span>${e(campaign.dateRange)}</span>
+        </div>
+        <div class="campaign-top-actions">
+          <button id="ls-back-btn" type="button">Back</button>
+          <button id="ls-reset-btn" type="button">Reset</button>
+        </div>
+      </header>
 
-            ${briefing.mythicContext ? `
-              <details class="briefing-accordion">
-                <summary>Myth vs history</summary>
-                <div class="briefing-accordion-body">${e(briefing.mythicContext)}</div>
-              </details>
-            ` : ''}
+      <div class="campaign-title-block">
+        <div class="campaign-title-kicker">Campaign Map</div>
+        <h1>${e(campaign.subtitle)}</h1>
+      </div>
 
-            <details class="briefing-accordion">
-              <summary>How the game adapts this</summary>
-              <div class="briefing-accordion-body">${e(briefing.gameAdaptation)}</div>
-            </details>
+      <div class="campaign-node-layer">
+        ${campaign.nodes.map(node => renderNode(node, selected)).join('')}
+      </div>
 
-            ${briefing.gameplayTip ? `
-              <section class="briefing-section">
-                <h4 class="briefing-heading">Gameplay tip</h4>
-                <p class="briefing-copy">${e(briefing.gameplayTip)}</p>
-              </section>
-            ` : ''}
-
-            <details class="briefing-accordion">
-              <summary>Accuracy note</summary>
-              <div class="briefing-accordion-body">${e(briefing.accuracyNote)}</div>
-            </details>
-          </div>
-
-          <div class="briefing-actions">
-            ${canBegin ? `<button class="briefing-begin-btn" data-begin-level="${level.level}" data-era="${level.era}">Begin Battle</button>` : `<div class="briefing-locked-note">Locked in normal mode. ${SHOW_ALL_ERA0_LEVELS_FOR_DEV ? 'Dev mode can still open all levels.' : 'Complete earlier levels to unlock this battle.'}</div>`}
-          </div>
+      <div class="campaign-hero-chip">
+        <div class="campaign-hero-orb">M</div>
+        <div>
+          <span>Hero</span>
+          <strong>${e(campaign.heroName)}</strong>
         </div>
       </div>
-    `;
-  }
 
-  if (selectedGateChapter >= 0) {
-    const chapter = ERA0_CHAPTERS[selectedGateChapter];
-    return `
-      <div class="level-briefing-sheet is-open" aria-hidden="false" role="dialog" aria-modal="true">
-        <div class="level-briefing-backdrop" data-close-sheet="1"></div>
-        <div class="briefing-panel">
-          <div class="briefing-handle" aria-hidden="true"></div>
-          <button class="briefing-close" type="button" data-close-sheet="1" aria-label="Close chapter preview">Close</button>
-          <div class="briefing-scroll">
-            <div class="briefing-topline">${e(chapter.label)}</div>
-            <h3 class="briefing-title">${e(chapter.name)}</h3>
-            <div class="briefing-period">${e(normalizePeriod(chapter.years))}</div>
-            <p class="briefing-teaser">${e(getChapterDescription(selectedGateChapter))}</p>
-            <section class="briefing-section">
-              <h4 class="briefing-heading">What waits here</h4>
-              <p class="briefing-copy">This chapter opens later in the journey and expands the campaign into new terrain, stronger mythic pressure, and deeper Colchian lore.</p>
-            </section>
-          </div>
-          <div class="briefing-actions">
-            <div class="briefing-locked-note">Complete the previous chapter to unlock this gate.</div>
-          </div>
-        </div>
+      <div class="campaign-star-chip">
+        <span>Total Stars</span>
+        <strong>${e(totalStars)}</strong>
       </div>
-    `;
-  }
 
-  return `<div class="level-briefing-sheet" aria-hidden="true"></div>`;
+      ${renderSelectedCard(selected)}
+      ${renderReadMore(selected)}
+    </div>
+  `;
 }
 
-function bindInteractions() {
+function renderFallbackList(era: number): string {
+  const eraLevels = allLevels.filter(level => level.era === era).sort((a, b) => a.level - b.level);
+  return `
+    <div class="campaign-map-shell campaign-map-fallback">
+      <header class="campaign-topbar">
+        <div class="campaign-era-badge"><strong>Era ${e(era)}</strong><span>Campaign list fallback</span></div>
+        <div class="campaign-top-actions"><button id="ls-back-btn" type="button">Back</button></div>
+      </header>
+      <div class="campaign-fallback-grid">
+        ${eraLevels.map(level => {
+          const playable = SaveManager.isLevelUnlocked(level.era, level.level);
+          const stars = SaveManager.getStars(SaveManager.levelId(level.era, level.level));
+          return `
+            <button class="campaign-fallback-level" data-fallback-level="${level.level}" ${playable ? '' : 'disabled'}>
+              <strong>${e(level.level)}. ${e(level.name)}</strong>
+              <span>${starsHtml(stars)}</span>
+            </button>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function bindInteractions(): void {
   if (!container) return;
-  bindMissingImageFallback();
 
-  const qsPlayBtn = container.querySelector<HTMLButtonElement>('#qs-play-btn');
-  if (qsPlayBtn) {
-    const eraLevels = allLevels.filter(l => l.era === currentEra).sort((a, b) => a.level - b.level);
-    let currentQuickStartLevel = eraLevels[0];
-    for (const lvl of eraLevels) {
-      if (isLevelStartAllowed(lvl)) {
-        currentQuickStartLevel = lvl;
-      }
-    }
-    qsPlayBtn.addEventListener('click', () => {
-      closeSheet(false);
-      onSelect?.(currentEra, currentQuickStartLevel.level);
-    });
-  }
-
-  const qsExploreBtn = container.querySelector<HTMLButtonElement>('#qs-explore-btn');
-  if (qsExploreBtn) {
-    qsExploreBtn.addEventListener('click', () => {
-      mobileExploreMapActive = true;
+  container.querySelectorAll<HTMLButtonElement>('[data-node-id]').forEach(button => {
+    button.addEventListener('click', () => {
+      selectedNodeId = button.dataset.nodeId || null;
+      readMoreOpen = false;
       render(currentEra);
     });
-  }
+  });
 
-  container.querySelectorAll<HTMLElement>('.map-node').forEach((node) => {
-    node.addEventListener('click', () => {
-      const era = Number(node.dataset.era);
-      const levelNum = Number(node.dataset.level);
-      const level = allLevels.find((candidate) => candidate.era === era && candidate.level === levelNum) || null;
-      if (!level) return;
-      selectedGateChapter = -1;
-      selectedBriefingLevel = level;
-      rerenderPreserveScroll();
+  container.querySelector<HTMLButtonElement>('#campaign-play-btn')?.addEventListener('click', () => {
+    const selected = getSelectedNode();
+    if (!selected?.levelRef || !isNodePlayable(selected)) return;
+    onSelect?.(selected.levelRef.era, selected.levelRef.level);
+  });
+
+  container.querySelector<HTMLButtonElement>('#campaign-read-btn')?.addEventListener('click', () => {
+    readMoreOpen = true;
+    render(currentEra);
+  });
+
+  container.querySelectorAll<HTMLElement>('[data-close-readmore]').forEach(el => {
+    el.addEventListener('click', () => {
+      readMoreOpen = false;
+      render(currentEra);
     });
   });
 
-  container.querySelectorAll<HTMLElement>('[data-gate-chapter]').forEach((gate) => {
-    gate.addEventListener('click', () => {
-      selectedBriefingLevel = null;
-      selectedGateChapter = Number(gate.dataset.gateChapter);
-      rerenderPreserveScroll();
+  container.querySelectorAll<HTMLButtonElement>('[data-fallback-level]').forEach(button => {
+    button.addEventListener('click', () => {
+      const level = Number(button.dataset.fallbackLevel);
+      if (Number.isFinite(level)) onSelect?.(currentEra, level);
     });
   });
-
-  container.querySelectorAll<HTMLElement>('[data-close-sheet]').forEach((closeEl) => {
-    closeEl.addEventListener('click', () => closeSheet());
-  });
-
-  const beginBtn = container.querySelector<HTMLButtonElement>('[data-begin-level]');
-  if (beginBtn) {
-    beginBtn.addEventListener('click', () => {
-      const era = Number(beginBtn.dataset.era);
-      const level = Number(beginBtn.dataset.beginLevel);
-      closeSheet(false);
-      onSelect?.(era, level);
-    });
-  }
 
   container.querySelector<HTMLButtonElement>('#ls-back-btn')?.addEventListener('click', () => {
-    closeSheet(false);
+    readMoreOpen = false;
     onBack?.();
   });
 
   container.querySelector<HTMLButtonElement>('#ls-reset-btn')?.addEventListener('click', () => {
     if (confirm('Clear all save data and restart?')) {
       SaveManager.reset();
-      closeSheet(false);
+      selectedNodeId = null;
+      readMoreOpen = false;
       render(currentEra);
     }
   });
+
+  document.removeEventListener('keydown', handleEscape);
+  document.addEventListener('keydown', handleEscape);
 }
 
-function bindMissingImageFallback(): void {
-  if (!container || container.dataset.imageErrorBound === '1') return;
-  container.dataset.imageErrorBound = '1';
-  container.addEventListener('error', (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLImageElement)) return;
-    if (
-      target.classList.contains('map-node-art-img') ||
-      target.classList.contains('briefing-hero-img')
-    ) {
-      target.classList.add('is-missing');
-    }
-  }, true);
-}
-
-function bindEscape() {
-  document.removeEventListener('keydown', handleSheetEscape);
-  document.addEventListener('keydown', handleSheetEscape);
-}
-
-function handleSheetEscape(event: KeyboardEvent) {
+function handleEscape(event: KeyboardEvent): void {
   if (event.key !== 'Escape') return;
-  if (!selectedBriefingLevel && selectedGateChapter < 0) return;
-  closeSheet();
+  if (readMoreOpen) {
+    readMoreOpen = false;
+    render(currentEra);
+  }
 }
 
-function closeSheet(shouldRerender = true) {
-  selectedBriefingLevel = null;
-  selectedGateChapter = -1;
-  if (shouldRerender) rerenderPreserveScroll();
-}
-
-function getScrollHost(): HTMLElement | null {
-  if (!container) return null;
-  const screen = container.closest<HTMLElement>('#screen-level-select');
-  return screen || container;
-}
-
-function rerenderPreserveScroll(): void {
-  const scrollHost = getScrollHost();
-  const scrollTop = scrollHost?.scrollTop ?? 0;
-  render(currentEra);
-  const updatedHost = getScrollHost();
-  if (updatedHost) updatedHost.scrollTop = scrollTop;
-}
-
-function render(era: number) {
+function render(era: number): void {
   if (!container) return;
-  currentEra = era;
   injectStyles();
+  currentEra = era;
 
-  const eraLevels = allLevels.filter(l => l.era === era).sort((a, b) => a.level - b.level);
-  
-  let currentQuickStartLevel = eraLevels[0];
-  for (const lvl of eraLevels) {
-    if (isLevelStartAllowed(lvl)) {
-      currentQuickStartLevel = lvl;
-    }
-  }
-
-  const isLandscapeTouch = isMobileLandscape();
   const screen = container.closest<HTMLElement>('#screen-level-select');
-  
   if (screen) {
-    screen.classList.toggle('quick-start-active', isLandscapeTouch && !mobileExploreMapActive);
+    screen.classList.remove('quick-start-active', 'briefing-open');
+    screen.classList.add('campaign-map-mode');
   }
 
-  let mainContentHtml = '';
-  if (isLandscapeTouch && !mobileExploreMapActive) {
-    const currentBriefing = getBriefingForLevel(currentQuickStartLevel);
-    mainContentHtml = `
-      <div class="quick-start-container">
-        <div class="quick-start-card">
-          <div class="qs-kicker">ERA ${currentEra} &middot; ${e(ERA_NAMES[currentEra])}</div>
-          <div class="qs-title">Level ${currentQuickStartLevel.level}</div>
-          <div class="qs-subtitle">${e(currentQuickStartLevel.name)}</div>
-          
-          <div class="qs-meta-grid">
-            <div class="qs-meta-item">
-              <span class="qs-meta-label">Objective</span>
-              <span class="qs-meta-val">${e(currentBriefing.objective || 'Defend stronghold')}</span>
-            </div>
-            <div class="qs-meta-item">
-              <span class="qs-meta-label">Type</span>
-              <span class="qs-meta-val">${e(nodeTruthSummary(currentBriefing.kind))}</span>
-            </div>
-          </div>
-          
-          <div class="qs-actions">
-            <button class="qs-btn-play" id="qs-play-btn">
-              Play Level ${currentQuickStartLevel.level}
-            </button>
-            <button class="qs-btn-explore" id="qs-explore-btn">
-              Campaign Map
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-  } else {
-    mainContentHtml = era === 0 ? renderEraJourney(eraLevels) : renderGenericEraList(era, eraLevels);
-  }
+  const campaign = CAMPAIGNS[era];
+  if (!selectedNodeId) selectedNodeId = getLatestPlayableNode()?.id || campaign?.nodes[0]?.id || null;
 
-  const html = `
-    <div class="ls-shell">
-      <div class="ls-volume-panel">
+  container.innerHTML = `
+    <div class="ls-shell ls-shell-campaign">
+      <div class="ls-volume-panel campaign-volume-panel">
         <div class="vol-row">
           <span class="vol-label">Music</span>
           <input type="range" id="vol-music-level" min="0" max="100" value="10">
           <span class="vol-val" id="vol-music-level-val">10</span>
         </div>
       </div>
-      ${mainContentHtml}
-      <div class="ls-footer">
-        <button id="ls-back-btn">Back</button>
-        <button id="ls-reset-btn">Clear Progress</button>
-      </div>
-      ${renderSheet()}
+      ${campaign ? renderCampaignMap() : renderFallbackList(era)}
     </div>
   `;
 
-  container.innerHTML = html;
-  if (screen) {
-    const sheetOpen = Boolean(selectedBriefingLevel || selectedGateChapter >= 0);
-    screen.classList.toggle('briefing-open', sheetOpen);
-  }
   audio.bindVolumeControls();
   bindInteractions();
-  bindEscape();
 }
 
 export const LevelSelect = {
@@ -680,7 +526,7 @@ export const LevelSelect = {
     era: number,
     containerEl: HTMLElement,
     levels: LevelData[],
-    onSelectLevel: (era: number, level: number) => void,
+    onSelectLevel: OnSelect,
     onBackFn: () => void,
   ) {
     injectStyles();
@@ -688,14 +534,16 @@ export const LevelSelect = {
     onBack = onBackFn;
     allLevels = levels;
     container = containerEl;
-    mobileExploreMapActive = false;
+    currentEra = era;
+    selectedNodeId = null;
+    readMoreOpen = false;
     await loadFacts();
-    preloadEra0Thumbs(levels);
     render(era);
   },
 
   hide() {
-    closeSheet(false);
+    readMoreOpen = false;
+    document.removeEventListener('keydown', handleEscape);
   },
 
   refresh() {
