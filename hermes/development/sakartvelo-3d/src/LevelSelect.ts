@@ -333,7 +333,7 @@ function bindMapPanning(): void {
   shell.addEventListener('pointerdown', (event) => {
     if (readMoreOpen) return;
     const target = event.target as HTMLElement | null;
-    if (target?.closest('.campaign-info-card, .campaign-topbar, .campaign-hero-chip, .campaign-star-chip, .campaign-readmore')) return;
+    if (target?.closest('[data-node-id], button, input, .campaign-info-card, .campaign-topbar, .campaign-hero-chip, .campaign-star-chip, .campaign-readmore')) return;
     panGesture = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, startPanX: campaignPanX, moved: false };
     shell.setPointerCapture?.(event.pointerId);
   });
