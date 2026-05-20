@@ -742,9 +742,15 @@ export class GameLoop {
   }
 
   private _updateCameraSway(time: number): void {
-    if (!gs.currentLevel) return;
+    if (!gs.currentLevel || !gs.cameraHeight || !gs.cameraDepth) return;
     const t = time * 0.1;
-    this._camera.position.x = gs.cameraBaseX + Math.sin(t) * 0.15;
+    const swayX = Math.sin(t) * 0.15;
+    this._camera.position.set(
+      gs.cameraBaseX + swayX,
+      gs.cameraHeight,
+      gs.cameraBaseZ + gs.cameraDepth
+    );
+    this._camera.lookAt(gs.cameraBaseX + swayX, 0, gs.cameraBaseZ);
   }
 
   cleanup(): void {

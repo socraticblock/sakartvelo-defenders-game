@@ -44,6 +44,13 @@ export class InputManager {
   private _initialZoom = 100;
   private _wheelDilationTimer: any = null;
 
+  // Camera Drag-to-pan
+  private _isDragging = false;
+  private _dragStartX?: number;
+  private _dragStartY?: number;
+  private _camStartBaseX = 0;
+  private _camStartBaseZ = 0;
+
   // Three.js refs
   private _renderer!: THREE.WebGLRenderer;
   private _camera!: THREE.Camera;
@@ -346,11 +353,87 @@ export class InputManager {
   private _onPointerUp = (e: PointerEvent): void => {
     this._activePointers.delete(e.pointerId);
 
+    const wasPinching = this._isPinching;
+    const wasDragging = this._isDragging;
+
     if (this._isPinching && this._activePointers.size < 2) {
       this._isPinching = false;
       // Restore time if no UI menus are open
       if (!gs.selectedTower && !document.getElementById('build-circle')?.classList.contains('visible')) {
         gs.targetTimeScale = 1.0;
+      }
+    }
+
+    // Reset drag start tracking coordinates
+    this._dragStartX = undefined;
+    this._dragStartY = undefined;
+    this._isDragging = false;
+
+    // Only process tap/click if the pointer did not pinch or drag
+    if (!wasPinching && !wasDragging) {
+      if (this._isBlockedByUi(e.clientX, e.clientY)) return;
+
+      this._mouseX = e.clientX;
+      this._mouseY = e.clientY;
+      this._mouseDirty = true;
+
+      const grid = gs.grid;
+      if (!grid) return;
+
+      // Check WarHorn FIRST
+      if (warHorn.group.visible && gs.waveMgr && (!gs.waveMgr.active || gs.waveMgr.inBuildPhase)) {
+        this._getNormalizedMouse();
+        this._ray.setFromCamera(this._mouse, this._camera);
+        const hits = this._ray.intersectObject(warHorn.group, true);
+        if (hits.length > 0) {
+          console.log('--- WAR HORN HIT! ---');
+          const bonus = gs.waveMgr.inBuildPhase ? gs.getBuildPhaseBonus() : (gs.waveCountdownActive ? gs.getCountdownBonus() : 0);
+          gs.startWave(bonus);
+          return; // Click swallowed
+        }
+      }
+
+      // Placement mode: ray hits tall tower meshes before the ground tile — always use grid.
+      if (gs.selectedType) {
+        const rawCell = this.getMouseGrid(grid);
+        if (rawCell) {
+          let gx = rawCell.gx;
+          let gy = rawCell.gy;
+
+          const groundPos = this.getMouseGround();
+          const snapP = this._getClosestPlinth(grid, gs.selectedType, groundPos);
+          if (snapP) {
+            gx = snapP.userData.gx;
+            gy = snapP.userData.gy;
+          }
+
+          this._cb.onGridClick(gx, gy, rawCell.isPath);
+        } else {
+          this._cb.onDeselect();
+        }
+        return;
+      }
+
+      const tower = this.getMouseTower(gs.towers);
+      if (tower) {
+        this._cb.onTowerClick(tower);
+        return;
+      }
+
+      const cell = this.getMouseGrid(grid);
+      if (cell) {
+        if (grid.isPlinthCell(cell.gx, cell.gy)) {
+          this._cb.onBuildNodeClick(cell.gx, cell.gy);
+          return;
+        }
+        const pos = this.getMouseGround();
+        if (pos) {
+          this._cb.onHeroMove(pos.x, pos.z);
+          // Clear tower selection when moving hero or clicking away
+          this._cb.onDeselect();
+        }
+      } else {
+        this._cb.onDeselect();
       }
     }
   };
@@ -376,19 +459,42 @@ export class InputManager {
 
       if (this._isPinching) {
         const delta = dist - this._initialPinchDist;
-        // Pinching out (fingers spread) = dist increases = delta positive = zoom out?
-        // Wait, spread fingers = zoom IN (percentage decreases, or camera gets closer).
-        // Let's test standard mapping: zoom in = camera physically closer = zoomPct increases?
-        // Our camera zoom pct: 100 is normal. Higher means zoomed OUT? No, "zoom" usually means magnification.
-        // Wait, zoomPct in main: `const zoomScale = 100 / cameraZoomPct; dist = ... * zoomScale`
-        // So higher zoomPct = smaller dist = zoomed IN (magnified).
-        // Fingers spread -> dist increases -> delta > 0 -> we want zoom IN -> targetZoom increases!
         const targetZoom = this._initialZoom + delta * 0.3;
         if ((window as any).__setCameraZoom) {
           (window as any).__setCameraZoom(targetZoom);
         }
       }
-      return; // Do not process hover while pinching
+      return; // Do not process hover or dragging while pinching
+    }
+
+    // Camera Drag-to-pan handling
+    if (this._dragStartX !== undefined && this._dragStartY !== undefined) {
+      const dx = e.clientX - this._dragStartX;
+      const dy = e.clientY - this._dragStartY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (!this._isDragging) {
+        if (dist > 8) { // Drag deadzone threshold
+          this._isDragging = true;
+        }
+      }
+
+      if (this._isDragging) {
+        // Compute pan factor dynamically based on height of camera
+        const factor = (gs.cameraHeight || 15) * 0.0018;
+        
+        // Boundaries based on level grid size + cushion for expanded scenery
+        const gridWidth = gs.currentLevel?.grid_width ?? 18;
+        const gridHeight = gs.currentLevel?.grid_height ?? 10;
+        const minX = -6;
+        const maxX = gridWidth + 6;
+        const minZ = -4;
+        const maxZ = gridHeight + 4;
+
+        gs.cameraBaseX = THREE.MathUtils.clamp(this._camStartBaseX - dx * factor, minX, maxX);
+        gs.cameraBaseZ = THREE.MathUtils.clamp(this._camStartBaseZ - dy * factor, minZ, maxZ);
+        return; // Skip hover updates while dragging
+      }
     }
 
     this._mouseX = e.clientX;
@@ -405,7 +511,10 @@ export class InputManager {
       const dy = pts[0].clientY - pts[1].clientY;
       this._initialPinchDist = Math.sqrt(dx * dx + dy * dy);
       this._initialZoom = (window as any).__getCameraZoom?.() || 100;
-      this._isPinching = false;
+      this._isPinching = true;
+      this._isDragging = false;
+      this._dragStartX = undefined;
+      this._dragStartY = undefined;
       return; // Cancel regular click
     }
 
@@ -416,67 +525,16 @@ export class InputManager {
     // Stop propagation so we don't trigger multiple handlers
     e.stopPropagation();
 
+    // Start tracking drag
+    this._isDragging = false;
+    this._dragStartX = e.clientX;
+    this._dragStartY = e.clientY;
+    this._camStartBaseX = gs.cameraBaseX;
+    this._camStartBaseZ = gs.cameraBaseZ;
+
     this._mouseX = e.clientX;
     this._mouseY = e.clientY;
-
-    const grid = gs.grid;
-    if (!grid) return;
-
-    // Check WarHorn FIRST
-    if (warHorn.group.visible && gs.waveMgr && (!gs.waveMgr.active || gs.waveMgr.inBuildPhase)) {
-      this._getNormalizedMouse();
-      this._ray.setFromCamera(this._mouse, this._camera);
-      const hits = this._ray.intersectObject(warHorn.group, true);
-      if (hits.length > 0) {
-        console.log('--- WAR HORN HIT! ---');
-        const bonus = gs.waveMgr.inBuildPhase ? gs.getBuildPhaseBonus() : (gs.waveCountdownActive ? gs.getCountdownBonus() : 0);
-        gs.startWave(bonus);
-        return; // Click swallowed
-      }
-    }
-
-    // Placement mode: ray hits tall tower meshes before the ground tile — always use grid.
-    if (gs.selectedType) {
-      const rawCell = this.getMouseGrid(grid);
-      if (rawCell) {
-        let gx = rawCell.gx;
-        let gy = rawCell.gy;
-
-        const groundPos = this.getMouseGround();
-        const snapP = this._getClosestPlinth(grid, gs.selectedType, groundPos);
-        if (snapP) {
-          gx = snapP.userData.gx;
-          gy = snapP.userData.gy;
-        }
-
-        this._cb.onGridClick(gx, gy, rawCell.isPath);
-      } else {
-        this._cb.onDeselect();
-      }
-      return;
-    }
-
-    const tower = this.getMouseTower(gs.towers);
-    if (tower) {
-      this._cb.onTowerClick(tower);
-      return;
-    }
-
-    const cell = this.getMouseGrid(grid);
-    if (cell) {
-      if (grid.isPlinthCell(cell.gx, cell.gy)) {
-        this._cb.onBuildNodeClick(cell.gx, cell.gy);
-        return;
-      }
-      const pos = this.getMouseGround();
-      if (pos) {
-        this._cb.onHeroMove(pos.x, pos.z);
-        // Clear tower selection when moving hero or clicking away
-        this._cb.onDeselect();
-      }
-    } else {
-      this._cb.onDeselect();
-    }
+    this._mouseDirty = true;
   };
 
   private _onContextMenu = (e: MouseEvent): void => {

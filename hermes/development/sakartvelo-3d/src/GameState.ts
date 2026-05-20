@@ -63,6 +63,9 @@ export class GameState {
 
   // ─── Camera ──────────────────────────────────────────────
   cameraBaseX = 0;
+  cameraBaseZ = 0;
+  cameraHeight = 0;
+  cameraDepth = 0;
 
   // ─── Helpers ─────────────────────────────────────────────
   get buildPhaseActive() { return this.waveMgr?.inBuildPhase ?? false; }

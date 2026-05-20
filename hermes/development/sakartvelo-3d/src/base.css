@@ -8,10 +8,24 @@
   box-sizing: border-box;
 }
 
-body {
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
   overflow: hidden;
+  position: fixed;
+  touch-action: none;
+  -webkit-overflow-scrolling: none;
+  user-select: none;
+  -webkit-user-select: none;
   background: #1a1a2e;
   font-family: 'Noto Serif Georgian', 'Georgia', serif;
+}
+
+/* Allow touch scrolling inside scrollable info and settings cards/modals */
+.game-info-card, .bestiary-modal, .enemy-intro-modal, .scrollable {
+  touch-action: pan-y !important;
 }
 
 canvas {

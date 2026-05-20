@@ -168,6 +168,9 @@ function setupCamera(gw: number, gh: number): void {
 
   applyTarget(targetZ);
   gs.cameraBaseX = cx;
+  gs.cameraBaseZ = targetZ;
+  gs.cameraHeight = camHeight;
+  gs.cameraDepth = camDepth;
 }
 
 async function startLevel(era: number, level: number): Promise<void> {
