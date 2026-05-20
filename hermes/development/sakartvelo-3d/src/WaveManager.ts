@@ -95,7 +95,14 @@ export class WaveManager {
     this.spawnTimer -= dt;
     if (this.spawnTimer <= 0 && this.spawnIndex < this.spawnList.length) {
       const s = this.spawnList[this.spawnIndex];
-      const enemy = new Enemy(s.type, this.worldPath, s.hp_mult, s.speed_mult);
+      const enemy = new Enemy(
+        s.type,
+        this.worldPath,
+        s.hp_mult,
+        s.speed_mult,
+        s.formation ?? (s.type === 'cavalry' ? 'wide' : s.type === 'siege' || s.type === 'boss' ? 'column' : 'loose'),
+        this.spawnIndex,
+      );
       this.aliveEnemies.push(enemy);
       this.spawnIndex++;
       this.spawnTimer = s.spawn_interval || 0.8;
