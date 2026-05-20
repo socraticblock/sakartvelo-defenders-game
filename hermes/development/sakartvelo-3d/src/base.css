@@ -21,7 +21,12 @@ html, body {
   font-family: 'Noto Serif Georgian', 'Georgia', serif;
 }
 
-/* Shell-specific touch action locking to prevent page scrolling in gameplay */
+/*
+ * Shell-specific touch locks.
+ *
+ * Do not lock every .intro-overlay globally: the era prologue/narration screen
+ * is also an intro overlay, but it intentionally scrolls on compact phones.
+ */
 canvas,
 #hud,
 #hero-bar,
@@ -30,17 +35,20 @@ canvas,
 #tower-action-circle,
 #horn-bonus,
 #tutorial-overlay,
-.intro-overlay {
+#screen-title.intro-overlay {
   touch-action: none !important;
 }
 
-/* Allow touch scrolling inside scrollable panels and the campaign map */
+/* Allow touch scrolling inside deliberate narrative, menu, and map surfaces. */
 .game-info-card,
 .bestiary-modal,
 .enemy-intro-modal,
 .scrollable,
+.intro-body,
+#screen-era.intro-overlay,
 #screen-level-select:not(.quick-start-active) {
   touch-action: pan-y !important;
+  -webkit-overflow-scrolling: touch;
 }
 
 canvas {
