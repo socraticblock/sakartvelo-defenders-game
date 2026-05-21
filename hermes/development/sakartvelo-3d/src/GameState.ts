@@ -16,7 +16,9 @@ import { SaveManager } from './SaveManager';
 import { FriendlyInfantry } from './FriendlyInfantry';
 import { comboIndicator } from './ComboIndicator';
 import { disposeObject3D } from './utils/threeDispose';
-import { ECONOMY_BALANCE, FRIENDLY_INFANTRY_BALANCE } from './BalanceConfig';
+import { ECONOMY_BALANCE, FRIENDLY_INFANTRY_BALANCE, V5_SLICE_BALANCE } from './BalanceConfig';
+import { spawnSplashRing, spawnHitFlash } from './Effects';
+import { canDamageEnemy } from './EnemyTraits';
 
 export class GameState {
   // ─── Entities ───────────────────────────────────────────
@@ -33,6 +35,8 @@ export class GameState {
   lives = 20;
   infantryCost = FRIENDLY_INFANTRY_BALANCE.cost;
   infantryCooldown = 0;
+  stonefallCooldown = 0;
+  targetedMapPower: 'stonefall' | null = null;
 
   // ─── Selection ───────────────────────────────────────────
   selectedType: string | null = null;   // tower type being placed
@@ -135,6 +139,8 @@ export class GameState {
     this.popupDismissed = false;
     this.bossKilled = false;
     this.infantryCooldown = 0;
+    this.stonefallCooldown = 0;
+    this.targetedMapPower = null;
     this.levelElapsedTime = 0;
     comboIndicator.reset();
 
@@ -258,7 +264,6 @@ export class GameState {
     const activeCount = this.friendlies.filter(f => f.alive).length;
     return !!this.grid &&
       !this.gameOver &&
-      this.gold >= this.infantryCost &&
       this.infantryCooldown <= 0 &&
       activeCount < FRIENDLY_INFANTRY_BALANCE.maxActive;
   }
@@ -266,10 +271,30 @@ export class GameState {
   spawnFriendlyInfantry(scene: THREE.Scene): boolean {
     if (!this.grid || !this.canSpawnInfantry()) return false;
     const unit = new FriendlyInfantry(this.grid.getWorldPath());
-    this.gold -= this.infantryCost;
     this.infantryCooldown = FRIENDLY_INFANTRY_BALANCE.cooldown;
     this.friendlies.push(unit);
     scene.add(unit.group);
+    return true;
+  }
+
+  canCastStonefall(): boolean {
+    return !!this.grid && !this.gameOver && this.stonefallCooldown <= 0;
+  }
+
+  castStonefall(scene: THREE.Scene, pos: THREE.Vector3): boolean {
+    if (!this.canCastStonefall()) return false;
+    this.stonefallCooldown = V5_SLICE_BALANCE.stonefallCooldown;
+    this.targetedMapPower = null;
+    const hitPos = new THREE.Vector3(pos.x, 0.08, pos.z);
+    spawnSplashRing(scene, hitPos, V5_SLICE_BALANCE.stonefallRadius);
+    for (const enemy of this.enemies) {
+      if (!enemy.alive || !canDamageEnemy(enemy.type, 'abilityMagic')) continue;
+      if (enemy.getPos().distanceTo(hitPos) <= V5_SLICE_BALANCE.stonefallRadius) {
+        enemy.takeDamage(V5_SLICE_BALANCE.stonefallDamage);
+        enemy.applyTemporarySlow(0.25, 1.4);
+        spawnHitFlash(scene, enemy.getPos());
+      }
+    }
     return true;
   }
 

@@ -10,6 +10,7 @@ import { Tower } from './Tower';
 import { TileUserData, TOWER_CONFIGS } from './types';
 import { buildArcherMesh, buildCatapultMesh, buildWallMesh } from './TowerMeshes';
 import { warHorn } from './WarHorn';
+import { V5_SLICE_BALANCE } from './BalanceConfig';
 
 type KBLayout = 'qwerty' | 'azerty';
 
@@ -19,6 +20,7 @@ interface InputCallbacks {
   onBuildNodeClick: (gx: number, gy: number) => void;
   onTowerClick: (tower: Tower) => void;
   onAbility: (idx: number) => void;
+  onMapPowerTarget: (x: number, z: number) => void;
   onEscape: () => void;
   onDeselect: () => void;
 }
@@ -209,7 +211,7 @@ export class InputManager {
     if (!groundPos || !selectedType || selectedType === 'wall') return null;
     const plinths = (grid as any).plinths as THREE.Group[] | undefined;
     if (!plinths?.length) return null;
-    const SNAP_RADIUS = 2.0; // world units, shared by ghost + placement
+    const SNAP_RADIUS = selectedType === 'tapPlinth' ? V5_SLICE_BALANCE.plinthTapRadius : 2.0;
     let closest: THREE.Group | null = null;
     let minDist = SNAP_RADIUS;
     for (const p of plinths) {
@@ -290,6 +292,17 @@ export class InputManager {
       }
     }
     return null;
+  }
+
+  getMousePlinth(grid: Grid): { gx: number; gy: number } | null {
+    this._getNormalizedMouse();
+    this._ray.setFromCamera(this._mouse, this._camera);
+    const hits = this._ray.intersectObjects(grid.getPlinthPickMeshes(), true);
+    if (hits.length === 0) return null;
+    const data = hits[0].object.userData;
+    const plinths = (grid as any).plinths as THREE.Group[] | undefined;
+    if (plinths?.some(p => p.userData.gx === data.gx && p.userData.gy === data.gy && p.userData.occupied)) return null;
+    return { gx: data.gx, gy: data.gy };
   }
 
   // ─── Private ───────────────────────────────────────────
@@ -393,6 +406,12 @@ export class InputManager {
         }
       }
 
+      if (gs.targetedMapPower) {
+        const pos = this.getMouseGround();
+        if (pos) this._cb.onMapPowerTarget(pos.x, pos.z);
+        return;
+      }
+
       // Placement mode: ray hits tall tower meshes before the ground tile — always use grid.
       if (gs.selectedType) {
         const rawCell = this.getMouseGrid(grid);
@@ -414,6 +433,12 @@ export class InputManager {
         return;
       }
 
+      const plinthHit = this.getMousePlinth(grid);
+      if (plinthHit) {
+        this._cb.onBuildNodeClick(plinthHit.gx, plinthHit.gy);
+        return;
+      }
+
       const tower = this.getMouseTower(gs.towers);
       if (tower) {
         this._cb.onTowerClick(tower);
@@ -422,11 +447,13 @@ export class InputManager {
 
       const cell = this.getMouseGrid(grid);
       if (cell) {
-        if (grid.isPlinthCell(cell.gx, cell.gy)) {
-          this._cb.onBuildNodeClick(cell.gx, cell.gy);
+        const groundPos = this.getMouseGround();
+        const tappedPlinth = this._getClosestPlinth(grid, 'tapPlinth', groundPos);
+        if (tappedPlinth) {
+          this._cb.onBuildNodeClick(tappedPlinth.userData.gx, tappedPlinth.userData.gy);
           return;
         }
-        const pos = this.getMouseGround();
+        const pos = groundPos;
         if (pos) {
           this._cb.onHeroMove(pos.x, pos.z);
           // Clear tower selection when moving hero or clicking away
@@ -475,7 +502,7 @@ export class InputManager {
 
       if (!this._isDragging) {
         const isTouch = e.pointerType === 'touch' || e.pointerType === 'pen';
-        const dragThreshold = isTouch ? 16 : 8;
+        const dragThreshold = isTouch ? V5_SLICE_BALANCE.touchDragThresholdPx : V5_SLICE_BALANCE.dragThresholdPx;
         if (dist > dragThreshold) { // Drag deadzone threshold
           this._isDragging = true;
         }

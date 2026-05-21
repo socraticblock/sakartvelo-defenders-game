@@ -125,6 +125,7 @@ export class GameLoop {
       this._updateWaveCountdown(dt);
       this._updateSpawn(dt);
       this._updateInfantryCooldown(dt);
+      this._updateStonefallCooldown(dt);
       updateEnemySlow();
       updateEnemyWallAttacks(this._scene, this._camera, dt);
       this._updateEnemies(dt);
@@ -214,6 +215,10 @@ export class GameLoop {
 
   private _updateInfantryCooldown(dt: number): void {
     if (gs.infantryCooldown > 0) gs.infantryCooldown = Math.max(0, gs.infantryCooldown - dt);
+  }
+
+  private _updateStonefallCooldown(dt: number): void {
+    if (gs.stonefallCooldown > 0) gs.stonefallCooldown = Math.max(0, gs.stonefallCooldown - dt);
   }
 
   private _updateEnemies(dt: number): void {

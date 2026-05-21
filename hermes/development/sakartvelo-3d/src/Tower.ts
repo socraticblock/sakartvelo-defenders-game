@@ -13,6 +13,8 @@ import {
   buildCatapultMesh,
   buildWallMesh,
 } from './TowerMeshes';
+import { SaveManager } from './SaveManager';
+import { V5_SLICE_BALANCE } from './BalanceConfig';
 
 const _origColorMap = new Map<THREE.Mesh, number>();
 
@@ -68,7 +70,7 @@ export class Tower {
     this.buildMesh();
     this.rangeRing = this.createRangeRing();
     this.group.add(this.rangeRing);
-    this.effectiveDamage = this.config.damage;
+    this.effectiveDamage = this.config.damage * (this.type === 'archer' ? this.getArcherUpgradeMult() : 1);
     this.effectiveRange = this.config.range;
     this.effectiveSpeed = this.config.attackSpeed;
     this.effectiveSplash = this.config.splashRadius;
@@ -108,7 +110,7 @@ export class Tower {
     if (this.type === 'archer') {
       const m = TOWER_LEVEL_MULTS.archer;
       const idx = this.level - 1;
-      this.effectiveDamage = this.config.damage * m.damage[idx];
+      this.effectiveDamage = this.config.damage * m.damage[idx] * this.getArcherUpgradeMult();
       this.effectiveRange = this.config.range * m.range[idx];
       this.effectiveSpeed = this.config.attackSpeed * m.speed[idx];
       this.effectiveSplash = this.config.splashRadius;
@@ -132,6 +134,10 @@ export class Tower {
     this.group.children.forEach(c => { if (c !== this.rangeRing) toRemove.push(c); });
     toRemove.forEach(c => this.group.remove(c));
     this.buildMesh();
+  }
+
+  private getArcherUpgradeMult(): number {
+    return SaveManager.hasV5Upgrade('archer_damage_5') ? V5_SLICE_BALANCE.archerDamageUpgradeMult : 1;
   }
 
   private buildMesh() {

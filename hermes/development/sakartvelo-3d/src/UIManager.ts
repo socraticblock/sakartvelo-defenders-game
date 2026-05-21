@@ -13,6 +13,7 @@ import { TOWER_CONFIGS } from './types';
 import { BESTIARY_ENTRIES } from './BestiaryData';
 import { visuals } from './VisualsManager';
 import { escapeHtml } from './utils/dom';
+import { V5_SLICE_BALANCE } from './BalanceConfig';
 
 type OnLevelSelect = (era: number, level: number) => void;
 type OnEscape = () => void;
@@ -43,6 +44,7 @@ export class UIManager {
   private $heroStatus = document.getElementById('hero-status');
   private $wallModeBtn = document.getElementById('wall-mode-btn') as HTMLButtonElement | null;
   private $infantrySpawnBtn = document.getElementById('infantry-spawn-btn') as HTMLButtonElement | null;
+  private $stonefallBtn = document.getElementById('stonefall-btn') as HTMLButtonElement | null;
   private $buildCircle = document.getElementById('build-circle');
   private $buildCircleArcher = document.getElementById('build-circle-archer') as HTMLButtonElement | null;
   private $buildCircleCatapult = document.getElementById('build-circle-catapult') as HTMLButtonElement | null;
@@ -123,13 +125,23 @@ export class UIManager {
       }
       this.screens.updateAbilities(gs.hero);
     }
-    if (this.$wallModeBtn) this.$wallModeBtn.classList.toggle('selected', gs.selectedType === 'wall');
+    if (this.$wallModeBtn) {
+      this.$wallModeBtn.classList.toggle('selected', gs.selectedType === 'wall');
+      this.$wallModeBtn.disabled = !gs.hero?.alive || gs.gold < TOWER_CONFIGS.wall.cost;
+      this.$wallModeBtn.title = !gs.hero?.alive ? 'Hero down: building unavailable.' : `Place Wall (${TOWER_CONFIGS.wall.cost}g)`;
+    }
     if (this.$infantrySpawnBtn) {
       const cd = Math.max(0, gs.infantryCooldown);
       const canSpawn = gs.canSpawnInfantry();
-      const baseText = `⚔ Infantry (${gs.infantryCost}g)`;
+      const baseText = 'Call Militia';
       this.$infantrySpawnBtn.disabled = !canSpawn;
       this.setText(this.$infantrySpawnBtn, cd > 0 ? `${baseText} ${cd.toFixed(1)}s` : baseText);
+    }
+    if (this.$stonefallBtn) {
+      const cd = Math.max(0, gs.stonefallCooldown);
+      this.$stonefallBtn.disabled = !gs.canCastStonefall();
+      this.$stonefallBtn.classList.toggle('selected', gs.targetedMapPower === 'stonefall');
+      this.setText(this.$stonefallBtn, cd > 0 ? `Stonefall ${cd.toFixed(1)}s` : (gs.targetedMapPower ? 'Choose Target' : 'Stonefall'));
     }
 
     this.panel.update();
@@ -220,9 +232,10 @@ export class UIManager {
   setTowerPlacementType(type: string | null): void {
     gs.selectedType = type;
     gs.selectedTower = null;
+    gs.targetedMapPower = null;
     
     // Slow down time for tactical placement
-    gs.targetTimeScale = type ? 0.1 : 1.0;
+    gs.targetTimeScale = type ? V5_SLICE_BALANCE.tacticalSlowMotionScale : 1.0;
     
     this.closeBuildCircle();
     this.panel.towerButtons.forEach(b => b.classList.remove('selected'));
@@ -232,6 +245,10 @@ export class UIManager {
   openBuildCircleAtCell(gx: number, gy: number, primeMove = false): void {
     if (!this.$buildCircle || !gs.grid) return;
     if (gs.gameOver) return;
+    if (!gs.hero?.alive) {
+      this.setText(this.$heroStatus, 'Hero down: building unavailable.');
+      return;
+    }
     const worldPos = gs.grid.getPlinthVisualPos(gx, gy) || new THREE.Vector3(gx + 0.5, 0.1, gy + 0.5);
     const cam = (window as any).__camera as THREE.Camera | undefined;
     if (!cam) return;
@@ -252,7 +269,7 @@ export class UIManager {
     this.buildCircleOpenedAtMs = performance.now();
     this.buildCircleCell = { gx, gy };
     this.buildCircleMovePrimed = primeMove;
-    gs.targetTimeScale = 0.1;
+    gs.targetTimeScale = V5_SLICE_BALANCE.tacticalSlowMotionScale;
   }
 
   closeBuildCircle(): void {
@@ -284,7 +301,7 @@ export class UIManager {
       btn.dataset.bound = '1';
       btn.addEventListener('click', (e) => {
         e.preventDefault();
-        if (!this.buildCircleCell || !gs.hero || !gs.grid || gs.gameOver) return;
+        if (!this.buildCircleCell || !gs.hero || !gs.hero.alive || !gs.grid || gs.gameOver) return;
         const { gx, gy } = this.buildCircleCell;
         if (!gs.grid.isBuildable(gx, gy, false)) return;
         gs.hero.pendingBuild = { type, gx, gy, isPath: false };
@@ -317,6 +334,19 @@ export class UIManager {
         const scene = (window as any).__scene;
         if (!scene) return;
         gs.spawnFriendlyInfantry(scene);
+      });
+    }
+    if (this.$stonefallBtn && this.$stonefallBtn.dataset.bound !== '1') {
+      this.$stonefallBtn.dataset.bound = '1';
+      this.$stonefallBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (!gs.canCastStonefall()) return;
+        gs.selectedTower = null;
+        gs.selectedType = null;
+        gs.targetedMapPower = gs.targetedMapPower === 'stonefall' ? null : 'stonefall';
+        gs.targetTimeScale = gs.targetedMapPower ? V5_SLICE_BALANCE.tacticalSlowMotionScale : 1.0;
+        this.closeBuildCircle();
+        this.update();
       });
     }
   }

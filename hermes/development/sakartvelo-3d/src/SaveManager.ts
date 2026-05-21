@@ -28,6 +28,8 @@ export interface SaveData {
   bestTimes: Record<string, number>;
   /** Total stars earned */
   totalStars: number;
+  /** Tiny v5 slice upgrades. This is intentionally not the full Academy tree. */
+  v5Upgrades: Record<string, boolean>;
 }
 
 const DEFAULT_SAVE: SaveData = {
@@ -38,6 +40,7 @@ const DEFAULT_SAVE: SaveData = {
   scrollInventory: {},
   bestTimes: {},
   totalStars: 0,
+  v5Upgrades: {},
 };
 
 function loadRaw(): SaveData {
@@ -225,6 +228,17 @@ export const SaveManager = {
 
   getScrollCount(type: string): number {
     return loadRaw().scrollInventory[type] || 0;
+  },
+
+  hasV5Upgrade(id: string): boolean {
+    return loadRaw().v5Upgrades?.[id] === true;
+  },
+
+  unlockV5Upgrade(id: string): void {
+    const save = loadRaw();
+    save.v5Upgrades = save.v5Upgrades || {};
+    save.v5Upgrades[id] = true;
+    persist(save);
   },
 
   // ─── Helpers ──────────────────────────────────────────

@@ -17,23 +17,36 @@ export const ECONOMY_BALANCE = {
 } as const;
 
 export const HERO_BALANCE = {
-  moveSpeed: 3.5,
+  moveSpeed: 4.2,
   attackRange: 2.8,
   attackDamage: 14,
   attackInterval: 1.0,
   respawnTime: 15,
-  buildRange: 1.5,
-  buildTime: 1.5,
+  buildRange: 1.65,
+  buildTime: 1.25,
 } as const;
 
 export const FRIENDLY_INFANTRY_BALANCE = {
-  /** Emergency reinforcement, not a better Archer. */
-  cost: 65,
-  cooldown: 20,
+  /** Emergency reinforcement map power, not a paid disposable item. */
+  cost: 0,
+  cooldown: 24,
   maxActive: 2,
   hp: 110,
   speed: 1.9,
   attackDamage: 7,
   attackRange: 0.75,
   attackCooldown: 0.9,
+} as const;
+
+export const V5_SLICE_BALANCE = {
+  tacticalSlowMotionScale: 0.1,
+  dragThresholdPx: 10,
+  touchDragThresholdPx: 12,
+  tapMaxDurationMs: 260,
+  plinthTapRadius: 1.15,
+  stonefallCooldown: 26,
+  stonefallRadius: 1.85,
+  stonefallDamage: 125,
+  archerDamageUpgradeMult: 1.05,
+  heroBuildSpeedUpgradeMult: 0.95,
 } as const;

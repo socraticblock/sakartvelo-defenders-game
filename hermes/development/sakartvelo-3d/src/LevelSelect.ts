@@ -65,7 +65,7 @@ const ERA0_CAMPAIGN: CampaignEra = {
   dateRange: 'c. 600 BC – c. 100 BC',
   heroName: 'Medea',
   nodes: [
-    { id: 'e0_l1', level: 1, title: 'The Golden River', type: 'main', x: 12, y: 66, description: 'Defend the first village road near the Rioni.', levelRef: { era: 0, level: 1 }, next: ['e0_l2'] },
+    { id: 'e0_l1', level: 1, title: 'Gold Streams of the Rioni', type: 'main', x: 12, y: 66, description: 'Defend the first village road near the Rioni.', levelRef: { era: 0, level: 1 }, next: ['e0_l2'] },
     { id: 'e0_l2', level: 2, title: 'Forest Road', type: 'main', x: 25, y: 53, description: 'Hold the road through the Colchian forest.', levelRef: { era: 0, level: 2 }, requires: ['e0_l1'], next: ['e0_l3', 'e0_c1'] },
     { id: 'e0_l3', level: 3, title: 'Reed Village', type: 'main', x: 38, y: 42, description: 'Protect a riverside settlement of reed and timber.', levelRef: { era: 0, level: 3 }, requires: ['e0_l2'], next: ['e0_l4'] },
     { id: 'e0_c1', title: 'Gold-Panner’s Trial', type: 'challenge', x: 42, y: 74, description: 'Optional river challenge for extra mastery. Coming later.', requires: ['e0_l2'] },
@@ -137,11 +137,7 @@ function getLatestPlayableNode(): CampaignNode | null {
   if (!campaign) return null;
   const playable = campaign.nodes.filter(isNodePlayable);
   if (playable.length === 0) return campaign.nodes.find(node => node.levelRef && levelExists(node.levelRef)) || campaign.nodes[0] || null;
-  return playable.reduce((best, node) => {
-    const bestLevel = best.levelRef?.level ?? 0;
-    const nodeLevel = node.levelRef?.level ?? 0;
-    return nodeLevel >= bestLevel ? node : best;
-  }, playable[0]);
+  return playable[0];
 }
 
 function getSelectedNode(): CampaignNode | null {

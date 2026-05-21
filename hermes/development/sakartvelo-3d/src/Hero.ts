@@ -12,8 +12,9 @@ import { HeroAbilities } from './HeroAbilities';
 import { gs } from './GameState';
 import { audio } from './AudioManager';
 import { instantiateMedea, type MedeaInstance, type MedeaTemplate } from './MedeaGltf';
-import { HERO_BALANCE } from './BalanceConfig';
+import { HERO_BALANCE, V5_SLICE_BALANCE } from './BalanceConfig';
 import { canDamageEnemy } from './EnemyTraits';
+import { SaveManager } from './SaveManager';
 
 export interface HeroProjectileSpawn {
   origin: THREE.Vector3;
@@ -80,7 +81,7 @@ export class Hero {
   private readonly BUILD_TIME = HERO_BALANCE.buildTime;
 
   get buildRequiredTime(): number {
-    return this.BUILD_TIME;
+    return this.BUILD_TIME * (SaveManager.hasV5Upgrade('hero_build_speed_5') ? V5_SLICE_BALANCE.heroBuildSpeedUpgradeMult : 1);
   }
 
   // Health bar
@@ -340,7 +341,7 @@ export class Hero {
     if (this.pendingBuild && this.buildTimer > 0) {
       this.buildBg.visible = true;
       this.buildFill.visible = true;
-      const ratio = Math.min(1, this.buildTimer / this.BUILD_TIME);
+        const ratio = Math.min(1, this.buildTimer / this.buildRequiredTime);
       this.buildFill.scale.x = Math.max(0.001, ratio);
       this.buildFill.position.x = -0.39 * (1 - ratio);
     } else {
@@ -543,6 +544,8 @@ export class Hero {
       this.hpBg.visible = false;
       this.hpFill.visible = false;
       this.moveTarget = null;
+      this.pendingBuild = null;
+      this.buildTimer = 0;
       this.selected = false;
     }
   }

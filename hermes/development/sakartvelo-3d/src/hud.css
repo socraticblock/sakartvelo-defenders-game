@@ -573,12 +573,13 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
   box-shadow: 0 0 10px rgba(212, 160, 23, 0.45);
 }
 
-.infantry-spawn-btn {
+.map-power-btn {
   position: absolute;
   left: 14px;
   bottom: 90px;
   z-index: 12;
-  min-height: 42px;
+  min-width: 118px;
+  min-height: 46px;
   padding: 8px 12px;
   border: 2px solid #8b6914;
   border-radius: 10px;
@@ -588,7 +589,17 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
   font-size: 12px;
 }
 
-.infantry-spawn-btn:disabled {
+.stonefall-power-btn {
+  bottom: 144px;
+}
+
+.map-power-btn.selected {
+  border-color: #ffd96a;
+  box-shadow: 0 0 16px rgba(212, 160, 23, 0.46);
+  background: rgba(139, 105, 20, 0.72);
+}
+
+.map-power-btn:disabled {
   opacity: 0.45;
 }
 
@@ -1202,12 +1213,17 @@ body.dock-stack-bottom-ability-first.build-layout-bottom #bottom-bar {
     font-size: 18px;
   }
 
-  .infantry-spawn-btn {
+  .map-power-btn {
     left: 8px;
     bottom: calc(112px + env(safe-area-inset-bottom));
+    min-width: 108px;
     min-height: 38px;
     padding: 6px 10px;
     font-size: 11px;
+  }
+
+  .stonefall-power-btn {
+    bottom: calc(156px + env(safe-area-inset-bottom));
   }
 
   .game-settings-btn {

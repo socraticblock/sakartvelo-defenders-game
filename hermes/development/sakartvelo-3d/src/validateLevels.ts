@@ -60,6 +60,7 @@ function normalizeLevelToLandscape(level: LevelData): LevelData {
     grid_height: level.grid_width,
     path_waypoints: level.path_waypoints.map(rotatePoint),
     build_nodes: level.build_nodes?.map(rotatePoint),
+    wall_nodes: level.wall_nodes?.map(rotatePoint),
   };
 }
 
@@ -115,6 +116,11 @@ function isValidLevel(candidate: unknown, index: number): candidate is LevelData
 
   if (level.build_nodes !== undefined && (!Array.isArray(level.build_nodes) || !level.build_nodes.every(isPoint))) {
     console.warn(prefix, 'build_nodes must be [number, number] pairs when present.');
+    return false;
+  }
+
+  if (level.wall_nodes !== undefined && (!Array.isArray(level.wall_nodes) || !level.wall_nodes.every(isPoint))) {
+    console.warn(prefix, 'wall_nodes must be [number, number] pairs when present.');
     return false;
   }
 

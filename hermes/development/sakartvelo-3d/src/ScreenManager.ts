@@ -183,6 +183,18 @@ export class ScreenManager {
       ? ERA0_LEVEL_BRIEFINGS[level.level]?.defenseTargetLabel
       : undefined;
     const target = briefingTarget || humanizeTarget(level?.defense_target || level?.name || 'Sakartvelo');
+    const archerUnlocked = SaveManager.hasV5Upgrade('archer_damage_5');
+    const heroUnlocked = SaveManager.hasV5Upgrade('hero_build_speed_5');
+    const upgradeHtml = (!archerUnlocked || !heroUnlocked)
+      ? `
+      <div class="slice-upgrade-card">
+        <div class="slice-upgrade-kicker">Training Unlock</div>
+        <div class="slice-upgrade-options">
+          ${!archerUnlocked ? '<button class="slice-upgrade-btn" data-v5-upgrade="archer_damage_5">Archer Damage +5%</button>' : ''}
+          ${!heroUnlocked ? '<button class="slice-upgrade-btn" data-v5-upgrade="hero_build_speed_5">Hero Build Speed +5%</button>' : ''}
+        </div>
+      </div>`
+      : '<div class="slice-upgrade-card earned">Training Applied: Archer Damage +5% and Hero Build Speed +5%</div>';
 
     title.textContent = 'VICTORY';
     starsEl.innerHTML = '☆'.repeat(3);
@@ -194,8 +206,19 @@ export class ScreenManager {
         <span>Time: ${escapeHtml(this._formatTime(elapsed))}${newRecord ? ' <b>NEW RECORD</b>' : ''}</span>
         <span>Best: ${escapeHtml(best !== undefined ? this._formatTime(best) : this._formatTime(elapsed))}</span>
       </div>
+      ${upgradeHtml}
+      <div class="chronicle-card-title">Historical Card: Ancient Colchis</div>
       <div class="chronicle-fact">${escapeHtml(level?.historical_fact || '')}</div>
     `;
+    msg.querySelectorAll<HTMLButtonElement>('[data-v5-upgrade]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.v5Upgrade;
+        if (!id) return;
+        SaveManager.unlockV5Upgrade(id);
+        const card = msg.querySelector<HTMLElement>('.slice-upgrade-card');
+        if (card) card.textContent = 'Training unlocked. Replay this level to feel the upgrade.';
+      }, { once: true });
+    });
     this._showScreen('screen-level-complete');
 
     for (let i = 1; i <= 3; i++) {

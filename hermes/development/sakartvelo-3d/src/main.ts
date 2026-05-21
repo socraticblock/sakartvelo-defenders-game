@@ -10,7 +10,7 @@ import { input } from './InputManager';
 import { audio } from './AudioManager';
 import { GameLoop } from './GameLoop';
 import { SaveManager } from './SaveManager';
-import { Tower } from './Tower';
+import { TOWER_CONFIGS } from './TowerConfigs';
 import { screenMgr } from './ScreenManager';
 import { initMagicParticles } from './MagicalParticles';
 import { initAmbientDust } from './AmbientDust';
@@ -19,6 +19,7 @@ import { getMedeaTemplate, loadMedeaTemplate } from './MedeaGltf';
 import { validateLevels } from './validateLevels';
 import { preloadEnemyAssetsForLevel } from './actors/EnemyFactory';
 import { requestLandscapeOrientation } from './Orientation';
+import { V5_SLICE_BALANCE } from './BalanceConfig';
 
 // Use the generated magical sprite
 const MAGIC_SPRITE = '/magic_particle_sprite.png';
@@ -116,6 +117,9 @@ function initDebugClickAudit(): void {
 
 function setupCamera(gw: number, gh: number): void {
   const cx = gw / 2, cz = gh / 2;
+  const level = gs.currentLevel;
+  const fullField = level?.map_presentation === 'full_field';
+  const landscapePhone = innerWidth > innerHeight && innerHeight <= 520;
   const bottomUiRects = ['bottom-bar', 'hero-bar']
     .map(id => document.getElementById(id))
     .filter((el): el is HTMLElement => Boolean(el) && getComputedStyle(el!).display !== 'none')
@@ -124,15 +128,18 @@ function setupCamera(gw: number, gh: number): void {
   const bottomTop = bottomUiRects.length ? Math.min(...bottomUiRects.map(rect => rect.top)) : innerHeight;
   const bottomUiRatio = Math.max(0, Math.min(0.42, (innerHeight - bottomTop) / innerHeight));
   const zoomScale = 100 / cameraZoomPct;
-  const dist = Math.max(gh * 0.75, gw * 1.06) * zoomScale;
-  const upwardBiasCells = gh * (0.08 + bottomUiRatio * 0.42);
+  const framingScale = fullField ? (landscapePhone ? 0.72 : 0.78) : 1.0;
+  const dist = Math.max(gh * 0.75, gw * 1.06) * zoomScale * framingScale;
+  const upwardBiasCells = gh * (fullField ? (0.02 + bottomUiRatio * 0.2) : (0.08 + bottomUiRatio * 0.42));
   const zoomOutFactor = Math.max(0, Math.min(1, (100 - cameraZoomPct) / 20));
-  const screenLiftCells = gh * (0.14 + zoomOutFactor * 0.1);
-  const targetBottomY = Math.min(innerHeight - 12, bottomTop - 12);
-  const camHeight = dist * (0.96 + bottomUiRatio * 0.12);
-  const camDepth = dist * (0.82 + bottomUiRatio * 0.2);
-  const baseTargetZ = cz - upwardBiasCells + screenLiftCells;
-  const mapBottom = new THREE.Vector3(cx, 0, gh - 0.08);
+  const screenLiftCells = gh * (fullField ? (0.02 + zoomOutFactor * 0.04) : (0.14 + zoomOutFactor * 0.1));
+  const targetBottomY = fullField
+    ? Math.min(innerHeight + innerHeight * (landscapePhone ? 0.22 : 0.16), bottomTop + innerHeight * 0.16)
+    : Math.min(innerHeight - 12, bottomTop - 12);
+  const camHeight = dist * (fullField ? (0.86 + bottomUiRatio * 0.06) : (0.96 + bottomUiRatio * 0.12));
+  const camDepth = dist * (fullField ? (0.76 + bottomUiRatio * 0.08) : (0.82 + bottomUiRatio * 0.2));
+  const baseTargetZ = cz - upwardBiasCells + screenLiftCells + (fullField ? gh * 0.08 : 0);
+  const mapBottom = new THREE.Vector3(cx, 0, gh + (fullField ? 1.2 : -0.08));
 
   camera.fov = 46;
   camera.aspect = innerWidth / innerHeight;
@@ -147,8 +154,8 @@ function setupCamera(gw: number, gh: number): void {
   };
 
   let targetZ = baseTargetZ;
-  const minTargetZ = baseTargetZ - gh * 0.75;
-  const maxTargetZ = baseTargetZ + gh * 0.75;
+  const minTargetZ = baseTargetZ - gh * (fullField ? 1.0 : 0.75);
+  const maxTargetZ = baseTargetZ + gh * (fullField ? 1.0 : 0.75);
 
   // Solve bottom-map screen anchor while preserving camera angle.
   for (let i = 0; i < 6; i++) {
@@ -227,20 +234,24 @@ ui.init(
 void loadMedeaTemplate().catch(() => {});
 
 function issueHeroMoveCommand(x: number, z: number): void {
-  if (!gs.hero) return;
+  if (!gs.hero || !gs.hero.alive) return;
   // User movement input always overrides queued build/upgrade intents.
   gs.hero.pendingBuild = null;
   gs.hero.buildTimer = 0;
   gs.pendingUpgradeTower = null;
+  gs.targetedMapPower = null;
   gs.hero.moveTo(x, z);
 }
 
 input.init(renderer, camera, scene, {
   onHeroMove: (x, z) => issueHeroMoveCommand(x, z),
   onGridClick: (gx, gy, isPath) => {
-    if (gs.gameOver || !gs.selectedType || !gs.hero || !gs.grid) return;
+    if (gs.gameOver || !gs.selectedType || !gs.hero || !gs.hero.alive || !gs.grid) return;
     
     // ONLY walk if the spot is actually buildable (on a plinth)
+    const towerCost = TOWER_CONFIGS[gs.selectedType]?.cost ?? Infinity;
+    if (gs.gold < towerCost) return;
+
     if (gs.grid.isBuildable(gx, gy, gs.selectedType === 'wall')) {
       gs.hero.pendingBuild = { type: gs.selectedType, gx, gy, isPath };
       ui.setTowerPlacementType(null);
@@ -252,21 +263,28 @@ input.init(renderer, camera, scene, {
   },
   onTowerClick: (tower) => {
     gs.selectedTower = tower;
-    gs.targetTimeScale = 0.1;
+    gs.targetedMapPower = null;
+    gs.targetTimeScale = V5_SLICE_BALANCE.tacticalSlowMotionScale;
     tower.showRange(true);
     ui.update();
   },
   onBuildNodeClick: (gx, gy) => {
-    if (gs.gameOver || !gs.grid || !gs.hero) return;
+    if (gs.gameOver || !gs.grid || !gs.hero || !gs.hero.alive) return;
     if (gs.selectedType === 'wall') return;
     issueHeroMoveCommand(gx + 0.5, gy + 0.5);
     ui.openBuildCircleAtCell(gx, gy, true);
   },
   onAbility: (idx) => gs.hero?.activateAbility(idx, gs.enemies, gs.towers),
+  onMapPowerTarget: (x, z) => {
+    gs.castStonefall(scene, new THREE.Vector3(x, 0, z));
+    gs.targetTimeScale = 1.0;
+    ui.update();
+  },
   onEscape: () => { 
     if (gs.selectedTower) gs.selectedTower.showRange(false);
     ui.setTowerPlacementType(null); 
     gs.selectedTower = null; 
+    gs.targetedMapPower = null;
     gs.targetTimeScale = 1.0;
     ui.update(); 
   },
@@ -274,6 +292,7 @@ input.init(renderer, camera, scene, {
     if (gs.selectedTower) gs.selectedTower.showRange(false);
     ui.setTowerPlacementType(null); 
     gs.selectedTower = null; 
+    gs.targetedMapPower = null;
     gs.targetTimeScale = 1.0;
     ui.update(); 
   },

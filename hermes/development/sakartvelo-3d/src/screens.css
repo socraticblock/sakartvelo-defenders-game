@@ -88,6 +88,42 @@
   text-align: left;
 }
 
+.chronicle-card-title,
+.slice-upgrade-kicker {
+  color: #ffd96a;
+  font-size: 12px;
+  letter-spacing: 1.4px;
+  margin: 12px 0 6px;
+  text-transform: uppercase;
+}
+
+.slice-upgrade-card {
+  margin: 10px auto 12px;
+  padding: 12px;
+  border: 1px solid rgba(212, 160, 23, 0.35);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  color: #f0e6d2;
+}
+
+.slice-upgrade-options {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.slice-upgrade-btn {
+  min-height: 42px;
+  padding: 9px 14px;
+  border: 1px solid #d4a017;
+  border-radius: 8px;
+  background: rgba(212, 160, 23, 0.22);
+  color: #f0e6d2;
+  font-family: inherit;
+  cursor: pointer;
+}
+
 .lc-btn-group {
   display: flex;
   gap: 12px;

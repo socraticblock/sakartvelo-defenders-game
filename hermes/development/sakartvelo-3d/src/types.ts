@@ -32,6 +32,7 @@ export interface LevelData {
   visual_height?: number;
   visual_offset_x?: number;
   visual_offset_y?: number;
+  wall_nodes?: number[][];
 }
 
 export interface WaveData {

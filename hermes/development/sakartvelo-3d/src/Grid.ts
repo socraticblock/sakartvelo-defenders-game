@@ -5,6 +5,7 @@ export class Grid {
   group: THREE.Group = new THREE.Group();
   private tiles: THREE.Mesh[][] = [];
   private plinths: THREE.Group[] = [];
+  private wallSlots: THREE.Group[] = [];
   private pathCells = new Set<string>();
   private occupiedCells = new Map<string, boolean>();
   private _curve: THREE.CatmullRomCurve3 | null = null;
@@ -46,6 +47,7 @@ export class Grid {
     this.createPathRibbon(level.path_waypoints);
     this.createHitTestTiles();
     this.createPlinths(level.build_nodes || []);
+    this.createWallSlots(level.wall_nodes || []);
     this.createThemeDecorations();
     this.createLevelSignature();
     this.createEnvironmentDecorations();
@@ -94,6 +96,11 @@ export class Grid {
         const mat = aura.material as THREE.MeshBasicMaterial;
         mat.opacity = 0.45 + Math.sin(time * 5) * 0.22;
         aura.scale.setScalar(1.02 + Math.sin(time * 5) * 0.08);
+      } else if (!p.userData.occupied) {
+        aura.visible = true;
+        const mat = aura.material as THREE.MeshBasicMaterial;
+        mat.opacity = 0.18 + Math.sin(time * 3.2) * 0.06;
+        aura.scale.setScalar(1.0 + Math.sin(time * 3.2) * 0.04);
       } else {
         aura.visible = false;
       }
@@ -109,6 +116,17 @@ export class Grid {
         mat.emissiveIntensity = 0;
       }
     }
+
+    this.wallSlots.forEach(slot => {
+      const ring = slot.userData.ring as THREE.Mesh | undefined;
+      if (!ring) return;
+      ring.visible = isWallMode && !slot.userData.occupied;
+      if (ring.visible) {
+        const mat = ring.material as THREE.MeshBasicMaterial;
+        mat.opacity = 0.35 + Math.sin(time * 5) * 0.16;
+        ring.scale.setScalar(1.0 + Math.sin(time * 5) * 0.08);
+      }
+    });
 
     for (const mesh of this.waterMeshes) {
       const mat = mesh.material as THREE.MeshBasicMaterial;
@@ -358,6 +376,13 @@ export class Grid {
     // Golden glow ring for building "intent"
     const auraGeo = this.safeRingGeometry(mobile ? 0.58 : 0.45, mobile ? 0.72 : 0.55, 32);
     auraGeo.rotateX(-Math.PI / 2);
+    const hitGeo = new THREE.CylinderGeometry(mobile ? 1.15 : 1.0, mobile ? 1.15 : 1.0, 0.16, 16);
+    const hitMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+    });
 
     const auraMat = new THREE.MeshBasicMaterial({ 
       color: 0xffd972, 
@@ -419,13 +444,62 @@ export class Grid {
       aura.userData = { gx: x, gy: y, isPath: false };
       group.add(aura);
 
-      group.userData = { gx: x, gy: y, aura, occupied: false };
+      const hit = new THREE.Mesh(hitGeo, hitMat);
+      hit.position.y = 0.08;
+      hit.userData = { gx: x, gy: y, isPath: false, isBuildPlinthHit: true };
+      group.add(hit);
+
+      group.userData = { gx: x, gy: y, aura, hit, occupied: false };
       this.plinths.push(group);
       this.group.add(group);
     });
   }
 
   // â”€â”€â”€ HIT-TEST TILES (invisible, for raycasting only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+  private createWallSlots(nodes: number[][]): void {
+    if (!nodes.length) return;
+
+    const baseGeo = new THREE.BoxGeometry(0.92, 0.06, 0.92);
+    const baseMat = new THREE.MeshStandardMaterial({
+      color: 0x6f6244,
+      roughness: 0.88,
+      metalness: 0.05,
+      emissive: 0x2a1c08,
+      emissiveIntensity: 0.16,
+    });
+    const ringGeo = this.safeRingGeometry(0.48, 0.64, 32);
+    ringGeo.rotateX(-Math.PI / 2);
+
+    nodes.forEach(([x, y]) => {
+      const group = new THREE.Group();
+      group.position.set(x + 0.5, 0.065, y + 0.5);
+
+      const base = new THREE.Mesh(baseGeo, baseMat);
+      base.rotation.y = Math.PI / 4;
+      base.userData = { gx: x, gy: y, isPath: true, isWallSlot: true };
+      group.add(base);
+
+      const ring = new THREE.Mesh(
+        ringGeo,
+        new THREE.MeshBasicMaterial({
+          color: 0xd4a017,
+          transparent: true,
+          opacity: 0.35,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        }),
+      );
+      ring.position.y = 0.045;
+      ring.visible = false;
+      ring.userData = { gx: x, gy: y, isPath: true, isWallSlot: true };
+      group.add(ring);
+
+      group.userData = { gx: x, gy: y, occupied: false, ring };
+      this.wallSlots.push(group);
+      this.group.add(group);
+    });
+  }
 
   private createHitTestTiles() {
     const tileGeo = new THREE.BoxGeometry(1.0, 0.12, 1.0);
@@ -1210,6 +1284,11 @@ export class Grid {
 
   isBuildable(gx: number, gy: number, isWall: boolean = false): boolean {
     if (gx < 0 || gx >= this.width || gy < 0 || gy >= this.height) return false;
+    if (this.occupiedCells.has(`${gx},${gy}`)) return false;
+
+    if (isWall && this.wallSlots.length > 0) {
+      return this.wallSlots.some(p => p.userData.gx === gx && p.userData.gy === gy && !p.userData.occupied);
+    }
     
     // If plinths are defined, only allow building ON plinths (except walls)
     if (this.plinths.length > 0 && !isWall) {
@@ -1217,7 +1296,6 @@ export class Grid {
       return onPlinth;
     }
 
-    if (this.occupiedCells.has(`${gx},${gy}`)) return false;
     // Walls can be placed ON the path; others cannot
     if (this.pathCells.has(`${gx},${gy}`)) return isWall;
     // Walls can ONLY be built on the path; others (Archer/Catapult) can ONLY be built off-path.
@@ -1228,12 +1306,16 @@ export class Grid {
     this.occupiedCells.set(`${gx},${gy}`, true);
     const plinth = this.plinths.find(p => p.userData.gx === gx && p.userData.gy === gy);
     if (plinth) plinth.userData.occupied = true;
+    const wallSlot = this.wallSlots.find(p => p.userData.gx === gx && p.userData.gy === gy);
+    if (wallSlot) wallSlot.userData.occupied = true;
   }
 
   free(gx: number, gy: number) {
     this.occupiedCells.delete(`${gx},${gy}`);
     const plinth = this.plinths.find(p => p.userData.gx === gx && p.userData.gy === gy);
     if (plinth) plinth.userData.occupied = false;
+    const wallSlot = this.wallSlots.find(p => p.userData.gx === gx && p.userData.gy === gy);
+    if (wallSlot) wallSlot.userData.occupied = false;
   }
 
   /** Flash a tile's emissive to signal successful placement */
@@ -1250,7 +1332,21 @@ export class Grid {
         }
       });
     });
+    this.wallSlots.forEach(p => {
+      p.children.forEach(c => {
+        if (c instanceof THREE.Mesh && c.userData.gx !== undefined) {
+          meshes.push(c);
+        }
+      });
+    });
     return meshes;
+  }
+
+  getPlinthPickMeshes(): THREE.Object3D[] {
+    return this.plinths.flatMap(p => p.children.filter(c =>
+      (c as any).userData?.isBuildPlinthHit ||
+      ((c as any).userData?.gx !== undefined && !(c as any).userData?.isWallSlot),
+    ));
   }
 
   getPlinthVisualPos(gx: number, gy: number): THREE.Vector3 | null {
