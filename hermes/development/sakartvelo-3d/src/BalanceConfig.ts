@@ -50,3 +50,23 @@ export const V5_SLICE_BALANCE = {
   archerDamageUpgradeMult: 1.05,
   heroBuildSpeedUpgradeMult: 0.95,
 } as const;
+
+/** Map presentation tuning (Level 1 framed diorama vs standard board levels). */
+export const MAP_PRESENTATION_BALANCE = {
+  fullFieldPathWidth: 1.4,
+  boardPathWidth: 1.25,
+  /** Baseline path width used when lane offsets were authored. */
+  pathWidthBaseline: 1.15,
+  /** Replaces legacy 0.72–0.78 zoom-out on full_field. */
+  fullFieldFramingScale: 1.0,
+  /** Margin around logic grid for camera framing and pan clamp. */
+  fullFieldPlayableSkirtCells: 2,
+  /** Exponential fog density on Level 1 diorama (higher = faster falloff). */
+  fullFieldFogDensity: 0.032,
+  /** Standard battle fog when not on framed full_field. */
+  boardFogDensity: 0.0135,
+} as const;
+
+/** Combat speed multiplier when not in tactical slow-mo (Bible §5.4). */
+export const COMBAT_SPEED_OPTIONS = [1, 2] as const;
+export type CombatSpeedMultiplier = (typeof COMBAT_SPEED_OPTIONS)[number];

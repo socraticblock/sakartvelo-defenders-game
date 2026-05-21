@@ -235,7 +235,8 @@ export class UIManager {
     gs.targetedMapPower = null;
     
     // Slow down time for tactical placement
-    gs.targetTimeScale = type ? V5_SLICE_BALANCE.tacticalSlowMotionScale : 1.0;
+    if (type) gs.targetTimeScale = V5_SLICE_BALANCE.tacticalSlowMotionScale;
+    else gs.restoreCombatTimeScale();
     
     this.closeBuildCircle();
     this.panel.towerButtons.forEach(b => b.classList.remove('selected'));
@@ -291,7 +292,7 @@ export class UIManager {
     this.buildCircleCell = null;
     this.$buildCircle?.classList.remove('visible');
     if (!gs.selectedTower) {
-      gs.targetTimeScale = 1.0;
+      gs.restoreCombatTimeScale();
     }
   }
 
@@ -344,7 +345,8 @@ export class UIManager {
         gs.selectedTower = null;
         gs.selectedType = null;
         gs.targetedMapPower = gs.targetedMapPower === 'stonefall' ? null : 'stonefall';
-        gs.targetTimeScale = gs.targetedMapPower ? V5_SLICE_BALANCE.tacticalSlowMotionScale : 1.0;
+        if (gs.targetedMapPower) gs.targetTimeScale = V5_SLICE_BALANCE.tacticalSlowMotionScale;
+        else gs.restoreCombatTimeScale();
         this.closeBuildCircle();
         this.update();
       });
@@ -360,6 +362,7 @@ export class UIManager {
     const resetTutorialBtn = document.getElementById('btn-reset-tutorial-intros');
     if (!openBtn || !this.$gameInfoModal || !closeBtn || !settingsBtn || !this.$gameSettingsModal || !settingsCloseBtn) return;
     this._bindCameraZoomControl();
+    this._bindCombatSpeedControl();
     this._bindDockLayoutControls();
     this._bindVisualQualityControl();
 
@@ -489,6 +492,26 @@ export class UIManager {
     slider.value = String(zoom);
     value.textContent = String(zoom);
     slider.style.setProperty('--pct', `${((zoom - 80) / 40) * 100}%`);
+  }
+
+  private _bindCombatSpeedControl(): void {
+    const btn = document.getElementById('btn-combat-speed') as HTMLButtonElement | null;
+    if (!btn || btn.dataset.bound === '1') return;
+    btn.dataset.bound = '1';
+    const COMBAT_SPEED_KEY = 'sakartvelo_combat_speed';
+    const saved = Number(localStorage.getItem(COMBAT_SPEED_KEY));
+    if (saved === 2) gs.setCombatSpeed(2);
+    const sync = () => {
+      btn.textContent = `${gs.combatSpeedMultiplier}x`;
+      btn.setAttribute('aria-label', `Combat speed ${gs.combatSpeedMultiplier}x`);
+    };
+    sync();
+    btn.addEventListener('click', () => {
+      const next = gs.combatSpeedMultiplier === 1 ? 2 : 1;
+      gs.setCombatSpeed(next);
+      localStorage.setItem(COMBAT_SPEED_KEY, String(next));
+      sync();
+    });
   }
 
   private _bindCameraZoomControl(): void {

@@ -123,7 +123,7 @@ export class TowerPanel {
       
       t.showRange(false);
       gs.selectedTower = null;
-      gs.targetTimeScale = 1.0;
+      gs.restoreCombatTimeScale();
       this.$circle?.classList.remove('visible');
     };
     const doSell = () => {
@@ -133,7 +133,7 @@ export class TowerPanel {
       gs.selectedTower.showRange(false);
       gs.sellTower(gs.selectedTower, scene);
       gs.selectedTower = null;
-      gs.targetTimeScale = 1.0;
+      gs.restoreCombatTimeScale();
       this.$circle?.classList.remove('visible');
     };
     this.$upgradeBtn.addEventListener('click', doUpgrade);

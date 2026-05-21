@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { MAP_PRESENTATION_BALANCE } from './BalanceConfig';
 import { LevelData } from './types';
 
 export class Grid {
@@ -26,6 +27,8 @@ export class Grid {
 
   readonly width: number;
   readonly height: number;
+  /** Path ribbon half-width basis; used for lane offset scaling. */
+  readonly pathWidth: number;
 
   constructor(level: LevelData) {
     this.width = level.grid_width;
@@ -35,6 +38,9 @@ export class Grid {
     this.era = level.era ?? 0;
     this.levelNum = level.level ?? 1;
     this.mapPresentation = level.map_presentation || 'board';
+    this.pathWidth = this.mapPresentation === 'full_field'
+      ? MAP_PRESENTATION_BALANCE.fullFieldPathWidth
+      : MAP_PRESENTATION_BALANCE.boardPathWidth;
     this.visualWidth = level.visual_width ?? level.grid_width;
     this.visualHeight = level.visual_height ?? level.grid_height;
     this.visualOffsetX = level.visual_offset_x ?? 0;
@@ -54,8 +60,21 @@ export class Grid {
     this.createDefenseObjective();
     this.addDecorations();
     if (this.mapPresentation === 'full_field') {
-      this.createFullFieldDecorations();
+      this.createDioramaPerimeterWall();
     }
+  }
+
+  /** Playable grid plus skirt — the only ground area drawn for full_field. */
+  private getDioramaBounds(): { w: number; h: number; cx: number; cz: number; skirt: number } | null {
+    if (this.mapPresentation !== 'full_field') return null;
+    const skirt = MAP_PRESENTATION_BALANCE.fullFieldPlayableSkirtCells;
+    return {
+      skirt,
+      w: this.width + skirt * 2,
+      h: this.height + skirt * 2,
+      cx: this.width / 2,
+      cz: this.height / 2,
+    };
   }
 
   /** Update method for animating pulsing auras and wall-path highlight. */
@@ -156,31 +175,48 @@ export class Grid {
   // â”€â”€â”€ ORGANIC GROUND (replaces visible grid tiles) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   private createOrganicGround() {
-    const w = this.mapPresentation === 'full_field' ? this.visualWidth : this.width;
-    const h = this.mapPresentation === 'full_field' ? this.visualHeight : this.height;
-    const ox = this.mapPresentation === 'full_field' ? this.visualOffsetX : 0;
-    const oz = this.mapPresentation === 'full_field' ? this.visualOffsetY : 0;
+    const diorama = this.getDioramaBounds();
+    const w = diorama ? diorama.w : this.width;
+    const h = diorama ? diorama.h : this.height;
+    const tcx = diorama ? diorama.cx : this.width / 2;
+    const tcz = diorama ? diorama.cz : this.height / 2;
+    const isRiverTheme = this.theme.includes('river') || this.theme.includes('rioni')
+      || this.theme.includes('tribes') || this.theme.includes('golden');
 
-    // Single terrain plane covering the entire map
     const terrainGeo = new THREE.PlaneGeometry(w, h, Math.floor(w * 2), Math.floor(h * 2));
     terrainGeo.rotateX(-Math.PI / 2);
-    terrainGeo.translate((this.width / 2) + ox, -0.01, (this.height / 2) + oz);
+    terrainGeo.translate(tcx, -0.01, tcz);
 
-    // Subtle vertex color variation for organic feel
     const colors = new Float32Array(terrainGeo.attributes.position.count * 3);
     const posAttr = terrainGeo.attributes.position;
     for (let i = 0; i < posAttr.count; i++) {
       const x = posAttr.getX(i);
       const z = posAttr.getZ(i);
-      // Procedural color variation using simple noise-like math
-      const noise = Math.sin(x * 2.3) * Math.cos(z * 1.7) * 0.045;
-      const ridge = Math.sin((x + z) * 0.65) * 0.018;
-      const riverCool = this.theme.includes('river') || this.theme.includes('rioni') || this.theme.includes('tribes') || this.theme.includes('golden')
-        ? Math.max(0, 1 - Math.abs(z - (this.height - 1.25)) / 2.8) * 0.045
+      const noise = Math.sin(x * 2.3) * Math.cos(z * 1.7) * 0.038;
+      const ridge = Math.sin((x + z) * 0.65) * 0.016;
+      const riverCool = isRiverTheme
+        ? Math.max(0, 1 - Math.abs(z - (this.height - 1.25)) / 2.4) * 0.055
         : 0;
-      const r = 0.47 + noise + ridge - riverCool * 0.45;
-      const g = 0.61 + noise * 1.25 + ridge + riverCool * 0.4;
-      const b = 0.42 + noise * 0.55 + riverCool;
+
+      let r = diorama ? 0.34 : 0.47;
+      let g = diorama ? 0.52 : 0.61;
+      let b = diorama ? 0.28 : 0.42;
+      r += noise + ridge - riverCool * 0.35;
+      g += noise * 1.1 + ridge + riverCool * 0.32;
+      b += noise * 0.45 + riverCool * 0.2;
+
+      if (diorama) {
+        const nx = Math.abs(x - tcx) / (this.width * 0.5);
+        const nz = Math.abs(z - tcz) / (this.height * 0.5);
+        const edgeT = Math.max(0, Math.max(nx, nz) - 0.72) * 2.2;
+        if (edgeT > 0) {
+          const t = Math.min(1, edgeT);
+          r = r * (1 - t) + 0.18 * t;
+          g = g * (1 - t) + 0.32 * t;
+          b = b * (1 - t) + 0.16 * t;
+        }
+      }
+
       colors[i * 3] = r;
       colors[i * 3 + 1] = g;
       colors[i * 3 + 2] = b;
@@ -195,12 +231,15 @@ export class Grid {
     terrain.receiveShadow = true;
     this.group.add(terrain);
 
-    if (this.mapPresentation !== 'full_field') {
-      this.createTerrainEdges();
-    }
+    this.createTerrainEdges();
   }
 
   private createTerrainEdges(): void {
+    if (this.mapPresentation === 'full_field') {
+      this.createDioramaCliffRing();
+      return;
+    }
+
     const edgeMat = new THREE.MeshStandardMaterial({ color: 0x5f624f, roughness: 0.96, metalness: 0.02 });
     const lipMat = new THREE.MeshLambertMaterial({ color: 0x7f9167 });
     const parts: Array<[number, number, number, number, number]> = [
@@ -210,8 +249,8 @@ export class Grid {
       [0.28, this.height, this.width + 0.18, this.height / 2, -0.15],
     ];
 
-    for (const [w, d, x, z, y] of parts) {
-      const cliff = new THREE.Mesh(new THREE.BoxGeometry(w, 0.42, d), edgeMat);
+    for (const [pw, d, x, z, y] of parts) {
+      const cliff = new THREE.Mesh(new THREE.BoxGeometry(pw, 0.42, d), edgeMat);
       cliff.position.set(x, y, z);
       cliff.castShadow = true;
       cliff.receiveShadow = true;
@@ -222,6 +261,51 @@ export class Grid {
     backLip.position.set(this.width / 2, 0.025, -0.03);
     backLip.receiveShadow = true;
     this.group.add(backLip);
+  }
+
+  /** Tall cliff ring at diorama outer edge (Kingdom Rush–style frame). */
+  private createDioramaCliffRing(): void {
+    const skirt = MAP_PRESENTATION_BALANCE.fullFieldPlayableSkirtCells;
+    const x0 = -skirt;
+    const x1 = this.width + skirt;
+    const z0 = -skirt;
+    const z1 = this.height + skirt;
+    const spanX = x1 - x0;
+    const spanZ = z1 - z0;
+    const cliffMat = new THREE.MeshStandardMaterial({ color: 0x3d4238, roughness: 0.98, metalness: 0.01 });
+    const rockMat = new THREE.MeshStandardMaterial({ color: 0x4a4f44, roughness: 0.95, metalness: 0.02 });
+    const cliffH = 1.55;
+
+    const addWall = (pw: number, pd: number, px: number, pz: number) => {
+      const cliff = new THREE.Mesh(new THREE.BoxGeometry(pw, cliffH, pd), cliffMat);
+      cliff.position.set(px, cliffH * 0.38, pz);
+      cliff.castShadow = true;
+      cliff.receiveShadow = true;
+      this.group.add(cliff);
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(pw * 1.02, 0.22, pd * 1.05), rockMat);
+      cap.position.set(px, cliffH * 0.82, pz);
+      cap.castShadow = true;
+      this.group.add(cap);
+    };
+
+    addWall(spanX + 0.6, 0.65, (x0 + x1) / 2, z0 - 0.42);
+    addWall(spanX + 0.6, 0.65, (x0 + x1) / 2, z1 + 0.42);
+    addWall(0.65, spanZ + 0.6, x0 - 0.42, (z0 + z1) / 2);
+    addWall(0.65, spanZ + 0.6, x1 + 0.42, (z0 + z1) / 2);
+
+    const lipMat = new THREE.MeshLambertMaterial({ color: 0x5a6b48 });
+    const lips: Array<[number, number, number, number, number]> = [
+      [this.width, 0.2, this.width / 2, 0.02, -0.06],
+      [this.width, 0.22, this.width / 2, this.height - 0.02, -0.06],
+      [0.22, this.height, 0.02, this.height / 2, -0.06],
+      [0.22, this.height, this.width - 0.02, this.height / 2, -0.06],
+    ];
+    for (const [pw, pd, px, pz, py] of lips) {
+      const lip = new THREE.Mesh(new THREE.BoxGeometry(pw, 0.12, pd), lipMat);
+      lip.position.set(px, py, pz);
+      lip.receiveShadow = true;
+      this.group.add(lip);
+    }
   }
 
   // â”€â”€â”€ PATH RIBBON (smooth organic winding road) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -235,7 +319,7 @@ export class Grid {
     this._curve = curve;
     const curvePoints = curve.getPoints(waypoints.length * 10); // High resolution for smoothness
 
-    const pathWidth = 1.15;
+    const pathWidth = this.pathWidth;
     const vertices: number[] = [];
     const indices: number[] = [];
     let vi = 0;
@@ -520,8 +604,8 @@ export class Grid {
   }
 
   private createEnvironmentDecorations() {
-    // Keep only rocks as requested
-    const rockCount = Math.floor(this.width * this.height * 0.4);
+    const rockDensity = this.mapPresentation === 'full_field' ? 0.12 : 0.4;
+    const rockCount = Math.floor(this.width * this.height * rockDensity);
     const rockGeo = new THREE.DodecahedronGeometry(0.18, 0);
     const rockMat = new THREE.MeshStandardMaterial({ color: 0x7a7a72, roughness: 0.9 });
     const rockMesh = new THREE.InstancedMesh(rockGeo, rockMat, rockCount);
@@ -912,8 +996,8 @@ export class Grid {
   }
 
   private createRioniValleySet(): void {
-    const riverW = this.mapPresentation === 'full_field' ? this.visualWidth : this.width + 0.8;
-    const riverX = this.mapPresentation === 'full_field' ? (this.width / 2) + this.visualOffsetX : this.width / 2;
+    const riverW = this.width + 0.8;
+    const riverX = this.width / 2;
     const river = this.makeWaterStrip(riverW, 1.0);
     river.position.set(riverX, 0.008, this.height - 0.55);
     this.group.add(river);
@@ -1151,121 +1235,73 @@ export class Grid {
     }
   }
 
-  private createFullFieldDecorations(): void {
-    // Fill the margins outside the playable 18x10 grid with beautiful scenery
-    // Gameplay grid is [0, 18] in X, [0, 10] in Z
-    // Full field visual bounds are 40x24, meaning X is [-11, 29] and Z is [-7, 17]
+  /** Dense forest ring on the diorama skirt — blocks view past the playable pass. */
+  private createDioramaPerimeterWall(): void {
+    const skirt = MAP_PRESENTATION_BALANCE.fullFieldPlayableSkirtCells;
+    const x0 = -skirt + 0.15;
+    const x1 = this.width + skirt - 0.15;
+    const z0 = -skirt + 0.15;
+    const z1 = this.height + skirt - 0.15;
 
-    // 1. Top margin thick, overlapping double-row forest wall & cliffs (Z is [-7, 0])
-    // Row 1 (far back)
-    for (let x = -10.5; x <= 28.5; x += 0.8) {
-      const scale = 0.95 + this.rand() * 0.45;
-      const xOffset = (this.rand() - 0.5) * 0.25;
-      const zOffset = (this.rand() - 0.5) * 0.25;
-      this.addPropUnsafe(this.makeTree(), x + xOffset, -5.5 + zOffset, scale);
-      if (this.rand() < 0.3) {
-        this.addPropUnsafe(this.makeStone(0x77735f), x + xOffset + 0.3, -6.0 + zOffset, 0.7 + this.rand() * 0.6);
+    const addTreeLine = (x: number, z: number, scale: number) => {
+      this.addPropUnsafe(
+        this.makeTree(),
+        x + (this.rand() - 0.5) * 0.22,
+        z + (this.rand() - 0.5) * 0.22,
+        scale,
+      );
+      if (this.rand() < 0.35) {
+        this.addPropUnsafe(
+          this.makeStone(0x5a5e52),
+          x + (this.rand() - 0.5) * 0.35,
+          z + (this.rand() - 0.5) * 0.35,
+          0.65 + this.rand() * 0.55,
+        );
       }
-    }
-    // Row 2 (closer front)
-    for (let x = -10.0; x <= 28.0; x += 0.9) {
-      const scale = 0.8 + this.rand() * 0.4;
-      const xOffset = (this.rand() - 0.5) * 0.3;
-      const zOffset = (this.rand() - 0.5) * 0.3;
-      this.addPropUnsafe(this.makeTree(), x + xOffset, -3.0 + zOffset, scale);
-      if (this.rand() < 0.4) {
-        this.addPropUnsafe(this.makeStone(0x77735f), x + xOffset - 0.3, -2.5 + zOffset, 0.5 + this.rand() * 0.5);
-      }
+    };
+
+    for (let x = x0; x <= x1; x += 0.62) {
+      addTreeLine(x, z0, 1.05 + this.rand() * 0.35);
+      addTreeLine(x, z0 + 0.75, 0.92 + this.rand() * 0.28);
     }
 
-    // 2. Left margin tree-and-cliff clusters & path entrance wrapping (X is [-11, 0])
-    // Watchtower & Arch ruin at the left margin
-    this.addPropUnsafe(this.makeWatchtower(), -4.5, 1.2, 1.0);
-    this.addPropUnsafe(this.makeArchRuin(0x77735f), -3.5, 2.2, 0.95);
-    this.addPropUnsafe(this.makeStone(0x77735f), -5.5, 2.5, 1.5);
-    this.addPropUnsafe(this.makeStone(0x66624f), -6.0, 1.8, 1.25);
-
-    // A rustic Georgian campfire area on the left
-    this.addPropUnsafe(this.makeHut(), -5.0, 7.5, 1.15);
-    this.addPropUnsafe(this.makeFire(), -3.8, 8.0, 1.2);
-    this.addPropUnsafe(this.makeQvevri(), -3.2, 6.8, 0.75);
-    this.addPropUnsafe(this.makeQvevri(), -2.9, 7.1, 0.6);
-
-    // Wind the path entrance at [-1, 4] out from a dense forest gate
-    for (let i = 0; i < 6; i++) {
-      // Above path entrance
-      this.addPropUnsafe(this.makeTree(), -2.0 - i * 0.8, 2.8 - (this.rand() * 0.4), 0.85 + this.rand() * 0.3);
-      this.addPropUnsafe(this.makeStone(0x77735f), -1.5 - i * 1.0, 2.2, 0.6 + this.rand() * 0.5);
-      // Below path entrance
-      this.addPropUnsafe(this.makeTree(), -2.0 - i * 0.8, 5.2 + (this.rand() * 0.4), 0.85 + this.rand() * 0.3);
-      this.addPropUnsafe(this.makeStone(0x77735f), -1.5 - i * 1.0, 5.8, 0.6 + this.rand() * 0.5);
+    for (let x = x0; x <= x1; x += 0.62) {
+      if (x > 4 && x < this.width - 4) continue;
+      addTreeLine(x, z1, 1.0 + this.rand() * 0.32);
+      addTreeLine(x, z1 - 0.7, 0.88 + this.rand() * 0.25);
     }
 
-    // Leftmost boundary tree and rock wall (dense cluster at X = [-11, -6])
-    for (let z = 0; z <= 10; z += 1.2) {
-      for (let ox = -10.5; ox <= -6.5; ox += 1.5) {
-        this.addPropUnsafe(this.makeTree(), ox + (this.rand() - 0.5) * 0.4, z + (this.rand() - 0.5) * 0.4, 0.8 + this.rand() * 0.45);
-        if (this.rand() < 0.5) {
-          this.addPropUnsafe(this.makeStone(0x77735f), ox + 0.6, z - 0.3, 0.7 + this.rand() * 0.7);
-        }
+    for (let z = z0; z <= z1; z += 0.68) {
+      addTreeLine(x0, z, 0.95 + this.rand() * 0.3);
+      addTreeLine(x0 + 0.72, z, 0.88 + this.rand() * 0.28);
+    }
+
+    for (let z = z0; z <= z1; z += 0.68) {
+      addTreeLine(x1, z, 0.95 + this.rand() * 0.3);
+      addTreeLine(x1 - 0.72, z, 0.88 + this.rand() * 0.28);
+    }
+
+    const pathStart = this.worldPath[0];
+    if (pathStart) {
+      for (let i = 0; i < 4; i++) {
+        addTreeLine(pathStart.x - 1.1 - i * 0.55, pathStart.z - 0.55, 0.9 + this.rand() * 0.2);
+        addTreeLine(pathStart.x - 1.1 - i * 0.55, pathStart.z + 0.55, 0.9 + this.rand() * 0.2);
       }
     }
 
-    // 3. Right margin village and ruins, path exit village gate (X is [18, 29])
-    // Village Gate at path exit endpoint
-    const villageGate = this.makeGate(0xd4a017);
-    villageGate.rotation.y = -Math.PI / 2; // Face horizontally
-    this.addPropUnsafe(villageGate, 17.6, 5.0, 1.35);
-
-    // Right margin structures & village scenery (X is [18, 29])
-    this.addPropUnsafe(this.makeWatchtower(), 21.0, 1.5, 1.05);
-    this.addPropUnsafe(this.makeArchRuin(0x827a60), 22.5, 2.5, 1.0);
-    this.addPropUnsafe(this.makeBanner(0x9b1d20), 20.0, 2.8, 1.1);
-
-    this.addPropUnsafe(this.makeHut(), 22.5, 7.5, 1.15);
-    this.addPropUnsafe(this.makeFire(), 21.2, 8.0, 1.25);
-    this.addPropUnsafe(this.makeQvevri(), 23.0, 6.5, 0.75);
-
-    // Right boundary tree & rock wall (dense clusters at X = [24, 29])
-    for (let z = 0; z <= 11; z += 1.2) {
-      for (let ox = 24.0; ox <= 28.0; ox += 1.5) {
-        this.addPropUnsafe(this.makeTree(), ox + (this.rand() - 0.5) * 0.4, z + (this.rand() - 0.5) * 0.4, 0.8 + this.rand() * 0.4);
-        if (this.rand() < 0.5) {
-          this.addPropUnsafe(this.makeStone(0x827a60), ox + 0.5, z + 0.2, 0.7 + this.rand() * 0.7);
-        }
+    const pathEnd = this.worldPath[this.worldPath.length - 1];
+    if (pathEnd) {
+      const villageGate = this.makeGate(0xd4a017);
+      villageGate.rotation.y = -Math.PI / 2;
+      this.addPropUnsafe(villageGate, pathEnd.x + 0.1, pathEnd.z, 1.3);
+      for (let i = 0; i < 3; i++) {
+        addTreeLine(pathEnd.x + 0.9 + i * 0.5, pathEnd.z - 0.6, 0.85 + this.rand() * 0.2);
+        addTreeLine(pathEnd.x + 0.9 + i * 0.5, pathEnd.z + 0.6, 0.85 + this.rand() * 0.2);
       }
     }
 
-    // 4. Bottom margin decorations / far riverbank (Z is [10, 17])
-    // Vineyard rows on the far bank
-    for (let i = 0; i < 5; i++) {
-      const row = this.makeVineyardRow(6);
-      row.rotation.y = -0.05;
-      this.addPropUnsafe(row, -7.0 + i * 2.5, 12.0, 0.95);
-    }
-    for (let i = 0; i < 5; i++) {
-      const row = this.makeVineyardRow(6);
-      row.rotation.y = -0.05;
-      this.addPropUnsafe(row, 20.0 + i * 2.5, 12.0, 0.95);
-    }
-
-    // Dense forest and rocks along the far bank (Z = 14 to 17) to hide the bottom edge
-    for (let x = -10.0; x <= 28.0; x += 1.2) {
-      const scale = 0.85 + this.rand() * 0.4;
-      const xOffset = (this.rand() - 0.5) * 0.4;
-      const zOffset = (this.rand() - 0.5) * 0.4;
-      const z = 15.0 + zOffset;
-      this.addPropUnsafe(this.makeTree(), x + xOffset, z, scale);
-      if (this.rand() < 0.5) {
-        this.addPropUnsafe(this.makeStone(0x6d6e61), x + xOffset + 0.5, z + 0.5, 0.7 + this.rand() * 0.6);
-      }
-    }
-
-    // A watchtower and banner guarding the far riverbank
-    this.addPropUnsafe(this.makeWatchtower(), 6.5, 12.5, 1.05);
-    this.addPropUnsafe(this.makeBanner(0x9b1d20), 8.0, 12.8, 1.1);
-    this.addPropUnsafe(this.makeWatchtower(), 14.5, 12.5, 1.05);
-    this.addPropUnsafe(this.makeBanner(0x9b1d20), 13.0, 12.8, 1.1);
+    this.addPropUnsafe(this.makeWatchtower(), 1.0, 1.0, 0.95);
+    this.addPropUnsafe(this.makeWatchtower(), this.width - 1.0, 1.0, 0.95);
   }
 
   private addDecorations() {

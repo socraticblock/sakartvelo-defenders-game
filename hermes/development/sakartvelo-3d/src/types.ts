@@ -33,6 +33,20 @@ export interface LevelData {
   visual_offset_x?: number;
   visual_offset_y?: number;
   wall_nodes?: number[][];
+  /**
+   * Optional metadata for the v5 vertical slice (Bible §31.1).
+   * Ignored by gameplay; documents intent for content authors.
+   */
+  vertical_slice?: VerticalSliceMeta;
+}
+
+/** Level 1 golden-template metadata (see docs/level-1-template.md). */
+export interface VerticalSliceMeta {
+  role: 'golden_template' | 'clone_of_golden_template';
+  bible_ref: string;
+  campaign_node_id?: string;
+  presentation: 'full_field_tutorial' | 'board_standard';
+  clone_template_id?: string;
 }
 
 export interface WaveData {

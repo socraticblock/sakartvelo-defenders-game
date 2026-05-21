@@ -3,6 +3,7 @@ import { ENEMY_CONFIGS, type EnemyFormation } from './types';
 import { gs } from './GameState';
 import { EnemyView } from './actors/EnemyView';
 import { createEnemyView } from './actors/EnemyFactory';
+import { MAP_PRESENTATION_BALANCE } from './BalanceConfig';
 import { isFlyingEnemy } from './EnemyTraits';
 
 export class Enemy {
@@ -150,7 +151,9 @@ export class Enemy {
     const base = lanes[Math.abs(spawnIndex) % lanes.length] ?? 0;
     const jitter = ((Math.random() - 0.5) * 0.1);
     const typeScale = type === 'siege' ? 0.55 : type === 'cavalry' ? 1.1 : this.isFlying ? 1.25 : 1;
-    return (base + jitter) * typeScale;
+    const pathW = gs.grid?.pathWidth ?? MAP_PRESENTATION_BALANCE.pathWidthBaseline;
+    const laneScale = pathW / MAP_PRESENTATION_BALANCE.pathWidthBaseline;
+    return (base + jitter) * typeScale * laneScale;
   }
 
   update(dt: number, camera: THREE.Camera): void {

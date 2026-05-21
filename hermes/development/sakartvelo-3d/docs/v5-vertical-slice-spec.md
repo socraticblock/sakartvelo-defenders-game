@@ -1,5 +1,7 @@
 # Sakartvelo Defenders v5 Vertical Slice
 
+**Level 1 golden template (authoring + playtest):** [level-1-template.md](./level-1-template.md) · [LEVEL-1-CHECKLIST.md](./LEVEL-1-CHECKLIST.md)
+
 ## Implemented Scope
 
 - One playable Era 0 level: **Gold Streams of the Rioni**.
@@ -11,6 +13,14 @@
 - Six waves: basic infantry, clustered infantry, mixed brute pressure, fast raiders, flying enemies, and mini-boss finale.
 - Map powers in scope: Call Militia and Stonefall.
 - Victory/defeat flow, 1-3 stars, one historical card, and a tiny local upgrade choice.
+
+## Map presentation (Level 1 golden template)
+
+- Level 1: `full_field` **diorama** — ground mesh is playable 18×10 + 2-cell skirt only (22×14), cliff ring, dense forest perimeter, stronger fog; not a 34×19 void.
+- Levels 2+: `board` 12×16 (standard clone template).
+- `fullFieldPathWidth`: **1.40** · `boardPathWidth`: **1.25** · `fullFieldFramingScale`: **1.0**
+- Lane offsets scale with path width (`pathWidth / 1.15`).
+- Combat speed: HUD **1x / 2x** (`btn-combat-speed`); tactical slow-mo overrides build circle / stonefall / tower pick.
 
 ## Tuning Constants
 

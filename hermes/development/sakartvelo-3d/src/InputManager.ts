@@ -10,7 +10,7 @@ import { Tower } from './Tower';
 import { TileUserData, TOWER_CONFIGS } from './types';
 import { buildArcherMesh, buildCatapultMesh, buildWallMesh } from './TowerMeshes';
 import { warHorn } from './WarHorn';
-import { V5_SLICE_BALANCE } from './BalanceConfig';
+import { MAP_PRESENTATION_BALANCE, V5_SLICE_BALANCE } from './BalanceConfig';
 
 type KBLayout = 'qwerty' | 'azerty';
 
@@ -373,7 +373,7 @@ export class InputManager {
       this._isPinching = false;
       // Restore time if no UI menus are open
       if (!gs.selectedTower && !document.getElementById('build-circle')?.classList.contains('visible')) {
-        gs.targetTimeScale = 1.0;
+        gs.restoreCombatTimeScale();
       }
     }
 
@@ -520,19 +520,12 @@ export class InputManager {
         let minZ = -4;
         let maxZ = gridHeight + 4;
 
-        if (gs.currentLevel && gs.currentLevel.map_presentation === 'full_field') {
-          const w = gs.currentLevel.visual_width ?? gridWidth;
-          const h = gs.currentLevel.visual_height ?? gridHeight;
-          const ox = gs.currentLevel.visual_offset_x ?? 0;
-          const oz = gs.currentLevel.visual_offset_y ?? 0;
-          const cx = gridWidth / 2 + ox;
-          const cz = gridHeight / 2 + oz;
-          
-          // Clamp to visual boundaries minus margins to prevent showing empty backdrop scenery
-          minX = cx - w / 2 + 4;
-          maxX = cx + w / 2 - 4;
-          minZ = cz - h / 2 + 3;
-          maxZ = cz + h / 2 - 3;
+        if (gs.currentLevel?.map_presentation === 'full_field') {
+          const skirt = MAP_PRESENTATION_BALANCE.fullFieldPlayableSkirtCells;
+          minX = -skirt;
+          maxX = gridWidth + skirt;
+          minZ = -skirt;
+          maxZ = gridHeight + skirt;
         }
 
         gs.cameraBaseX = THREE.MathUtils.clamp(this._camStartBaseX - dx * factor, minX, maxX);
@@ -639,7 +632,7 @@ export class InputManager {
         // Only restore if no other menus are open and no physical pinch is active
         const buildMenuOpen = document.getElementById('build-circle')?.classList.contains('visible');
         if (!this._isPinching && !gs.selectedTower && !buildMenuOpen) {
-          gs.targetTimeScale = 1.0;
+          gs.restoreCombatTimeScale();
         }
       }, 250);
     }

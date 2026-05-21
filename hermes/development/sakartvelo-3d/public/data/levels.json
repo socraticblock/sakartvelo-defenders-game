@@ -184,9 +184,16 @@
       "theme": "golden_river",
       "defense_target": "Rioni settlement gate",
       "imageUrl": "/images/level1-golden-river.png",
+      "vertical_slice": {
+        "role": "golden_template",
+        "bible_ref": "31.1",
+        "campaign_node_id": "e0_l1",
+        "presentation": "full_field_tutorial",
+        "clone_template_id": "era0_board_12x16"
+      },
       "map_presentation": "full_field",
-      "visual_width": 34,
-      "visual_height": 19,
+      "visual_width": 22,
+      "visual_height": 14,
       "visual_offset_x": 0,
       "visual_offset_y": 0,
       "wall_nodes": [
@@ -252,7 +259,8 @@
               "count": 10,
               "hp_mult": 1.01,
               "speed_mult": 1.02,
-              "spawn_interval": 0.9
+              "spawn_interval": 0.9,
+              "formation": "loose"
             }
           ]
         },
@@ -264,14 +272,16 @@
               "count": 12,
               "hp_mult": 1.01,
               "speed_mult": 1.02,
-              "spawn_interval": 0.9
+              "spawn_interval": 0.9,
+              "formation": "wide"
             },
             {
               "type": "cavalry",
               "count": 4,
               "hp_mult": 0.96,
               "speed_mult": 1.05,
-              "spawn_interval": 1.15
+              "spawn_interval": 1.15,
+              "formation": "wide"
             }
           ]
         },
@@ -283,14 +293,16 @@
               "count": 14,
               "hp_mult": 1.05,
               "speed_mult": 1.02,
-              "spawn_interval": 0.9
+              "spawn_interval": 0.9,
+              "formation": "loose"
             },
             {
               "type": "cavalry",
               "count": 5,
               "hp_mult": 1.01,
               "speed_mult": 1.05,
-              "spawn_interval": 1.05
+              "spawn_interval": 1.05,
+              "formation": "wide"
             }
           ]
         },
@@ -302,7 +314,8 @@
               "count": 16,
               "hp_mult": 1.09,
               "speed_mult": 1.02,
-              "spawn_interval": 0.8
+              "spawn_interval": 0.8,
+              "formation": "wide"
             }
           ]
         },
@@ -314,20 +327,28 @@
               "count": 14,
               "hp_mult": 1.11,
               "speed_mult": 1.02,
-              "spawn_interval": 0.9
+              "spawn_interval": 0.9,
+              "formation": "loose"
             },
             {
               "type": "cavalry",
               "count": 7,
               "hp_mult": 1.06,
               "speed_mult": 1.06,
-              "spawn_interval": 0.95
+              "spawn_interval": 0.95,
+              "formation": "wide"
             }
           ]
         }
       ],
       "historical_fact": "TUTORIAL: Before centralized rule, clan communities guarded crossings, forests, and trade paths. These early defenses shaped the later Colchian world.",
       "boss": null,
+      "vertical_slice": {
+        "role": "clone_of_golden_template",
+        "bible_ref": "31.1",
+        "presentation": "board_standard",
+        "clone_template_id": "era0_board_12x16"
+      },
       "sub_era": "bronze_roots_rioni",
       "build_nodes": [
         [

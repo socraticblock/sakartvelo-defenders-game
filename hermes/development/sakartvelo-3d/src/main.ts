@@ -19,7 +19,8 @@ import { getMedeaTemplate, loadMedeaTemplate } from './MedeaGltf';
 import { validateLevels } from './validateLevels';
 import { preloadEnemyAssetsForLevel } from './actors/EnemyFactory';
 import { requestLandscapeOrientation } from './Orientation';
-import { V5_SLICE_BALANCE } from './BalanceConfig';
+import { ambientDust } from './AmbientDust';
+import { MAP_PRESENTATION_BALANCE, V5_SLICE_BALANCE } from './BalanceConfig';
 
 // Use the generated magical sprite
 const MAGIC_SPRITE = '/magic_particle_sprite.png';
@@ -27,8 +28,17 @@ const MAGIC_SPRITE = '/magic_particle_sprite.png';
 // ─── Scene ────────────────────────────────────────────────────────────────
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0f1812);
-scene.fog = new THREE.FogExp2(0x0f1812, 0.0135);
+const BATTLE_FOG_COLOR = 0x0f1812;
+scene.background = new THREE.Color(BATTLE_FOG_COLOR);
+scene.fog = new THREE.FogExp2(BATTLE_FOG_COLOR, MAP_PRESENTATION_BALANCE.boardFogDensity);
+
+function applyBattleAtmosphere(fullField: boolean): void {
+  const density = fullField
+    ? MAP_PRESENTATION_BALANCE.fullFieldFogDensity
+    : MAP_PRESENTATION_BALANCE.boardFogDensity;
+  scene.fog = new THREE.FogExp2(BATTLE_FOG_COLOR, density);
+  ambientDust?.setOpacity(fullField ? 0.18 : 0.55);
+}
 
 const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 120);
 const CAMERA_ZOOM_KEY = 'sakartvelo_camera_zoom_pct';
@@ -119,6 +129,7 @@ function setupCamera(gw: number, gh: number): void {
   const cx = gw / 2, cz = gh / 2;
   const level = gs.currentLevel;
   const fullField = level?.map_presentation === 'full_field';
+  const skirt = fullField ? MAP_PRESENTATION_BALANCE.fullFieldPlayableSkirtCells : 0;
   const landscapePhone = innerWidth > innerHeight && innerHeight <= 520;
   const bottomUiRects = ['bottom-bar', 'hero-bar']
     .map(id => document.getElementById(id))
@@ -128,18 +139,20 @@ function setupCamera(gw: number, gh: number): void {
   const bottomTop = bottomUiRects.length ? Math.min(...bottomUiRects.map(rect => rect.top)) : innerHeight;
   const bottomUiRatio = Math.max(0, Math.min(0.42, (innerHeight - bottomTop) / innerHeight));
   const zoomScale = 100 / cameraZoomPct;
-  const framingScale = fullField ? (landscapePhone ? 0.72 : 0.78) : 1.0;
-  const dist = Math.max(gh * 0.75, gw * 1.06) * zoomScale * framingScale;
-  const upwardBiasCells = gh * (fullField ? (0.02 + bottomUiRatio * 0.2) : (0.08 + bottomUiRatio * 0.42));
+  const framingScale = fullField
+    ? MAP_PRESENTATION_BALANCE.fullFieldFramingScale * (landscapePhone ? 0.94 : 1.0)
+    : 1.0;
+  const dist = Math.max(gh * 0.75, gw * 1.06) * zoomScale * framingScale * (fullField ? 0.9 : 1);
+  const upwardBiasCells = gh * (fullField ? (0.04 + bottomUiRatio * 0.22) : (0.08 + bottomUiRatio * 0.42));
   const zoomOutFactor = Math.max(0, Math.min(1, (100 - cameraZoomPct) / 20));
-  const screenLiftCells = gh * (fullField ? (0.02 + zoomOutFactor * 0.04) : (0.14 + zoomOutFactor * 0.1));
+  const screenLiftCells = gh * (fullField ? (0.04 + zoomOutFactor * 0.06) : (0.14 + zoomOutFactor * 0.1));
   const targetBottomY = fullField
-    ? Math.min(innerHeight + innerHeight * (landscapePhone ? 0.22 : 0.16), bottomTop + innerHeight * 0.16)
+    ? Math.min(innerHeight - 8, bottomTop - 10)
     : Math.min(innerHeight - 12, bottomTop - 12);
-  const camHeight = dist * (fullField ? (0.86 + bottomUiRatio * 0.06) : (0.96 + bottomUiRatio * 0.12));
-  const camDepth = dist * (fullField ? (0.76 + bottomUiRatio * 0.08) : (0.82 + bottomUiRatio * 0.2));
-  const baseTargetZ = cz - upwardBiasCells + screenLiftCells + (fullField ? gh * 0.08 : 0);
-  const mapBottom = new THREE.Vector3(cx, 0, gh + (fullField ? 1.2 : -0.08));
+  const camHeight = dist * (fullField ? (0.92 + bottomUiRatio * 0.08) : (0.96 + bottomUiRatio * 0.12));
+  const camDepth = dist * (fullField ? (0.82 + bottomUiRatio * 0.1) : (0.82 + bottomUiRatio * 0.2));
+  const baseTargetZ = cz - upwardBiasCells + screenLiftCells;
+  const mapBottom = new THREE.Vector3(cx, 0, gh + skirt * 0.5 + (fullField ? 0.15 : -0.08));
 
   camera.fov = 46;
   camera.aspect = innerWidth / innerHeight;
@@ -199,6 +212,7 @@ async function startLevel(era: number, level: number): Promise<void> {
   await preloadEnemyAssetsForLevel(lvl);
   await loadMedeaTemplate();
   gs.initLevel(lvl, scene, getMedeaTemplate());
+  applyBattleAtmosphere(lvl.map_presentation === 'full_field');
   ui.reset();
   if (gs.waveMgr?.inBuildPhase) {
     ui.showBuildPhase();
@@ -277,7 +291,7 @@ input.init(renderer, camera, scene, {
   onAbility: (idx) => gs.hero?.activateAbility(idx, gs.enemies, gs.towers),
   onMapPowerTarget: (x, z) => {
     gs.castStonefall(scene, new THREE.Vector3(x, 0, z));
-    gs.targetTimeScale = 1.0;
+    gs.restoreCombatTimeScale();
     ui.update();
   },
   onEscape: () => { 
@@ -285,7 +299,7 @@ input.init(renderer, camera, scene, {
     ui.setTowerPlacementType(null); 
     gs.selectedTower = null; 
     gs.targetedMapPower = null;
-    gs.targetTimeScale = 1.0;
+    gs.restoreCombatTimeScale();
     ui.update(); 
   },
   onDeselect: () => { 
@@ -293,7 +307,7 @@ input.init(renderer, camera, scene, {
     ui.setTowerPlacementType(null); 
     gs.selectedTower = null; 
     gs.targetedMapPower = null;
-    gs.targetTimeScale = 1.0;
+    gs.restoreCombatTimeScale();
     ui.update(); 
   },
 });

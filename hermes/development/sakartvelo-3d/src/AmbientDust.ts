@@ -44,6 +44,10 @@ export class AmbientDust {
     scene.add(this._points);
   }
 
+  setOpacity(opacity: number): void {
+    this._material.opacity = opacity;
+  }
+
   update(camera: THREE.PerspectiveCamera, time: number): void {
     camera.getWorldDirection(this._forward).normalize();
     this._right.crossVectors(this._forward, camera.up).normalize();

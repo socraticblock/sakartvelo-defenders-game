@@ -145,7 +145,7 @@ export class BossCinematic {
 
   private _cleanup(): void {
     this._active = false;
-    gs.targetTimeScale = 1.0;
+    gs.restoreCombatTimeScale();
     gs.currentTimeScale = 1.0;
 
     if (this._vignette) {

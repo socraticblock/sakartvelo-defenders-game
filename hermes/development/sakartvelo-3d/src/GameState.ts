@@ -16,7 +16,12 @@ import { SaveManager } from './SaveManager';
 import { FriendlyInfantry } from './FriendlyInfantry';
 import { comboIndicator } from './ComboIndicator';
 import { disposeObject3D } from './utils/threeDispose';
-import { ECONOMY_BALANCE, FRIENDLY_INFANTRY_BALANCE, V5_SLICE_BALANCE } from './BalanceConfig';
+import {
+  type CombatSpeedMultiplier,
+  ECONOMY_BALANCE,
+  FRIENDLY_INFANTRY_BALANCE,
+  V5_SLICE_BALANCE,
+} from './BalanceConfig';
 import { spawnSplashRing, spawnHitFlash } from './Effects';
 import { canDamageEnemy } from './EnemyTraits';
 
@@ -54,6 +59,7 @@ export class GameState {
   paused = false;
   targetTimeScale = 1.0;
   currentTimeScale = 1.0;
+  combatSpeedMultiplier: CombatSpeedMultiplier = 1;
   gameTime = 0; // Scaled time for synchronized slow-mo animations
   levelElapsedTime = 0;
   waveCountdown = 0;
@@ -72,6 +78,27 @@ export class GameState {
   cameraDepth = 0;
 
   // ─── Helpers ─────────────────────────────────────────────
+
+  /** Build circle, wall pick, or targeted map power (Bible §5.3). */
+  requiresTacticalSlowMo(): boolean {
+    return Boolean(this.targetedMapPower) || this.selectedType !== null;
+  }
+
+  restoreCombatTimeScale(): void {
+    if (this.requiresTacticalSlowMo()) {
+      this.targetTimeScale = V5_SLICE_BALANCE.tacticalSlowMotionScale;
+      return;
+    }
+    this.targetTimeScale = this.combatSpeedMultiplier;
+  }
+
+  setCombatSpeed(mult: CombatSpeedMultiplier): void {
+    this.combatSpeedMultiplier = mult;
+    if (!this.requiresTacticalSlowMo()) {
+      this.targetTimeScale = mult;
+    }
+  }
+
   get buildPhaseActive() { return this.waveMgr?.inBuildPhase ?? false; }
   get waveActive() { return this.waveMgr?.active ?? false; }
   get currentWaveNum() { return this.waveMgr?.waveNum ?? 0; }

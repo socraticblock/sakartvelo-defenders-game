@@ -385,8 +385,13 @@ export class ScreenManager {
       },
       {
         title: 'The Enemy Path',
-        text: 'Enemies follow the road. Towers prefer enemies farthest along the path and in range.',
+        text: 'Enemies follow the road in spread groups, not a single file. Towers prefer enemies farthest along the path and in range.',
         selector: '#wave',
+      },
+      {
+        title: 'Flying Threat',
+        text: 'Wave 5 brings flyers. Archers and map powers are your anti-air answer.',
+        done: () => (gs.waveMgr?.waveNum ?? 0) >= 5,
       },
       {
         title: 'Walls Block Enemies',
